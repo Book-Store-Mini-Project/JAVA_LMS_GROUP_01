@@ -1,20 +1,21 @@
 package com.example.java_lms_group_01.Controller;
 
-import com.jfoenix.controls.JFXTextField;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 
 public class LoginController {
 
     @FXML
-    private JFXTextField email;
+    private TextField loginEmail;
 
     @FXML
-    private JFXTextField password;
+    private PasswordField loginPass;
 
     @FXML
-    void btnOnActionSubmit(ActionEvent event) {
-        System.out.println("click");
+    void btnOnActionLogin(ActionEvent event) {
+
     }
 
 }

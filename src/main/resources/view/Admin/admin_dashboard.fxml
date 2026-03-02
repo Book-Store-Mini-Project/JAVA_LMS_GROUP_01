@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="720.0" prefWidth="1080.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.java_lms_group_01.Controller.AdminDashboard.AdminDashboard">
+
+    <left>
+        <VBox prefHeight="720.0" prefWidth="240.0" style="-fx-background-color: #2c3e50;" BorderPane.alignment="CENTER">
+            <children>
+                <VBox alignment="CENTER" prefHeight="150.0" prefWidth="240.0" spacing="10.0">
+                    <children>
+                        <Text fill="WHITE" strokeType="OUTSIDE" strokeWidth="0.0" text="LMS ADMIN">
+                            <font>
+                                <Font name="System Bold" size="24.0" />
+                            </font>
+                        </Text>
+                        <Label text="System Administrator" textFill="#bdc3c7" />
+                        <Separator opacity="0.2" prefWidth="180.0">
+                            <VBox.margin>
+                                <Insets left="20.0" right="20.0" />
+                            </VBox.margin>
+                        </Separator>
+                    </children>
+                </VBox>
+
+                <VBox spacing="5.0" VBox.vgrow="ALWAYS">
+                    <children>
+                        <Button fx:id="btnUsers" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#navUsers" prefHeight="50.0" prefWidth="240.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="  Manage User Profiles" textFill="WHITE">
+                            <font><Font size="14.0" /></font>
+                        </Button>
+                        <Button fx:id="btnCourses" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#navCourses" prefHeight="50.0" prefWidth="240.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="  Manage Courses" textFill="WHITE">
+                            <font><Font size="14.0" /></font>
+                        </Button>
+                        <Button fx:id="btnNotices" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#navNotices" prefHeight="50.0" prefWidth="240.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="  Manage Notices" textFill="WHITE">
+                            <font><Font size="14.0" /></font>
+                        </Button>
+                        <Button fx:id="btnTimetable" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#navTimetable" prefHeight="50.0" prefWidth="240.0" style="-fx-background-color: transparent; -fx-cursor: hand;" text="  Manage Timetables" textFill="WHITE">
+                            <font><Font size="14.0" /></font>
+                        </Button>
+                    </children>
+                    <padding>
+                        <Insets top="10.0" />
+                    </padding>
+                </VBox>
+
+                <Button mnemonicParsing="false" onAction="#btnOnActionLogout" prefHeight="50.0" prefWidth="240.0" style="-fx-background-color: #e74c3c; -fx-cursor: hand;" text="Logout" textFill="WHITE">
+                    <font><Font name="System Bold" size="13.0" /> </font>
+                </Button>
+            </children>
+        </VBox>
+    </left>
+
+    <center>
+        <AnchorPane prefHeight="200.0" prefWidth="200.0" style="-fx-background-color: #ecf0f1;" BorderPane.alignment="CENTER">
+            <children>
+                <AnchorPane prefHeight="60.0" prefWidth="840.0" style="-fx-background-color: white; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 5);" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+                    <children>
+                        <Label fx:id="lblTitle" layoutX="30.0" layoutY="18.0" text="Dashboard Overview" textFill="#2c3e50">
+                            <font>
+                                <Font name="System Bold" size="18.0" />
+                            </font>
+                        </Label>
+                    </children>
+                </AnchorPane>
+
+                <AnchorPane fx:id="contentArea" layoutX="20.0" layoutY="80.0" prefHeight="620.0" prefWidth="800.0" style="-fx-background-color: white; -fx-background-radius: 10;" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="80.0">
+                    <children>
+                        <VBox alignment="CENTER" layoutX="250.0" layoutY="200.0" spacing="10.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                            <children>
+                                <Text fill="#bdc3c7" strokeType="OUTSIDE" strokeWidth="0.0" text="Welcome to the Admin Control Panel">
+                                    <font><Font size="24.0" /></font>
+                                </Text>
+                                <Text fill="#bdc3c7" text="Select an option from the sidebar to manage LMS resources" />
+                            </children>
+                        </VBox>
+                    </children>
+                </AnchorPane>
+            </children>
+        </AnchorPane>
+    </center>
+</BorderPane>
