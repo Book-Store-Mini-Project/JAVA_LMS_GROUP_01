@@ -1,11 +1,17 @@
 package com.example.java_lms_group_01.model;
 
+import java.time.LocalDate;
+
 public class TechnicalOfficer extends User{
     private int deptId;
     private String position;
     private String labAssigned;
     private String shift;
     private String qualifications;
+
+    public TechnicalOfficer(int userId, String firstName, String lastName, String email, String address, String phoneNumber, LocalDate dateOfBirth, String gender) {
+        super(userId, firstName, lastName, email, address, phoneNumber, dateOfBirth, gender);
+    }
 
     public int getDeptId() {
         return deptId;

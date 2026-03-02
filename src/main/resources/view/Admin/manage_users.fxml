@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<AnchorPane prefHeight="620.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.java_lms_group_01.Controller.AdminDashboard.ManageUsersController">
+    <children>
+        <VBox layoutX="20.0" layoutY="20.0" spacing="20.0" AnchorPane.bottomAnchor="20.0" AnchorPane.leftAnchor="20.0" AnchorPane.rightAnchor="20.0" AnchorPane.topAnchor="20.0">
+            <children>
+
+                <HBox alignment="CENTER_LEFT" spacing="15.0" style="-fx-background-color: #f8f9fa; -fx-padding: 10; -fx-background-radius: 10;">
+                    <children>
+                        <TextField fx:id="txtSearch" prefHeight="35.0" prefWidth="300.0" promptText="Search by Name or Email..." style="-fx-background-radius: 20;" />
+                        <ComboBox fx:id="cmbRoleFilter" prefHeight="35.0" prefWidth="150.0" promptText="Filter by Role" style="-fx-background-radius: 20;" />
+                        <HBox alignment="CENTER_RIGHT" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Button mnemonicParsing="false" onAction="#btnOnActionAddNew" prefHeight="35.0" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;" text="+ Add New User">
+                                    <font><Font name="System Bold" size="12.0" /></font>
+                                </Button>
+                            </children>
+                        </HBox>
+                    </children>
+                </HBox>
+
+                <TableView fx:id="tblUsers" prefHeight="400.0" prefWidth="760.0" style="-fx-background-radius: 10;" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colId" prefWidth="60.0" text="ID" />
+                        <TableColumn fx:id="colFirstName" prefWidth="120.0" text="First Name" />
+                        <TableColumn fx:id="colLastName" prefWidth="120.0" text="Last Name" />
+                        <TableColumn fx:id="colEmail" prefWidth="180.0" text="Email" />
+                        <TableColumn fx:id="colRole" prefWidth="100.0" text="Role" />
+                        <TableColumn fx:id="colAction" prefWidth="160.0" text="Actions" />
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                    </columnResizePolicy>
+                </TableView>
+
+                <HBox alignment="CENTER_RIGHT" spacing="15.0">
+                    <children>
+                        <Button fx:id="btnEdit" disable="true" mnemonicParsing="false" onAction="#btnOnActionEdit" prefHeight="35.0" prefWidth="100.0" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-background-radius: 5;" text="Edit Profile" />
+                        <Button fx:id="btnDelete" disable="true" mnemonicParsing="false" onAction="#btnOnActionDelete" prefHeight="35.0" prefWidth="100.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;" text="Delete User" />
+                    </children>
+                </HBox>
+
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

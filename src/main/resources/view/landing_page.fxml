@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<AnchorPane prefHeight="600.0" prefWidth="555.0" style="-fx-background-color: #f8f9fa;" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.java_lms_group_01.Controller.LandingController">
+   <children>
+      <AnchorPane prefHeight="600.0" prefWidth="571.0">
+         <children>
+            <VBox alignment="CENTER" layoutX="110.0" layoutY="80.0" prefWidth="350.0" spacing="20.0">
+               <children>
+                  <Text fill="#2c3e50" strokeType="OUTSIDE" strokeWidth="0.0" text="Account Creating Portal">
+                     <font>
+                        <Font name="System Bold" size="26.0" />
+                     </font>
+                  </Text>
+                  <Text fill="#7f8c8d" text="Select your role to create an account" />
+
+                  <Separator prefWidth="200.0" style="-fx-padding: 10;" />
+
+                  <Button mnemonicParsing="false" onAction="#btnOnActionAdmin" prefHeight="50.0" prefWidth="300.0" style="-fx-background-color: #34495e; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;" text="Create Admin">
+                     <font> <Font name="System Bold" size="14.0" /> </font>
+                  </Button>
+
+                  <Button mnemonicParsing="false" onAction="#btnOnActionStudent" prefHeight="50.0" prefWidth="300.0" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;" text="Create Student">
+                     <font> <Font name="System Bold" size="14.0" /> </font>
+                  </Button>
+
+                  <Button mnemonicParsing="false" onAction="#btnOnActionLecturer" prefHeight="50.0" prefWidth="300.0" style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;" text="Create Lecturer">
+                     <font> <Font name="System Bold" size="14.0" /> </font>
+                  </Button>
+
+                  <Button mnemonicParsing="false" onAction="#btnOnActionTechnicalOfficer" prefHeight="50.0" prefWidth="300.0" style="-fx-background-color: #8e44ad; -fx-text-fill: white; -fx-background-radius: 10; -fx-cursor: hand;" text="Create Technical Officer">
+                     <font> <Font name="System Bold" size="14.0" /> </font>
+                  </Button>
+               </children>
+            </VBox>
+         </children>
+      </AnchorPane>
+   </children>
+</AnchorPane>

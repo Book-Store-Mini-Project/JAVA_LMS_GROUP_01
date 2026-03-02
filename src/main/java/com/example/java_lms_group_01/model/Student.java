@@ -1,44 +1,28 @@
 package com.example.java_lms_group_01.model;
 
-public class Student extends User{
-    private String registrationNo;
-    private Integer batchId;
-    private int deptId;
-    private Status status;
+import com.example.java_lms_group_01.model.User;
 
-    public String getRegistrationNo() {
-        return registrationNo;
-    }
+import java.time.LocalDate;
 
-    public void setRegistrationNo(String registrationNo) {
-        this.registrationNo = registrationNo;
-    }
+public class Student extends User {
+    private int batchId;
+    private String program;
+    private double gpa;
 
-    public Integer getBatchId() {
-        return batchId;
-    }
-
-    public void setBatchId(Integer batchId) {
+    public Student(int userId, String firstName, String lastName, String email,
+                   String address, String phoneNumber, LocalDate dateOfBirth, String gender,
+                   int batchId, String program, double gpa) {
+        super(userId, firstName, lastName, email, address, phoneNumber, dateOfBirth, gender);
         this.batchId = batchId;
+        this.program = program;
+        this.gpa = gpa;
     }
 
-    public int getDeptId() {
-        return deptId;
-    }
+    public int getBatchId() { return batchId; }
+    public void setBatchId(int batchId) { this.batchId = batchId; }
+    public String getProgram() { return program; }
+    public void setProgram(String program) { this.program = program; }
+    public double getGpa() { return gpa; }
+    public void setGpa(double gpa) { this.gpa = gpa; }
 
-    public void setDeptId(int deptId) {
-        this.deptId = deptId;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    public enum Status {
-        proper, repeat, suspended
-    }
 }

@@ -5,6 +5,10 @@ import java.time.LocalDate;
 public class Dean extends User{
     private int deptId;
 
+    public Dean(int userId, String firstName, String lastName, String email, String address, String phoneNumber, LocalDate dateOfBirth, String gender) {
+        super(userId, firstName, lastName, email, address, phoneNumber, dateOfBirth, gender);
+    }
+
     public LocalDate getDateOfAppointment() {
         return dateOfAppointment;
     }
