@@ -2,7 +2,7 @@ package com.example.java_lms_group_01.Controller.AdminDashboard;
 
 import com.example.java_lms_group_01.model.Course;
 import javafx.fxml.FXML;
-import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
 
 public class CourseFormController {
@@ -11,19 +11,13 @@ public class CourseFormController {
     private TextField txtCourseCode;
 
     @FXML
-    private TextField txtCredits;
+    private TextField txtCredit;
 
     @FXML
-    private TextField txtDeptId;
+    private TextField txtDepartment;
 
     @FXML
-    private CheckBox chkHasPractical;
-
-    @FXML
-    private CheckBox chkHasTheory;
-
-    @FXML
-    private TextField txtLecturerId;
+    private TextField txtLecturerRegNo;
 
     @FXML
     private TextField txtName;
@@ -31,29 +25,34 @@ public class CourseFormController {
     @FXML
     private TextField txtSemester;
 
+    @FXML
+    private ComboBox<String> cmbCourseType;
+
     public void setupForCreate() {
         txtCourseCode.setDisable(false);
-        chkHasTheory.setSelected(true);
-        chkHasPractical.setSelected(false);
-        txtSemester.setText("Level 1 Semester 2");
+        cmbCourseType.getItems().setAll("theory", "practical", "both");
+        cmbCourseType.setValue("theory");
     }
 
     public void setupForEdit(Course course) {
+        setupForCreate();
         txtCourseCode.setText(course.getCourseCode());
         txtCourseCode.setDisable(true);
         txtName.setText(course.getName());
-        txtCredits.setText(String.valueOf(course.getCredits()));
-        chkHasTheory.setSelected(course.isHasTheory());
-        chkHasPractical.setSelected(course.isHasPractical());
-        txtLecturerId.setText(String.valueOf(course.getLecturerId()));
-        txtDeptId.setText(String.valueOf(course.getDeptId()));
-        txtSemester.setText(course.getSemester());
+        txtCredit.setText(String.valueOf(course.getCredit()));
+        txtLecturerRegNo.setText(value(course.getLecturerRegistrationNo()));
+        txtDepartment.setText(value(course.getDepartment()));
+        txtSemester.setText(value(course.getSemester()));
+        cmbCourseType.setValue(value(course.getCourseType()));
     }
 
     public Course buildCourse() {
         String courseCode = value(txtCourseCode);
         String name = value(txtName);
+        String lecturerRegNo = value(txtLecturerRegNo);
+        String department = value(txtDepartment);
         String semester = value(txtSemester);
+        String courseType = cmbCourseType.getValue();
 
         if (courseCode.isBlank()) {
             throw new IllegalArgumentException("Course code is required.");
@@ -61,41 +60,43 @@ public class CourseFormController {
         if (name.isBlank()) {
             throw new IllegalArgumentException("Course name is required.");
         }
+        if (department.isBlank()) {
+            throw new IllegalArgumentException("Department is required.");
+        }
         if (semester.isBlank()) {
             throw new IllegalArgumentException("Semester is required.");
         }
+        if (courseType == null || courseType.isBlank()) {
+            throw new IllegalArgumentException("Course type is required.");
+        }
 
-        int credits;
-        int lecturerId;
-        int deptId;
+        int credit;
         try {
-            credits = Integer.parseInt(value(txtCredits));
-            lecturerId = Integer.parseInt(value(txtLecturerId));
-            deptId = Integer.parseInt(value(txtDeptId));
+            credit = Integer.parseInt(value(txtCredit));
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Credits, Lecturer ID, and Department ID must be valid numbers.");
+            throw new IllegalArgumentException("Credit must be a valid number.");
         }
 
-        if (credits <= 0) {
-            throw new IllegalArgumentException("Credits must be greater than 0.");
-        }
-        if (lecturerId <= 0 || deptId <= 0) {
-            throw new IllegalArgumentException("Lecturer ID and Department ID must be positive numbers.");
+        if (credit <= 0) {
+            throw new IllegalArgumentException("Credit must be greater than 0.");
         }
 
         return new Course(
                 courseCode,
                 name,
-                credits,
-                chkHasTheory.isSelected(),
-                chkHasPractical.isSelected(),
-                lecturerId,
-                deptId,
-                semester
+                lecturerRegNo.isBlank() ? null : lecturerRegNo,
+                department,
+                semester,
+                credit,
+                courseType
         );
     }
 
     private String value(TextField textField) {
         return textField.getText() == null ? "" : textField.getText().trim();
+    }
+
+    private String value(String text) {
+        return text == null ? "" : text;
     }
 }

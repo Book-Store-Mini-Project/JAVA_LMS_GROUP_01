@@ -10,7 +10,7 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/view/Admin/admin_dashboard.fxml")
+                getClass().getResource("/view/login_page.fxml")
         );
         Scene scene = new Scene(loader.load());
         stage.setTitle("Login Page");

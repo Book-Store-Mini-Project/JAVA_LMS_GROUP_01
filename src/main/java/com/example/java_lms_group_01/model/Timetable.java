@@ -1,50 +1,103 @@
 package com.example.java_lms_group_01.model;
 
+import java.time.LocalTime;
+
 public class Timetable {
-    private int timetableId;
-    private int departmentId;
-    private int semester;
-    private String academicYear;
+    private String timeTableId;
+    private String department;
+    private String lecId;
+    private String courseCode;
+    private String adminId;
+    private String day;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private String sessionType;
 
     public Timetable() {
     }
 
-    public Timetable(int timetableId, int departmentId, int semester, String academicYear) {
-        this.timetableId = timetableId;
-        this.departmentId = departmentId;
-        this.semester = semester;
-        this.academicYear = academicYear;
+    public Timetable(String timeTableId, String department, String lecId, String courseCode, String adminId,
+                     String day, LocalTime startTime, LocalTime endTime, String sessionType) {
+        this.timeTableId = timeTableId;
+        this.department = department;
+        this.lecId = lecId;
+        this.courseCode = courseCode;
+        this.adminId = adminId;
+        this.day = day;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.sessionType = sessionType;
     }
 
-    public int getTimetableId() {
-        return timetableId;
+    public String getTimeTableId() {
+        return timeTableId;
     }
 
-    public void setTimetableId(int timetableId) {
-        this.timetableId = timetableId;
+    public void setTimeTableId(String timeTableId) {
+        this.timeTableId = timeTableId;
     }
 
-    public int getDepartmentId() {
-        return departmentId;
+    public String getDepartment() {
+        return department;
     }
 
-    public void setDepartmentId(int departmentId) {
-        this.departmentId = departmentId;
+    public void setDepartment(String department) {
+        this.department = department;
     }
 
-    public int getSemester() {
-        return semester;
+    public String getLecId() {
+        return lecId;
     }
 
-    public void setSemester(int semester) {
-        this.semester = semester;
+    public void setLecId(String lecId) {
+        this.lecId = lecId;
     }
 
-    public String getAcademicYear() {
-        return academicYear;
+    public String getCourseCode() {
+        return courseCode;
     }
 
-    public void setAcademicYear(String academicYear) {
-        this.academicYear = academicYear;
+    public void setCourseCode(String courseCode) {
+        this.courseCode = courseCode;
+    }
+
+    public String getAdminId() {
+        return adminId;
+    }
+
+    public void setAdminId(String adminId) {
+        this.adminId = adminId;
+    }
+
+    public String getDay() {
+        return day;
+    }
+
+    public void setDay(String day) {
+        this.day = day;
+    }
+
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalTime endTime) {
+        this.endTime = endTime;
+    }
+
+    public String getSessionType() {
+        return sessionType;
+    }
+
+    public void setSessionType(String sessionType) {
+        this.sessionType = sessionType;
     }
 }

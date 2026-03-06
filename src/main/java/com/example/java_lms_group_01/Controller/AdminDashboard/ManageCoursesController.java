@@ -1,7 +1,7 @@
 package com.example.java_lms_group_01.Controller.AdminDashboard;
 
-import com.example.java_lms_group_01.model.Course;
 import com.example.java_lms_group_01.Repository.CourseRepository;
+import com.example.java_lms_group_01.model.Course;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
@@ -38,7 +38,7 @@ public class ManageCoursesController implements Initializable {
     private TableColumn<Course, Number> colCredits;
 
     @FXML
-    private TableColumn<Course, Number> colDeptId;
+    private TableColumn<Course, String> colDeptId;
 
     @FXML
     private TableColumn<Course, String> colHasPractical;
@@ -47,7 +47,7 @@ public class ManageCoursesController implements Initializable {
     private TableColumn<Course, String> colHasTheory;
 
     @FXML
-    private TableColumn<Course, Number> colLecturerId;
+    private TableColumn<Course, String> colLecturerId;
 
     @FXML
     private TableColumn<Course, String> colName;
@@ -69,39 +69,27 @@ public class ManageCoursesController implements Initializable {
         loadDepartmentFilter("All");
         loadCourses(null, null);
 
-        txtSearchCourse.textProperty().addListener((obs, oldValue, newValue) ->
-                applyFilters()
-        );
-
-        cmbDeptFilter.valueProperty().addListener((obs, oldValue, newValue) ->
-                applyFilters()
-        );
+        txtSearchCourse.textProperty().addListener((obs, oldValue, newValue) -> applyFilters());
+        cmbDeptFilter.valueProperty().addListener((obs, oldValue, newValue) -> applyFilters());
     }
 
     private void configureColumns() {
+        colHasPractical.setVisible(false);
         colCourseCode.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCourseCode()));
         colName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
-        colCredits.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCredits()));
-        colHasTheory.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().isHasTheory() ? "Yes" : "No"));
-        colHasPractical.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().isHasPractical() ? "Yes" : "No"));
-        colLecturerId.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getLecturerId()));
-        colDeptId.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getDeptId()));
-        colSemester.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getSemester()));
+        colCredits.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCredit()));
+        colHasTheory.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCourseType()));
+        colLecturerId.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getLecturerRegistrationNo())));
+        colDeptId.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getDepartment())));
+        colSemester.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getSemester())));
     }
 
     private void loadDepartmentFilter(String selectedValue) {
         try {
             cmbDeptFilter.getItems().clear();
             cmbDeptFilter.getItems().add("All");
-            for (Integer deptId : courseRepository.findAllDepartmentIds()) {
-                cmbDeptFilter.getItems().add(String.valueOf(deptId));
-            }
-
-            if (selectedValue != null && cmbDeptFilter.getItems().contains(selectedValue)) {
-                cmbDeptFilter.setValue(selectedValue);
-            } else {
-                cmbDeptFilter.setValue("All");
-            }
+            cmbDeptFilter.getItems().addAll(courseRepository.findAllDepartments());
+            cmbDeptFilter.setValue(cmbDeptFilter.getItems().contains(selectedValue) ? selectedValue : "All");
         } catch (SQLException e) {
             showError("Failed to load department filters.", e);
         }
@@ -109,16 +97,13 @@ public class ManageCoursesController implements Initializable {
 
     private void applyFilters() {
         String selectedDept = cmbDeptFilter.getValue();
-        Integer deptId = null;
-        if (selectedDept != null && !"All".equals(selectedDept)) {
-            deptId = Integer.parseInt(selectedDept);
-        }
-        loadCourses(deptId, txtSearchCourse.getText());
+        String department = "All".equals(selectedDept) ? null : selectedDept;
+        loadCourses(department, txtSearchCourse.getText());
     }
 
-    private void loadCourses(Integer deptId, String keyword) {
+    private void loadCourses(String department, String keyword) {
         try {
-            List<Course> courses = courseRepository.findByFilters(deptId, keyword);
+            List<Course> courses = courseRepository.findByFilters(department, keyword);
             tblCourses.getItems().setAll(courses);
         } catch (SQLException e) {
             showError("Failed to load courses.", e);
@@ -245,6 +230,10 @@ public class ManageCoursesController implements Initializable {
         dialog.setResultConverter(button -> button == saveButtonType ? resultHolder[0] : null);
         Optional<Course> result = dialog.showAndWait();
         return result.orElse(null);
+    }
+
+    private String value(String text) {
+        return text == null ? "" : text;
     }
 
     private void showInfo(String message) {

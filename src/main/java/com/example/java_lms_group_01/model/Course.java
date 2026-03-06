@@ -3,26 +3,24 @@ package com.example.java_lms_group_01.model;
 public class Course {
     private String courseCode;
     private String name;
-    private int credits;
-    private boolean hasTheory;
-    private boolean hasPractical;
-    private int lecturerId;
-    private int deptId;
+    private String lecturerRegistrationNo;
+    private String department;
     private String semester;
+    private int credit;
+    private String courseType;
 
     public Course() {
     }
 
-    public Course(String courseCode, String name, int credits, boolean hasTheory, boolean hasPractical,
-                  int lecturerId, int deptId, String semester) {
+    public Course(String courseCode, String name, String lecturerRegistrationNo, String department,
+                  String semester, int credit, String courseType) {
         this.courseCode = courseCode;
         this.name = name;
-        this.credits = credits;
-        this.hasTheory = hasTheory;
-        this.hasPractical = hasPractical;
-        this.lecturerId = lecturerId;
-        this.deptId = deptId;
+        this.lecturerRegistrationNo = lecturerRegistrationNo;
+        this.department = department;
         this.semester = semester;
+        this.credit = credit;
+        this.courseType = courseType;
     }
 
     public String getCourseCode() {
@@ -41,44 +39,20 @@ public class Course {
         this.name = name;
     }
 
-    public int getCredits() {
-        return credits;
+    public String getLecturerRegistrationNo() {
+        return lecturerRegistrationNo;
     }
 
-    public void setCredits(int credits) {
-        this.credits = credits;
+    public void setLecturerRegistrationNo(String lecturerRegistrationNo) {
+        this.lecturerRegistrationNo = lecturerRegistrationNo;
     }
 
-    public boolean isHasTheory() {
-        return hasTheory;
+    public String getDepartment() {
+        return department;
     }
 
-    public void setHasTheory(boolean hasTheory) {
-        this.hasTheory = hasTheory;
-    }
-
-    public boolean isHasPractical() {
-        return hasPractical;
-    }
-
-    public void setHasPractical(boolean hasPractical) {
-        this.hasPractical = hasPractical;
-    }
-
-    public int getLecturerId() {
-        return lecturerId;
-    }
-
-    public void setLecturerId(int lecturerId) {
-        this.lecturerId = lecturerId;
-    }
-
-    public int getDeptId() {
-        return deptId;
-    }
-
-    public void setDeptId(int deptId) {
-        this.deptId = deptId;
+    public void setDepartment(String department) {
+        this.department = department;
     }
 
     public String getSemester() {
@@ -87,5 +61,21 @@ public class Course {
 
     public void setSemester(String semester) {
         this.semester = semester;
+    }
+
+    public int getCredit() {
+        return credit;
+    }
+
+    public void setCredit(int credit) {
+        this.credit = credit;
+    }
+
+    public String getCourseType() {
+        return courseType;
+    }
+
+    public void setCourseType(String courseType) {
+        this.courseType = courseType;
     }
 }

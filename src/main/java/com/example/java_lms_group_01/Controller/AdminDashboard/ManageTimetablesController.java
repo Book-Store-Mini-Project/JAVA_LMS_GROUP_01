@@ -2,7 +2,6 @@ package com.example.java_lms_group_01.Controller.AdminDashboard;
 
 import com.example.java_lms_group_01.Repository.TimetableRepository;
 import com.example.java_lms_group_01.model.Timetable;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -20,6 +19,7 @@ import javafx.scene.layout.GridPane;
 
 import java.net.URL;
 import java.sql.SQLException;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -36,13 +36,28 @@ public class ManageTimetablesController implements Initializable {
     private TableColumn<Timetable, String> colAcademicYear;
 
     @FXML
-    private TableColumn<Timetable, Number> colDepartmentId;
+    private TableColumn<Timetable, String> colDepartmentId;
 
     @FXML
-    private TableColumn<Timetable, Number> colSemester;
+    private TableColumn<Timetable, String> colLecId;
 
     @FXML
-    private TableColumn<Timetable, Number> colTimetableId;
+    private TableColumn<Timetable, String> colCourseCode;
+
+    @FXML
+    private TableColumn<Timetable, String> colAdminId;
+
+    @FXML
+    private TableColumn<Timetable, String> colSemester;
+
+    @FXML
+    private TableColumn<Timetable, String> colStartTime;
+
+    @FXML
+    private TableColumn<Timetable, String> colEndTime;
+
+    @FXML
+    private TableColumn<Timetable, String> colTimetableId;
 
     @FXML
     private TableView<Timetable> tblTimetable;
@@ -56,7 +71,7 @@ public class ManageTimetablesController implements Initializable {
     public void initialize(URL url, ResourceBundle resourceBundle) {
         configureColumns();
         loadDepartmentFilter("All");
-        loadSemesterFilter("All");
+        loadDayFilter("All");
         loadTimetables(null, null, null);
 
         cmbFilterDepartment.valueProperty().addListener((obs, oldValue, newValue) -> applyFilters());
@@ -65,58 +80,48 @@ public class ManageTimetablesController implements Initializable {
     }
 
     private void configureColumns() {
-        colTimetableId.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getTimetableId()));
-        colDepartmentId.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getDepartmentId()));
-        colSemester.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getSemester()));
-        colAcademicYear.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getAcademicYear()));
+        colTimetableId.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getTimeTableId())));
+        colDepartmentId.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getDepartment())));
+        colLecId.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getLecId())));
+        colCourseCode.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getCourseCode())));
+        colAdminId.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getAdminId())));
+        colSemester.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getDay())));
+        colStartTime.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getStartTime())));
+        colEndTime.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getEndTime())));
+        colAcademicYear.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getSessionType())));
     }
 
     private void loadDepartmentFilter(String selectedValue) {
         try {
             cmbFilterDepartment.getItems().clear();
             cmbFilterDepartment.getItems().add("All");
-            for (Integer departmentId : timetableRepository.findAllDepartmentIds()) {
-                cmbFilterDepartment.getItems().add(String.valueOf(departmentId));
-            }
+            cmbFilterDepartment.getItems().addAll(timetableRepository.findAllDepartments());
             cmbFilterDepartment.setValue(cmbFilterDepartment.getItems().contains(selectedValue) ? selectedValue : "All");
         } catch (SQLException e) {
             showError("Failed to load department filters.", e);
         }
     }
 
-    private void loadSemesterFilter(String selectedValue) {
+    private void loadDayFilter(String selectedValue) {
         try {
             cmbFilterSemester.getItems().clear();
             cmbFilterSemester.getItems().add("All");
-            for (Integer semester : timetableRepository.findAllSemesters()) {
-                cmbFilterSemester.getItems().add(String.valueOf(semester));
-            }
+            cmbFilterSemester.getItems().addAll(timetableRepository.findAllDays());
             cmbFilterSemester.setValue(cmbFilterSemester.getItems().contains(selectedValue) ? selectedValue : "All");
         } catch (SQLException e) {
-            showError("Failed to load semester filters.", e);
+            showError("Failed to load day filters.", e);
         }
     }
 
     private void applyFilters() {
-        Integer departmentId = null;
-        Integer semester = null;
-
-        String selectedDepartment = cmbFilterDepartment.getValue();
-        if (selectedDepartment != null && !"All".equals(selectedDepartment)) {
-            departmentId = Integer.parseInt(selectedDepartment);
-        }
-
-        String selectedSemester = cmbFilterSemester.getValue();
-        if (selectedSemester != null && !"All".equals(selectedSemester)) {
-            semester = Integer.parseInt(selectedSemester);
-        }
-
-        loadTimetables(departmentId, semester, txtSearchAcademicYear.getText());
+        String department = "All".equals(cmbFilterDepartment.getValue()) ? null : cmbFilterDepartment.getValue();
+        String day = "All".equals(cmbFilterSemester.getValue()) ? null : cmbFilterSemester.getValue();
+        loadTimetables(department, day, txtSearchAcademicYear.getText());
     }
 
-    private void loadTimetables(Integer departmentId, Integer semester, String academicYearKeyword) {
+    private void loadTimetables(String department, String day, String keyword) {
         try {
-            List<Timetable> timetables = timetableRepository.findByFilters(departmentId, semester, academicYearKeyword);
+            List<Timetable> timetables = timetableRepository.findByFilters(department, day, keyword);
             tblTimetable.getItems().setAll(timetables);
         } catch (SQLException e) {
             showError("Failed to load timetables.", e);
@@ -153,14 +158,14 @@ public class ManageTimetablesController implements Initializable {
 
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
         confirmation.setHeaderText("Delete Timetable");
-        confirmation.setContentText("Delete timetable ID " + selected.getTimetableId() + "?");
+        confirmation.setContentText("Delete timetable ID " + selected.getTimeTableId() + "?");
         Optional<ButtonType> answer = confirmation.showAndWait();
         if (answer.isEmpty() || answer.get() != ButtonType.OK) {
             return;
         }
 
         try {
-            boolean deleted = timetableRepository.deleteById(selected.getTimetableId());
+            boolean deleted = timetableRepository.deleteById(selected.getTimeTableId());
             if (deleted) {
                 refreshFiltersAndTable();
                 showInfo("Timetable deleted successfully.");
@@ -208,25 +213,51 @@ public class ManageTimetablesController implements Initializable {
         ButtonType saveButtonType = new ButtonType(editMode ? "Update" : "Save", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
 
-        TextField txtDepartmentId = new TextField();
-        TextField txtSemester = new TextField();
-        TextField txtAcademicYear = new TextField();
+        TextField txtId = new TextField();
+        TextField txtDepartment = new TextField();
+        TextField txtLecId = new TextField();
+        TextField txtCourseCode = new TextField();
+        TextField txtAdminId = new TextField();
+        TextField txtDay = new TextField();
+        TextField txtStartTime = new TextField();
+        TextField txtEndTime = new TextField();
+        ComboBox<String> cmbSessionType = new ComboBox<>();
+        cmbSessionType.getItems().addAll("theory", "practical");
 
         if (editMode) {
-            txtDepartmentId.setText(String.valueOf(existing.getDepartmentId()));
-            txtSemester.setText(String.valueOf(existing.getSemester()));
-            txtAcademicYear.setText(existing.getAcademicYear());
+            txtId.setText(value(existing.getTimeTableId()));
+            txtId.setDisable(true);
+            txtDepartment.setText(value(existing.getDepartment()));
+            txtLecId.setText(value(existing.getLecId()));
+            txtCourseCode.setText(value(existing.getCourseCode()));
+            txtAdminId.setText(value(existing.getAdminId()));
+            txtDay.setText(value(existing.getDay()));
+            txtStartTime.setText(value(existing.getStartTime()));
+            txtEndTime.setText(value(existing.getEndTime()));
+            cmbSessionType.setValue(value(existing.getSessionType()));
         }
 
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
-        grid.add(new Label("Department ID:"), 0, 0);
-        grid.add(txtDepartmentId, 1, 0);
-        grid.add(new Label("Semester:"), 0, 1);
-        grid.add(txtSemester, 1, 1);
-        grid.add(new Label("Academic Year:"), 0, 2);
-        grid.add(txtAcademicYear, 1, 2);
+        grid.add(new Label("Timetable ID:"), 0, 0);
+        grid.add(txtId, 1, 0);
+        grid.add(new Label("Department:"), 0, 1);
+        grid.add(txtDepartment, 1, 1);
+        grid.add(new Label("Lecturer Reg No (optional):"), 0, 2);
+        grid.add(txtLecId, 1, 2);
+        grid.add(new Label("Course Code (optional):"), 0, 3);
+        grid.add(txtCourseCode, 1, 3);
+        grid.add(new Label("Admin Reg No (optional):"), 0, 4);
+        grid.add(txtAdminId, 1, 4);
+        grid.add(new Label("Day:"), 0, 5);
+        grid.add(txtDay, 1, 5);
+        grid.add(new Label("Start Time (HH:mm):"), 0, 6);
+        grid.add(txtStartTime, 1, 6);
+        grid.add(new Label("End Time (HH:mm):"), 0, 7);
+        grid.add(txtEndTime, 1, 7);
+        grid.add(new Label("Session Type:"), 0, 8);
+        grid.add(cmbSessionType, 1, 8);
 
         dialog.getDialogPane().setContent(grid);
 
@@ -235,33 +266,84 @@ public class ManageTimetablesController implements Initializable {
                 return null;
             }
 
-            int departmentId;
-            int semester;
-            String academicYear = txtAcademicYear.getText() == null ? "" : txtAcademicYear.getText().trim();
+            String timetableId = value(txtId);
+            String department = value(txtDepartment);
+            String day = value(txtDay);
+            String sessionType = cmbSessionType.getValue();
 
+            if (timetableId.isBlank()) {
+                showInfo("Timetable ID is required.");
+                return null;
+            }
+            if (timetableId.length() > 5) {
+                showInfo("Timetable ID must be at most 5 characters.");
+                return null;
+            }
+            if (department.isBlank()) {
+                showInfo("Department is required.");
+                return null;
+            }
+            if (department.length() > 3) {
+                showInfo("Department must be at most 3 characters.");
+                return null;
+            }
+            if (day.isBlank()) {
+                showInfo("Day is required.");
+                return null;
+            }
+            if (day.length() > 10) {
+                showInfo("Day must be at most 10 characters.");
+                return null;
+            }
+            if (sessionType == null || sessionType.isBlank()) {
+                showInfo("Session type is required.");
+                return null;
+            }
+            if (!"theory".equals(sessionType) && !"practical".equals(sessionType)) {
+                showInfo("Session type must be theory or practical.");
+                return null;
+            }
+
+            String lecId = value(txtLecId);
+            String courseCode = value(txtCourseCode);
+            String adminId = value(txtAdminId);
+            if (!lecId.isBlank() && lecId.length() > 10) {
+                showInfo("Lecturer Reg No must be at most 10 characters.");
+                return null;
+            }
+            if (!courseCode.isBlank() && courseCode.length() > 10) {
+                showInfo("Course Code must be at most 10 characters.");
+                return null;
+            }
+            if (!adminId.isBlank() && adminId.length() > 10) {
+                showInfo("Admin Reg No must be at most 10 characters.");
+                return null;
+            }
+
+            LocalTime startTime;
+            LocalTime endTime;
             try {
-                departmentId = Integer.parseInt(txtDepartmentId.getText().trim());
-                semester = Integer.parseInt(txtSemester.getText().trim());
-            } catch (NumberFormatException e) {
-                showInfo("Department ID and Semester must be valid numbers.");
+                startTime = parseOptionalTime(value(txtStartTime), "Start Time");
+                endTime = parseOptionalTime(value(txtEndTime), "End Time");
+            } catch (IllegalArgumentException e) {
+                showInfo(e.getMessage());
                 return null;
             }
-
-            if (departmentId <= 0 || semester <= 0) {
-                showInfo("Department ID and Semester must be positive values.");
-                return null;
-            }
-
-            if (academicYear.isBlank()) {
-                showInfo("Academic Year is required.");
+            if (startTime != null && endTime != null && !endTime.isAfter(startTime)) {
+                showInfo("End Time must be later than Start Time.");
                 return null;
             }
 
             return new Timetable(
-                    editMode ? existing.getTimetableId() : 0,
-                    departmentId,
-                    semester,
-                    academicYear
+                    timetableId,
+                    department,
+                    emptyToNull(lecId),
+                    emptyToNull(courseCode),
+                    emptyToNull(adminId),
+                    day,
+                    startTime,
+                    endTime,
+                    sessionType
             );
         });
 
@@ -269,12 +351,39 @@ public class ManageTimetablesController implements Initializable {
         return result.orElse(null);
     }
 
+    private LocalTime parseOptionalTime(String value, String field) {
+        if (value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(value.length() == 5 ? value + ":00" : value);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(field + " must be in HH:mm format.");
+        }
+    }
+
+    private String emptyToNull(String value) {
+        return value.isBlank() ? null : value;
+    }
+
     private void refreshFiltersAndTable() {
         String selectedDepartment = cmbFilterDepartment.getValue();
-        String selectedSemester = cmbFilterSemester.getValue();
+        String selectedDay = cmbFilterSemester.getValue();
         loadDepartmentFilter(selectedDepartment);
-        loadSemesterFilter(selectedSemester);
+        loadDayFilter(selectedDay);
         applyFilters();
+    }
+
+    private String value(String text) {
+        return text == null ? "" : text;
+    }
+
+    private String value(TextField textField) {
+        return textField.getText() == null ? "" : textField.getText().trim();
+    }
+
+    private String value(LocalTime time) {
+        return time == null ? "" : time.toString();
     }
 
     private void showInfo(String message) {

@@ -29,7 +29,7 @@ import java.util.ResourceBundle;
 public class ManageNoticesController implements Initializable {
 
     @FXML
-    private TableColumn<Notice, Number> colAuthor;
+    private TableColumn<Notice, String> colAuthor;
 
     @FXML
     private TableColumn<Notice, String> colDate;
@@ -64,7 +64,7 @@ public class ManageNoticesController implements Initializable {
         colDate.setCellValueFactory(data -> new SimpleStringProperty(
                 data.getValue().getPublishDate() == null ? "" : data.getValue().getPublishDate().toString()
         ));
-        colAuthor.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCreatedByAdminId()));
+        colAuthor.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getCreatedBy())));
     }
 
     private void loadNotices(String keyword) {
@@ -173,7 +173,7 @@ public class ManageNoticesController implements Initializable {
             txtTitle.setText(existingNotice.getTitle());
             txtContent.setText(existingNotice.getContent());
             datePicker.setValue(existingNotice.getPublishDate());
-            txtCreatedBy.setText(String.valueOf(existingNotice.getCreatedByAdminId()));
+            txtCreatedBy.setText(value(existingNotice.getCreatedBy()));
         } else {
             datePicker.setValue(LocalDate.now());
         }
@@ -187,7 +187,7 @@ public class ManageNoticesController implements Initializable {
         grid.add(txtContent, 1, 1);
         grid.add(new Label("Publish Date:"), 0, 2);
         grid.add(datePicker, 1, 2);
-        grid.add(new Label("Created By (Admin ID):"), 0, 3);
+        grid.add(new Label("Created By (Admin Reg No):"), 0, 3);
         grid.add(txtCreatedBy, 1, 3);
 
         dialog.getDialogPane().setContent(grid);
@@ -210,16 +210,9 @@ public class ManageNoticesController implements Initializable {
                 return null;
             }
 
-            int adminId;
-            try {
-                adminId = Integer.parseInt(value(txtCreatedBy));
-            } catch (NumberFormatException e) {
-                showInfo("Created By Admin ID must be a valid number.");
-                return null;
-            }
-
-            if (adminId <= 0) {
-                showInfo("Created By Admin ID must be a positive number.");
+            String createdBy = value(txtCreatedBy);
+            if (createdBy.isBlank()) {
+                showInfo("Created By is required.");
                 return null;
             }
 
@@ -228,7 +221,7 @@ public class ManageNoticesController implements Initializable {
                     title,
                     content,
                     publishDate,
-                    adminId
+                    createdBy
             );
             return notice;
         });
@@ -243,6 +236,10 @@ public class ManageNoticesController implements Initializable {
 
     private String value(TextArea textArea) {
         return textArea.getText() == null ? "" : textArea.getText().trim();
+    }
+
+    private String value(String text) {
+        return text == null ? "" : text;
     }
 
     private void showInfo(String message) {

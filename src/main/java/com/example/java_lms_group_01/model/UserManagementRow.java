@@ -3,7 +3,7 @@ package com.example.java_lms_group_01.model;
 import java.time.LocalDate;
 
 public class UserManagementRow {
-    private int userId;
+    private String userId;
     private String firstName;
     private String lastName;
     private String email;
@@ -14,22 +14,16 @@ public class UserManagementRow {
 
     private String role;
     private String registrationNo;
-    private Integer deptId;
-    private Integer batchId;
+    private String password;
+    private String department;
+    private Double gpa;
     private String status;
     private String position;
-    private LocalDate dateOfAppointment;
-    private String accessLevel;
-    private LocalDate dateOfJoining;
-    private String labAssigned;
-    private String shift;
-    private String qualifications;
 
-    public UserManagementRow(int userId, String firstName, String lastName, String email, String address,
+    public UserManagementRow(String userId, String firstName, String lastName, String email, String address,
                              String phoneNumber, LocalDate dateOfBirth, String gender, String role,
-                             String registrationNo, Integer deptId, Integer batchId, String status,
-                             String position, LocalDate dateOfAppointment, String accessLevel,
-                             LocalDate dateOfJoining, String labAssigned, String shift, String qualifications) {
+                             String registrationNo, String password, String department, Double gpa,
+                             String status, String position) {
         this.userId = userId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -40,19 +34,14 @@ public class UserManagementRow {
         this.gender = gender;
         this.role = role;
         this.registrationNo = registrationNo;
-        this.deptId = deptId;
-        this.batchId = batchId;
+        this.password = password;
+        this.department = department;
+        this.gpa = gpa;
         this.status = status;
         this.position = position;
-        this.dateOfAppointment = dateOfAppointment;
-        this.accessLevel = accessLevel;
-        this.dateOfJoining = dateOfJoining;
-        this.labAssigned = labAssigned;
-        this.shift = shift;
-        this.qualifications = qualifications;
     }
 
-    public int getUserId() { return userId; }
+    public String getUserId() { return userId; }
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
     public String getEmail() { return email; }
@@ -62,14 +51,9 @@ public class UserManagementRow {
     public String getGender() { return gender; }
     public String getRole() { return role; }
     public String getRegistrationNo() { return registrationNo; }
-    public Integer getDeptId() { return deptId; }
-    public Integer getBatchId() { return batchId; }
+    public String getPassword() { return password; }
+    public String getDepartment() { return department; }
+    public Double getGpa() { return gpa; }
     public String getStatus() { return status; }
     public String getPosition() { return position; }
-    public LocalDate getDateOfAppointment() { return dateOfAppointment; }
-    public String getAccessLevel() { return accessLevel; }
-    public LocalDate getDateOfJoining() { return dateOfJoining; }
-    public String getLabAssigned() { return labAssigned; }
-    public String getShift() { return shift; }
-    public String getQualifications() { return qualifications; }
 }

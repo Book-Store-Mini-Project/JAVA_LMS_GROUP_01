@@ -15,7 +15,7 @@ public class DBConnection {
     private DBConnection() throws SQLException {
         try {
             this.connection = DriverManager.getConnection(
-                    "jdbc:mysql://localhost:3306/lms", "root", "2003"
+                    "jdbc:mysql://localhost:3306/lms02", "root", "2003"
             );
             System.out.println("Database connected successfully!");
         } catch (SQLException e) {

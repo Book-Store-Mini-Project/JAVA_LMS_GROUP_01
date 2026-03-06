@@ -42,8 +42,8 @@
                                         <TableColumn fx:id="adminEmail" prefWidth="180.0" text="Email" />
                                         <TableColumn fx:id="adminPhone" prefWidth="120.0" text="Phone" />
                                         <TableColumn fx:id="adminGender" prefWidth="90.0" text="Gender" />
-                                        <TableColumn fx:id="adminDeptId" prefWidth="90.0" text="Dept ID" />
-                                        <TableColumn fx:id="adminAccessLevel" prefWidth="130.0" text="Access Level" />
+                                        <TableColumn fx:id="adminDeptId" prefWidth="150.0" text="Address" />
+                                        <TableColumn fx:id="adminAccessLevel" prefWidth="130.0" text="Reg No" />
                                     </columns>
                                 </TableView>
                             </content>
@@ -60,7 +60,7 @@
                                         <TableColumn fx:id="lecPhone" prefWidth="120.0" text="Phone" />
                                         <TableColumn fx:id="lecGender" prefWidth="90.0" text="Gender" />
                                         <TableColumn fx:id="lecRegNo" prefWidth="120.0" text="Reg No" />
-                                        <TableColumn fx:id="lecDeptId" prefWidth="90.0" text="Dept ID" />
+                                        <TableColumn fx:id="lecDeptId" prefWidth="90.0" text="Department" />
                                         <TableColumn fx:id="lecPosition" prefWidth="130.0" text="Position" />
                                     </columns>
                                 </TableView>
@@ -78,8 +78,8 @@
                                         <TableColumn fx:id="stuPhone" prefWidth="120.0" text="Phone" />
                                         <TableColumn fx:id="stuGender" prefWidth="90.0" text="Gender" />
                                         <TableColumn fx:id="stuRegNo" prefWidth="120.0" text="Reg No" />
-                                        <TableColumn fx:id="stuDeptId" prefWidth="90.0" text="Dept ID" />
-                                        <TableColumn fx:id="stuBatchId" prefWidth="90.0" text="Batch ID" />
+                                        <TableColumn fx:id="stuDeptId" prefWidth="90.0" text="Department" />
+                                        <TableColumn fx:id="stuBatchId" prefWidth="90.0" text="GPA" />
                                         <TableColumn fx:id="stuStatus" prefWidth="120.0" text="Status" />
                                     </columns>
                                 </TableView>
@@ -96,10 +96,10 @@
                                         <TableColumn fx:id="toEmail" prefWidth="180.0" text="Email" />
                                         <TableColumn fx:id="toPhone" prefWidth="120.0" text="Phone" />
                                         <TableColumn fx:id="toGender" prefWidth="90.0" text="Gender" />
-                                        <TableColumn fx:id="toDeptId" prefWidth="90.0" text="Dept ID" />
-                                        <TableColumn fx:id="toPosition" prefWidth="120.0" text="Position" />
-                                        <TableColumn fx:id="toLab" prefWidth="130.0" text="Lab Assigned" />
-                                        <TableColumn fx:id="toShift" prefWidth="100.0" text="Shift" />
+                                        <TableColumn fx:id="toDeptId" prefWidth="130.0" text="Address" />
+                                        <TableColumn fx:id="toPosition" prefWidth="120.0" text="Reg No" />
+                                        <TableColumn fx:id="toLab" prefWidth="130.0" text="Date Of Birth" />
+                                        <TableColumn fx:id="toShift" prefWidth="100.0" text="Role" />
                                     </columns>
                                 </TableView>
                             </content>

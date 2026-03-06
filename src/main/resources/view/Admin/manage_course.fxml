@@ -33,13 +33,13 @@
 
                 <TableView fx:id="tblCourses" prefHeight="400.0" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="colCourseCode" prefWidth="86.0" text="course_code" />
+                        <TableColumn fx:id="colCourseCode" prefWidth="86.0" text="courseCode" />
                         <TableColumn fx:id="colName" prefWidth="49.0" text="name" />
-                        <TableColumn fx:id="colCredits" prefWidth="61.0" text="credits" />
-                        <TableColumn fx:id="colHasTheory" prefWidth="85.0" text="has_theory" />
-                  <TableColumn fx:id="colHasPractical" prefWidth="115.0" text="has_practical" />
-                  <TableColumn fx:id="colLecturerId" prefWidth="103.0" text="lecturer_id" />
-                  <TableColumn fx:id="colDeptId" prefWidth="116.0" text="dept_id" />
+                        <TableColumn fx:id="colCredits" prefWidth="61.0" text="credit" />
+                        <TableColumn fx:id="colHasTheory" prefWidth="85.0" text="course_type" />
+                  <TableColumn fx:id="colHasPractical" prefWidth="115.0" text="-" />
+                  <TableColumn fx:id="colLecturerId" prefWidth="103.0" text="lecturerRegistrationNo" />
+                  <TableColumn fx:id="colDeptId" prefWidth="116.0" text="department" />
                   <TableColumn fx:id="colSemester" prefWidth="173.0" text="semester" />
                     </columns>
                     <columnResizePolicy>

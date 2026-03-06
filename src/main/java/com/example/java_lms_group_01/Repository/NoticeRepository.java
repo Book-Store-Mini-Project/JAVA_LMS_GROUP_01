@@ -15,10 +15,10 @@ import java.util.List;
 public class NoticeRepository {
 
     private static final String BASE_SELECT =
-            "SELECT noticeId, title, content, publishDate, createdBy_adminId FROM Notices";
+            "SELECT notice_id, notice_title, notice_content, publishDate, createdBy FROM notice";
 
     public List<Notice> findAll() throws SQLException {
-        String sql = BASE_SELECT + " ORDER BY publishDate DESC, noticeId DESC";
+        String sql = BASE_SELECT + " ORDER BY publishDate DESC, notice_id DESC";
         Connection connection = DBConnection.getInstance().getConnection();
 
         try (PreparedStatement statement = connection.prepareStatement(sql);
@@ -34,8 +34,8 @@ public class NoticeRepository {
 
     public List<Notice> findByKeyword(String keyword) throws SQLException {
         String sql = BASE_SELECT +
-                " WHERE (? IS NULL OR ? = '' OR title LIKE ? OR content LIKE ?)" +
-                " ORDER BY publishDate DESC, noticeId DESC";
+                " WHERE (? IS NULL OR ? = '' OR notice_title LIKE ? OR notice_content LIKE ?)" +
+                " ORDER BY publishDate DESC, notice_id DESC";
 
         String safeKeyword = keyword == null ? "" : keyword.trim();
         String pattern = "%" + safeKeyword + "%";
@@ -58,14 +58,18 @@ public class NoticeRepository {
     }
 
     public boolean save(Notice notice) throws SQLException {
-        String sql = "INSERT INTO Notices (title, content, publishDate, createdBy_adminId) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO notice (notice_title, notice_content, publishDate, createdBy) VALUES (?, ?, ?, ?)";
         Connection connection = DBConnection.getInstance().getConnection();
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, notice.getTitle());
             statement.setString(2, notice.getContent());
-            statement.setDate(3, Date.valueOf(notice.getPublishDate()));
-            statement.setInt(4, notice.getCreatedByAdminId());
+            if (notice.getPublishDate() == null) {
+                statement.setNull(3, java.sql.Types.DATE);
+            } else {
+                statement.setDate(3, Date.valueOf(notice.getPublishDate()));
+            }
+            statement.setString(4, notice.getCreatedBy());
 
             boolean inserted = statement.executeUpdate() > 0;
             if (!inserted) {
@@ -82,21 +86,25 @@ public class NoticeRepository {
     }
 
     public boolean update(Notice notice) throws SQLException {
-        String sql = "UPDATE Notices SET title = ?, content = ?, publishDate = ?, createdBy_adminId = ? WHERE noticeId = ?";
+        String sql = "UPDATE notice SET notice_title = ?, notice_content = ?, publishDate = ?, createdBy = ? WHERE notice_id = ?";
         Connection connection = DBConnection.getInstance().getConnection();
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, notice.getTitle());
             statement.setString(2, notice.getContent());
-            statement.setDate(3, Date.valueOf(notice.getPublishDate()));
-            statement.setInt(4, notice.getCreatedByAdminId());
+            if (notice.getPublishDate() == null) {
+                statement.setNull(3, java.sql.Types.DATE);
+            } else {
+                statement.setDate(3, Date.valueOf(notice.getPublishDate()));
+            }
+            statement.setString(4, notice.getCreatedBy());
             statement.setInt(5, notice.getNoticeId());
             return statement.executeUpdate() > 0;
         }
     }
 
     public boolean deleteById(int noticeId) throws SQLException {
-        String sql = "DELETE FROM Notices WHERE noticeId = ?";
+        String sql = "DELETE FROM notice WHERE notice_id = ?";
         Connection connection = DBConnection.getInstance().getConnection();
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -108,11 +116,11 @@ public class NoticeRepository {
     private Notice mapRow(ResultSet rs) throws SQLException {
         Date publishDate = rs.getDate("publishDate");
         return new Notice(
-                rs.getInt("noticeId"),
-                rs.getString("title"),
-                rs.getString("content"),
+                rs.getInt("notice_id"),
+                rs.getString("notice_title"),
+                rs.getString("notice_content"),
                 publishDate == null ? null : publishDate.toLocalDate(),
-                rs.getInt("createdBy_adminId")
+                rs.getString("createdBy")
         );
     }
 }

@@ -7,17 +7,17 @@ public class Notice {
     private String title;
     private String content;
     private LocalDate publishDate;
-    private int createdByAdminId;
+    private String createdBy;
 
     public Notice() {
     }
 
-    public Notice(int noticeId, String title, String content, LocalDate publishDate, int createdByAdminId) {
+    public Notice(int noticeId, String title, String content, LocalDate publishDate, String createdBy) {
         this.noticeId = noticeId;
         this.title = title;
         this.content = content;
         this.publishDate = publishDate;
-        this.createdByAdminId = createdByAdminId;
+        this.createdBy = createdBy;
     }
 
     public int getNoticeId() {
@@ -52,11 +52,11 @@ public class Notice {
         this.publishDate = publishDate;
     }
 
-    public int getCreatedByAdminId() {
-        return createdByAdminId;
+    public String getCreatedBy() {
+        return createdBy;
     }
 
-    public void setCreatedByAdminId(int createdByAdminId) {
-        this.createdByAdminId = createdByAdminId;
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.ColumnConstraints?>
@@ -14,7 +14,7 @@
     </padding>
 
     <columnConstraints>
-        <ColumnConstraints minWidth="120.0"/>
+        <ColumnConstraints minWidth="150.0"/>
         <ColumnConstraints minWidth="240.0"/>
     </columnConstraints>
 
@@ -24,18 +24,18 @@
     <Label text="Name" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
     <TextField fx:id="txtName" promptText="Course name" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
-    <Label text="Credits" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-    <TextField fx:id="txtCredits" promptText="Credits" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+    <Label text="Credit" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+    <TextField fx:id="txtCredit" promptText="ex: 3" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 
-    <CheckBox fx:id="chkHasTheory" text="Has Theory" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-    <CheckBox fx:id="chkHasPractical" text="Has Practical" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+    <Label text="Course Type" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+    <ComboBox fx:id="cmbCourseType" promptText="theory / practical / both" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
 
-    <Label text="Lecturer ID" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-    <TextField fx:id="txtLecturerId" promptText="Lecturer ID" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+    <Label text="Lecturer Reg No" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+    <TextField fx:id="txtLecturerRegNo" promptText="optional" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
 
-    <Label text="Department ID" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
-    <TextField fx:id="txtDeptId" promptText="Department ID" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+    <Label text="Department" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
+    <TextField fx:id="txtDepartment" promptText="department name/code" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
 
     <Label text="Semester" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
-    <TextField fx:id="txtSemester" promptText="ex: Level 1 Semester 2" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+    <TextField fx:id="txtSemester" promptText="ex: Semester 1" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
 </GridPane>
