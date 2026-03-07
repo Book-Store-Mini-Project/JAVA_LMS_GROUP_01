@@ -1,6 +1,6 @@
 package com.example.java_lms_group_01.Controller.AdminDashboard;
 
-import com.example.java_lms_group_01.Repository.TimetableRepository;
+import com.example.java_lms_group_01.model.users.Admin;
 import com.example.java_lms_group_01.model.Timetable;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
@@ -65,7 +65,7 @@ public class ManageTimetablesController implements Initializable {
     @FXML
     private TextField txtSearchAcademicYear;
 
-    private final TimetableRepository timetableRepository = new TimetableRepository();
+    private final Admin admin = new Admin();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -95,7 +95,7 @@ public class ManageTimetablesController implements Initializable {
         try {
             cmbFilterDepartment.getItems().clear();
             cmbFilterDepartment.getItems().add("All");
-            cmbFilterDepartment.getItems().addAll(timetableRepository.findAllDepartments());
+            cmbFilterDepartment.getItems().addAll(admin.getTimetableDepartments());
             cmbFilterDepartment.setValue(cmbFilterDepartment.getItems().contains(selectedValue) ? selectedValue : "All");
         } catch (SQLException e) {
             showError("Failed to load department filters.", e);
@@ -106,7 +106,7 @@ public class ManageTimetablesController implements Initializable {
         try {
             cmbFilterSemester.getItems().clear();
             cmbFilterSemester.getItems().add("All");
-            cmbFilterSemester.getItems().addAll(timetableRepository.findAllDays());
+            cmbFilterSemester.getItems().addAll(admin.getTimetableDays());
             cmbFilterSemester.setValue(cmbFilterSemester.getItems().contains(selectedValue) ? selectedValue : "All");
         } catch (SQLException e) {
             showError("Failed to load day filters.", e);
@@ -121,7 +121,7 @@ public class ManageTimetablesController implements Initializable {
 
     private void loadTimetables(String department, String day, String keyword) {
         try {
-            List<Timetable> timetables = timetableRepository.findByFilters(department, day, keyword);
+            List<Timetable> timetables = admin.getTimetables(department, day, keyword);
             tblTimetable.getItems().setAll(timetables);
         } catch (SQLException e) {
             showError("Failed to load timetables.", e);
@@ -136,7 +136,7 @@ public class ManageTimetablesController implements Initializable {
         }
 
         try {
-            boolean saved = timetableRepository.save(timetable);
+            boolean saved = admin.addTimetable(timetable);
             if (saved) {
                 refreshFiltersAndTable();
                 showInfo("Timetable added successfully.");
@@ -165,7 +165,7 @@ public class ManageTimetablesController implements Initializable {
         }
 
         try {
-            boolean deleted = timetableRepository.deleteById(selected.getTimeTableId());
+            boolean deleted = admin.deleteTimetable(selected.getTimeTableId());
             if (deleted) {
                 refreshFiltersAndTable();
                 showInfo("Timetable deleted successfully.");
@@ -191,7 +191,7 @@ public class ManageTimetablesController implements Initializable {
         }
 
         try {
-            boolean changed = timetableRepository.update(updated);
+            boolean changed = admin.updateTimetable(updated);
             if (changed) {
                 refreshFiltersAndTable();
                 showInfo("Timetable updated successfully.");

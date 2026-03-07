@@ -1,5 +1,6 @@
 package com.example.java_lms_group_01.Controller;
 
+import com.example.java_lms_group_01.model.users.UserRole;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -41,7 +42,7 @@ public class LoginController {
         }
 
         try {
-            String role = findRoleByRegistrationNo(registrationNo, password);
+            UserRole role = findRoleByRegistrationNo(registrationNo, password);
 
             if (role == null) {
                 showAlert(Alert.AlertType.ERROR, "Login Failed", "Invalid registration number or password.");
@@ -56,19 +57,19 @@ public class LoginController {
         }
     }
 
-    private String findRoleByRegistrationNo(String registrationNo, String password) throws SQLException {
+    private UserRole findRoleByRegistrationNo(String registrationNo, String password) throws SQLException {
         Connection connection = DBConnection.getInstance().getConnection();
         if (isPasswordValid(connection, "SELECT password FROM admin WHERE registrationNo = ?", registrationNo, password)) {
-            return "Admin";
+            return UserRole.ADMIN;
         }
         if (isPasswordValid(connection, "SELECT password FROM lecturer WHERE registrationNo = ?", registrationNo, password)) {
-            return "Lecturer";
+            return UserRole.LECTURER;
         }
         if (isPasswordValid(connection, "SELECT password FROM student WHERE registrationNo = ?", registrationNo, password)) {
-            return "Student";
+            return UserRole.STUDENT;
         }
         if (isPasswordValid(connection, "SELECT password FROM tech_officer WHERE registrationNo = ?", registrationNo, password)) {
-            return "TechnicalOfficer";
+            return UserRole.TECHNICAL_OFFICER;
         }
         return null;
     }
@@ -86,24 +87,24 @@ public class LoginController {
         }
     }
 
-    private void loadLandingPage(String role, String registrationNo) throws Exception {
+    private void loadLandingPage(UserRole role, String registrationNo) throws Exception {
         String fxmlPath;
         String title;
 
         switch (role) {
-            case "Admin" -> {
+            case ADMIN -> {
                 fxmlPath = "/view/Admin/admin_dashboard.fxml";
                 title = "Admin Dashboard";
             }
-            case "Lecturer" -> {
+            case LECTURER -> {
                 fxmlPath = "/view/Landing/lecturer_landing.fxml";
                 title = "Lecturer Landing";
             }
-            case "Student" -> {
+            case STUDENT -> {
                 fxmlPath = "/view/Landing/student_landing.fxml";
                 title = "Student Landing";
             }
-            case "TechnicalOfficer" -> {
+            case TECHNICAL_OFFICER -> {
                 fxmlPath = "/view/Landing/technical_officer_landing.fxml";
                 title = "Technical Officer Landing";
             }
@@ -113,9 +114,9 @@ public class LoginController {
         FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
         Parent root = loader.load();
 
-        if (!"Admin".equals(role)) {
+        if (role != UserRole.ADMIN) {
             com.example.java_lms_group_01.Controller.LandingPages.RoleLandingController controller = loader.getController();
-            controller.setLandingData(role, registrationNo);
+            controller.setLandingData(role.value(), registrationNo);
         }
 
         Stage currentStage = (Stage) loginEmail.getScene().getWindow();

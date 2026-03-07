@@ -7,13 +7,13 @@ public class Course {
     private String department;
     private String semester;
     private int credit;
-    private String courseType;
+    private CourseType courseType;
 
     public Course() {
     }
 
     public Course(String courseCode, String name, String lecturerRegistrationNo, String department,
-                  String semester, int credit, String courseType) {
+                  String semester, int credit, CourseType courseType) {
         this.courseCode = courseCode;
         this.name = name;
         this.lecturerRegistrationNo = lecturerRegistrationNo;
@@ -21,6 +21,11 @@ public class Course {
         this.semester = semester;
         this.credit = credit;
         this.courseType = courseType;
+    }
+
+    public Course(String courseCode, String name, String lecturerRegistrationNo, String department,
+                  String semester, int credit, String courseType) {
+        this(courseCode, name, lecturerRegistrationNo, department, semester, credit, CourseType.fromValue(courseType));
     }
 
     public String getCourseCode() {
@@ -72,10 +77,18 @@ public class Course {
     }
 
     public String getCourseType() {
+        return courseType == null ? "" : courseType.dbValue();
+    }
+
+    public CourseType getCourseTypeEnum() {
         return courseType;
     }
 
-    public void setCourseType(String courseType) {
+    public void setCourseType(CourseType courseType) {
         this.courseType = courseType;
+    }
+
+    public void setCourseType(String courseType) {
+        this.courseType = CourseType.fromValue(courseType);
     }
 }

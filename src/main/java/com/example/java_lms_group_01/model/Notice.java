@@ -59,4 +59,10 @@ public class Notice {
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
     }
+
+    public void publishNotice(){}
+    public void editNotice(){}
+    public void removeNotice(){}
+
+
 }

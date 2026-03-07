@@ -1,6 +1,7 @@
 package com.example.java_lms_group_01.Controller.AdminDashboard;
 
 import com.example.java_lms_group_01.model.Course;
+import com.example.java_lms_group_01.model.CourseType;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
@@ -26,12 +27,12 @@ public class CourseFormController {
     private TextField txtSemester;
 
     @FXML
-    private ComboBox<String> cmbCourseType;
+    private ComboBox<CourseType> cmbCourseType;
 
     public void setupForCreate() {
         txtCourseCode.setDisable(false);
-        cmbCourseType.getItems().setAll("theory", "practical", "both");
-        cmbCourseType.setValue("theory");
+        cmbCourseType.getItems().setAll(CourseType.values());
+        cmbCourseType.setValue(CourseType.THEORY);
     }
 
     public void setupForEdit(Course course) {
@@ -43,7 +44,7 @@ public class CourseFormController {
         txtLecturerRegNo.setText(value(course.getLecturerRegistrationNo()));
         txtDepartment.setText(value(course.getDepartment()));
         txtSemester.setText(value(course.getSemester()));
-        cmbCourseType.setValue(value(course.getCourseType()));
+        cmbCourseType.setValue(course.getCourseTypeEnum());
     }
 
     public Course buildCourse() {
@@ -52,7 +53,7 @@ public class CourseFormController {
         String lecturerRegNo = value(txtLecturerRegNo);
         String department = value(txtDepartment);
         String semester = value(txtSemester);
-        String courseType = cmbCourseType.getValue();
+        CourseType courseType = cmbCourseType.getValue();
 
         if (courseCode.isBlank()) {
             throw new IllegalArgumentException("Course code is required.");
@@ -66,7 +67,7 @@ public class CourseFormController {
         if (semester.isBlank()) {
             throw new IllegalArgumentException("Semester is required.");
         }
-        if (courseType == null || courseType.isBlank()) {
+        if (courseType == null) {
             throw new IllegalArgumentException("Course type is required.");
         }
 

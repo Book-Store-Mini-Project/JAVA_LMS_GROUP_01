@@ -1,7 +1,8 @@
 package com.example.java_lms_group_01.Controller.AdminDashboard;
 
-import com.example.java_lms_group_01.Repository.UserRepository;
+import com.example.java_lms_group_01.model.users.Admin;
 import com.example.java_lms_group_01.model.UserManagementRow;
+import com.example.java_lms_group_01.model.users.UserRole;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -125,7 +126,7 @@ public class ManageUsersController implements Initializable {
     @FXML
     private TableView<UserManagementRow> tblTechnicalOfficers;
 
-    private final UserRepository userRepository = new UserRepository();
+    private final Admin admin = new Admin();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -143,7 +144,11 @@ public class ManageUsersController implements Initializable {
 
     @FXML
     void btnOnActionAdd(ActionEvent event) {
-        String role = getActiveRole();
+        UserRole role = getActiveRole();
+        if (role == null) {
+            showInfo("Please select a valid role tab.");
+            return;
+        }
 
         try {
             UserManagementRow row = showRoleDialog(role, null);
@@ -151,28 +156,26 @@ public class ManageUsersController implements Initializable {
                 return;
             }
 
-            boolean created = switch (role) {
-                case "Admin" -> userRepository.createAdmin(row);
-                case "Lecturer" -> userRepository.createLecturer(row);
-                case "Student" -> userRepository.createStudent(row);
-                case "TechnicalOfficer" -> userRepository.createTechnicalOfficer(row);
-                default -> false;
-            };
+            boolean created = admin.addUser(role, row);
 
             if (created) {
                 loadAllTables();
-                showInfo(role + " created successfully.");
+                showInfo(role.value() + " created successfully.");
             }
         } catch (IllegalArgumentException e) {
             showInfo(e.getMessage());
         } catch (SQLException e) {
-            showError("Failed to add " + role + ".", e);
+            showError("Failed to add " + role.value() + ".", e);
         }
     }
 
     @FXML
     void btnOnActionEdit(ActionEvent event) {
-        String role = getActiveRole();
+        UserRole role = getActiveRole();
+        if (role == null) {
+            showInfo("Please select a valid role tab.");
+            return;
+        }
 
         UserManagementRow selected = getSelectedRowByRole(role);
         if (selected == null) {
@@ -186,28 +189,26 @@ public class ManageUsersController implements Initializable {
                 return;
             }
 
-            boolean updated = switch (role) {
-                case "Admin" -> userRepository.updateAdmin(row);
-                case "Lecturer" -> userRepository.updateLecturer(row);
-                case "Student" -> userRepository.updateStudent(row);
-                case "TechnicalOfficer" -> userRepository.updateTechnicalOfficer(row);
-                default -> false;
-            };
+            boolean updated = admin.updateUser(role, row);
 
             if (updated) {
                 loadAllTables();
-                showInfo(role + " updated successfully.");
+                showInfo(role.value() + " updated successfully.");
             }
         } catch (IllegalArgumentException e) {
             showInfo(e.getMessage());
         } catch (SQLException e) {
-            showError("Failed to update " + role + ".", e);
+            showError("Failed to update " + role.value() + ".", e);
         }
     }
 
     @FXML
     void btnOnActionDelete(ActionEvent event) {
-        String role = getActiveRole();
+        UserRole role = getActiveRole();
+        if (role == null) {
+            showInfo("Please select a valid role tab.");
+            return;
+        }
 
         UserManagementRow selected = getSelectedRowByRole(role);
         if (selected == null) {
@@ -216,7 +217,7 @@ public class ManageUsersController implements Initializable {
         }
 
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmation.setHeaderText("Delete " + role);
+        confirmation.setHeaderText("Delete " + role.value());
         confirmation.setContentText("Delete registration number " + selected.getRegistrationNo() + "?");
         Optional<ButtonType> answer = confirmation.showAndWait();
         if (answer.isEmpty() || answer.get() != ButtonType.OK) {
@@ -224,56 +225,50 @@ public class ManageUsersController implements Initializable {
         }
 
         try {
-            boolean deleted = switch (role) {
-                case "Admin" -> userRepository.deleteAdmin(selected.getUserId());
-                case "Lecturer" -> userRepository.deleteLecturer(selected.getUserId());
-                case "Student" -> userRepository.deleteStudent(selected.getUserId());
-                case "TechnicalOfficer" -> userRepository.deleteTechnicalOfficer(selected.getUserId());
-                default -> false;
-            };
+            boolean deleted = admin.deleteUser(role, selected.getUserId());
 
             if (deleted) {
                 loadAllTables();
-                showInfo(role + " deleted successfully.");
+                showInfo(role.value() + " deleted successfully.");
             }
         } catch (SQLException e) {
-            showError("Failed to delete " + role + ".", e);
+            showError("Failed to delete " + role.value() + ".", e);
         }
     }
 
-    private String getActiveRole() {
+    private UserRole getActiveRole() {
         Tab selectedTab = tabUsers.getSelectionModel().getSelectedItem();
         if (selectedTab == tabAdmins) {
-            return "Admin";
+            return UserRole.ADMIN;
         }
         if (selectedTab == tabLecturers) {
-            return "Lecturer";
+            return UserRole.LECTURER;
         }
         if (selectedTab == tabStudents) {
-            return "Student";
+            return UserRole.STUDENT;
         }
         if (selectedTab == tabTechnicalOfficers) {
-            return "TechnicalOfficer";
+            return UserRole.TECHNICAL_OFFICER;
         }
         return null;
     }
 
-    private UserManagementRow getSelectedRowByRole(String role) {
+    private UserManagementRow getSelectedRowByRole(UserRole role) {
         return switch (role) {
-            case "Admin" -> tblAdmins.getSelectionModel().getSelectedItem();
-            case "Lecturer" -> tblLecturers.getSelectionModel().getSelectedItem();
-            case "Student" -> tblStudents.getSelectionModel().getSelectedItem();
-            case "TechnicalOfficer" -> tblTechnicalOfficers.getSelectionModel().getSelectedItem();
+            case ADMIN -> tblAdmins.getSelectionModel().getSelectedItem();
+            case LECTURER -> tblLecturers.getSelectionModel().getSelectedItem();
+            case STUDENT -> tblStudents.getSelectionModel().getSelectedItem();
+            case TECHNICAL_OFFICER -> tblTechnicalOfficers.getSelectionModel().getSelectedItem();
             default -> null;
         };
     }
 
-    private UserManagementRow showRoleDialog(String role, UserManagementRow existing) {
+    private UserManagementRow showRoleDialog(UserRole role, UserManagementRow existing) {
         return switch (role) {
-            case "Admin" -> showAdminDialog(existing);
-            case "Lecturer" -> showLecturerDialog(existing);
-            case "Student" -> showStudentDialog(existing);
-            case "TechnicalOfficer" -> showTechnicalOfficerDialog(existing);
+            case ADMIN -> showAdminDialog(existing);
+            case LECTURER -> showLecturerDialog(existing);
+            case STUDENT -> showStudentDialog(existing);
+            case TECHNICAL_OFFICER -> showTechnicalOfficerDialog(existing);
             default -> null;
         };
     }
@@ -317,7 +312,7 @@ public class ManageUsersController implements Initializable {
                     value(common[4]),
                     dob.getValue(),
                     gender.getValue(),
-                    "Admin",
+                    UserRole.ADMIN.value(),
                     required(txtReg, "Registration No"),
                     password,
                     null,
@@ -375,7 +370,7 @@ public class ManageUsersController implements Initializable {
                     value(common[4]),
                     dob.getValue(),
                     gender.getValue(),
-                    "Lecturer",
+                    UserRole.LECTURER.value(),
                     required(txtReg, "Registration No"),
                     password,
                     required(txtDepartment, "Department"),
@@ -438,7 +433,7 @@ public class ManageUsersController implements Initializable {
                     value(common[4]),
                     dob.getValue(),
                     gender.getValue(),
-                    "Student",
+                    UserRole.STUDENT.value(),
                     required(txtReg, "Registration No"),
                     password,
                     required(txtDepartment, "Department"),
@@ -490,7 +485,7 @@ public class ManageUsersController implements Initializable {
                     value(common[4]),
                     dob.getValue(),
                     gender.getValue(),
-                    "TechnicalOfficer",
+                    UserRole.TECHNICAL_OFFICER.value(),
                     required(txtReg, "Registration No"),
                     password,
                     null,
@@ -553,10 +548,10 @@ public class ManageUsersController implements Initializable {
 
     private void loadAllTables() {
         try {
-            tblAdmins.getItems().setAll(userRepository.findAdmins());
-            tblLecturers.getItems().setAll(userRepository.findLecturers());
-            tblStudents.getItems().setAll(userRepository.findStudents());
-            tblTechnicalOfficers.getItems().setAll(userRepository.findTechnicalOfficers());
+            tblAdmins.getItems().setAll(admin.getAdmins());
+            tblLecturers.getItems().setAll(admin.getLecturers());
+            tblStudents.getItems().setAll(admin.getStudents());
+            tblTechnicalOfficers.getItems().setAll(admin.getTechnicalOfficers());
         } catch (SQLException e) {
             showError("Failed to load user tables.", e);
         }
