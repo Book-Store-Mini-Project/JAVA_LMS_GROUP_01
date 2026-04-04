@@ -1,4 +1,4 @@
 package com.example.java_lms_group_01.Controller.Student;
 
-public class ProfileCOntroller {
+public class ProfileController {
 }

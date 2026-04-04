@@ -4,12 +4,17 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
+import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Optional;
 
 public class AdminDashboard {
 
@@ -33,7 +38,31 @@ public class AdminDashboard {
 
     @FXML
     void btnOnActionLogout(ActionEvent event) {
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setTitle("Logout");
+        confirmation.setHeaderText(null);
+        confirmation.setContentText("Are you sure you want to logout?");
 
+        Optional<ButtonType> result = confirmation.showAndWait();
+        if (result.isEmpty() || result.get() != ButtonType.OK) {
+            return;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/login_page.fxml"));
+            Parent root = loader.load();
+
+            Stage stage = (Stage) ((Button) event.getSource()).getScene().getWindow();
+            stage.setTitle("Login Page");
+            stage.setScene(new Scene(root));
+            stage.centerOnScreen();
+        } catch (IOException e) {
+            Alert error = new Alert(Alert.AlertType.ERROR);
+            error.setTitle("Navigation Error");
+            error.setHeaderText(null);
+            error.setContentText("Unable to load the login page.");
+            error.showAndWait();
+        }
     }
 
     @FXML
