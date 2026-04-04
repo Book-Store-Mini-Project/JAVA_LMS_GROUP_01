@@ -1,3 +1,5 @@
+package com.example.java_lms_group_01.Controller.Student;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TableColumn;
