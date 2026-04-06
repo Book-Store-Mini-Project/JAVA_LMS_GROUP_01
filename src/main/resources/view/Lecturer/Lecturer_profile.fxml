@@ -1,0 +1,18 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" alignment="CENTER" xmlns:fx="http://javafx.com/fxml" fx:controller="com.example.java_lms_group_01.Controller.Lecturer.LecturerProfileController">
+
+    <Label text="Update Lecturer Profile" style="-fx-font-size:18px;"/>
+
+    <TextField fx:id="txtName" promptText="Full Name"/>
+    <TextField fx:id="txtEmail" promptText="Email"/>
+    <TextField fx:id="txtPhone" promptText="Phone Number"/>
+    <TextField fx:id="txtDepartment" promptText="Department"/>
+
+    <Button text="Update Profile"/>
+
+</VBox>

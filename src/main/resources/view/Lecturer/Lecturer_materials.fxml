@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" xmlns:fx="http://javafx.com/fxml" fx:controller="com.example.java_lms_group_01.Controller.Lecturer.LecturerMaterialsController">
+
+    <Label text="Course Materials" style="-fx-font-size:18px;"/>
+
+    <HBox spacing="10">
+        <TextField fx:id="txtCourse" promptText="Course Name"/>
+        <TextField fx:id="txtMaterial" promptText="Material Title"/>
+        <Button text="Upload File"/>
+    </HBox>
+
+    <TableView fx:id="materialsTable">
+        <columns>
+            <TableColumn text="Course"/>
+            <TableColumn text="Material"/>
+            <TableColumn text="Date Uploaded"/>
+        </columns>
+    </TableView>
+
+</VBox>

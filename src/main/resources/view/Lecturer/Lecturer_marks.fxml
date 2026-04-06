@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" xmlns:fx="http://javafx.com/fxml"fx:controller="com.example.java_lms_group_01.Controller.Lecturer.LecturerMarksController">
+
+    <Label text="Upload Exam Marks" style="-fx-font-size:18px;"/>
+
+    <HBox spacing="10">
+        <TextField fx:id="txtStudentID" promptText="Student ID"/>
+        <TextField fx:id="txtCourseID" promptText="Course ID"/>
+        <TextField fx:id="txtMarks" promptText="Marks"/>
+        <Button text="Upload"/>
+    </HBox>
+
+    <TableView fx:id="marksTable">
+        <columns>
+            <TableColumn text="Student ID"/>
+            <TableColumn text="Course"/>
+            <TableColumn text="Marks"/>
+        </columns>
+    </TableView>
+
+</VBox>

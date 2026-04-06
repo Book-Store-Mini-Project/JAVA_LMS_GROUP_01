@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="com.example.java_lms_group_01.Controller.Lecturer.LecturerDashboardController">
+
+    <top>
+        <Label text="Lecturer Dashboard - Learning Management System"
+               style="-fx-font-size:18px; -fx-padding:10;"/>
+    </top>
+
+    <left>
+        <VBox spacing="10" style="-fx-padding:10;">
+            <Button text="Update Profile" fx:id="btnProfile"/>
+            <Button text="Manage Course Materials" fx:id="btnMaterials"/>
+            <Button text="Upload Exam Marks" fx:id="btnMarks"/>
+            <Button text="View Undergraduate Details" fx:id="btnStudents"/>
+            <Button text="View Eligibility" fx:id="btnEligibility"/>
+            <Button text="View Marks and GPA" fx:id="btnGPA"/>
+            <Button text="View Attendance and Medical" fx:id="btnAttendance"/>
+            <Button text="View Notices" fx:id="btnNotices"/>
+            <Button text="Logout" fx:id="btnLogout"/>
+        </VBox>
+    </left>
+
+    <center>
+        <Label text="Welcome Lecturer!"
+               style="-fx-font-size:16px;"/>
+    </center>
+
+</BorderPane>
