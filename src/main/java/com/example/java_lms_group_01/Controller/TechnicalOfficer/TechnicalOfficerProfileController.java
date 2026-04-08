@@ -1,15 +1,11 @@
 package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
-import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.Repository.UserProfileRepository;
 import com.example.java_lms_group_01.util.TechnicalOfficerContext;
-import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class TechnicalOfficerProfileController {
@@ -29,6 +25,8 @@ public class TechnicalOfficerProfileController {
     @FXML
     private TextField txtPicturePath;
 
+    private final UserProfileRepository userProfileRepository = new UserProfileRepository();
+
     @FXML
     public void initialize() {
         txtRegistrationNo.setEditable(false);
@@ -43,19 +41,16 @@ public class TechnicalOfficerProfileController {
             return;
         }
 
-        String sql = "UPDATE users SET firstName = ?, lastName = ?, email = ?, phoneNumber = ?, address = ? WHERE user_id = ?";
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, value(txtFirstName));
-                statement.setString(2, value(txtLastName));
-                statement.setString(3, value(txtEmail));
-                statement.setString(4, value(txtPhone));
-                statement.setString(5, value(txtAddress));
-                statement.setString(6, registrationNo);
-                statement.executeUpdate();
-            }
-            UserImageRepository.upsertImagePath(connection, registrationNo, value(txtPicturePath));
+            userProfileRepository.updateTechnicalOfficerProfile(
+                    registrationNo,
+                    value(txtFirstName),
+                    value(txtLastName),
+                    value(txtEmail),
+                    value(txtPhone),
+                    value(txtAddress),
+                    value(txtPicturePath)
+            );
             show(Alert.AlertType.INFORMATION, "Profile Updated", "Profile details updated successfully.");
         } catch (SQLException e) {
             show(Alert.AlertType.ERROR, "Database Error", e.getMessage());
@@ -68,30 +63,18 @@ public class TechnicalOfficerProfileController {
             return;
         }
 
-        String sql = """
-                SELECT u.user_id, u.firstName, u.lastName, u.email, u.phoneNumber, u.address
-                FROM users u
-                INNER JOIN tech_officer t ON t.registrationNo = u.user_id
-                WHERE t.registrationNo = ?
-                """;
-
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, registrationNo);
-                try (ResultSet rs = statement.executeQuery()) {
-                    if (!rs.next()) {
-                        return;
-                    }
-                    txtRegistrationNo.setText(safe(rs.getString("user_id")));
-                    txtFirstName.setText(safe(rs.getString("firstName")));
-                    txtLastName.setText(safe(rs.getString("lastName")));
-                    txtEmail.setText(safe(rs.getString("email")));
-                    txtPhone.setText(safe(rs.getString("phoneNumber")));
-                    txtAddress.setText(safe(rs.getString("address")));
-                    txtPicturePath.setText(safe(UserImageRepository.findImagePathByUserId(connection, registrationNo)));
-                }
+            var profile = userProfileRepository.findTechnicalOfficerProfile(registrationNo);
+            if (profile == null) {
+                return;
             }
+            txtRegistrationNo.setText(safe(profile.getUserId()));
+            txtFirstName.setText(safe(profile.getFirstName()));
+            txtLastName.setText(safe(profile.getLastName()));
+            txtEmail.setText(safe(profile.getEmail()));
+            txtPhone.setText(safe(profile.getPhoneNumber()));
+            txtAddress.setText(safe(profile.getAddress()));
+            txtPicturePath.setText(safe(profile.getProfileImagePath()));
         } catch (SQLException e) {
             show(Alert.AlertType.ERROR, "Database Error", e.getMessage());
         }

@@ -2,7 +2,6 @@ package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
 import com.example.java_lms_group_01.Repository.NoticeRepository;
 import com.example.java_lms_group_01.model.Notice;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -23,17 +22,17 @@ public class TechnicalOfficerNoticesController {
     @FXML
     private DatePicker dpPublishedDate;
     @FXML
-    private TableView<NoticeRow> tblNotices;
+    private TableView<Notice> tblNotices;
     @FXML
-    private TableColumn<NoticeRow, String> colNoticeId;
+    private TableColumn<Notice, String> colNoticeId;
     @FXML
-    private TableColumn<NoticeRow, String> colTitle;
+    private TableColumn<Notice, String> colTitle;
     @FXML
-    private TableColumn<NoticeRow, String> colContent;
+    private TableColumn<Notice, String> colContent;
     @FXML
-    private TableColumn<NoticeRow, String> colPublishDate;
+    private TableColumn<Notice, String> colPublishDate;
     @FXML
-    private TableColumn<NoticeRow, String> colCreatedBy;
+    private TableColumn<Notice, String> colCreatedBy;
 
     private final NoticeRepository noticeRepository = new NoticeRepository();
 
@@ -68,17 +67,7 @@ public class TechnicalOfficerNoticesController {
                         .collect(Collectors.toList());
             }
 
-            List<NoticeRow> rows = notices.stream()
-                    .map(n -> new NoticeRow(
-                            String.valueOf(n.getNoticeId()),
-                            safe(n.getTitle()),
-                            safe(n.getContent()),
-                            n.getPublishDate() == null ? "" : n.getPublishDate().toString(),
-                            safe(n.getCreatedBy())
-                    ))
-                    .collect(Collectors.toList());
-
-            tblNotices.getItems().setAll(rows);
+            tblNotices.getItems().setAll(notices);
         } catch (SQLException e) {
             showError("Failed to load notices.", e);
         }
@@ -94,31 +83,5 @@ public class TechnicalOfficerNoticesController {
         alert.setHeaderText(null);
         alert.setContentText(message + "\n" + e.getMessage());
         alert.showAndWait();
-    }
-
-    public static class NoticeRow {
-        private final SimpleStringProperty noticeId;
-        private final SimpleStringProperty title;
-        private final SimpleStringProperty content;
-        private final SimpleStringProperty publishDate;
-        private final SimpleStringProperty createdBy;
-
-        public NoticeRow(String noticeId, String title, String content, String publishDate, String createdBy) {
-            this.noticeId = new SimpleStringProperty(noticeId);
-            this.title = new SimpleStringProperty(title);
-            this.content = new SimpleStringProperty(content);
-            this.publishDate = new SimpleStringProperty(publishDate);
-            this.createdBy = new SimpleStringProperty(createdBy);
-        }
-
-        public SimpleStringProperty noticeIdProperty() { return noticeId; }
-        public SimpleStringProperty titleProperty() { return title; }
-        public SimpleStringProperty contentProperty() { return content; }
-        public SimpleStringProperty publishDateProperty() { return publishDate; }
-        public SimpleStringProperty createdByProperty() { return createdBy; }
-
-        public String getTitle() { return title.get(); }
-        public String getContent() { return content.get(); }
-        public String getPublishDate() { return publishDate.get(); }
     }
 }

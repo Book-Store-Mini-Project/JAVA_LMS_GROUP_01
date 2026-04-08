@@ -1,5 +1,7 @@
 package com.example.java_lms_group_01.model;
 
+import javafx.beans.property.SimpleStringProperty;
+
 public class Course {
     private String courseCode;
     private String name;
@@ -8,6 +10,7 @@ public class Course {
     private String semester;
     private int credit;
     private CourseType courseType;
+    private String enrollmentStatus;
 
     public Course() {
     }
@@ -90,5 +93,49 @@ public class Course {
 
     public void setCourseType(String courseType) {
         this.courseType = CourseType.fromValue(courseType);
+    }
+
+    public String getEnrollmentStatus() {
+        return enrollmentStatus == null ? "" : enrollmentStatus;
+    }
+
+    public void setEnrollmentStatus(String enrollmentStatus) {
+        this.enrollmentStatus = enrollmentStatus;
+    }
+
+    public SimpleStringProperty courseCodeProperty() {
+        return new SimpleStringProperty(value(courseCode));
+    }
+
+    public SimpleStringProperty nameProperty() {
+        return new SimpleStringProperty(value(name));
+    }
+
+    public SimpleStringProperty lecturerProperty() {
+        return new SimpleStringProperty(value(lecturerRegistrationNo));
+    }
+
+    public SimpleStringProperty departmentProperty() {
+        return new SimpleStringProperty(value(department));
+    }
+
+    public SimpleStringProperty semesterProperty() {
+        return new SimpleStringProperty(value(semester));
+    }
+
+    public SimpleStringProperty creditProperty() {
+        return new SimpleStringProperty(String.valueOf(credit));
+    }
+
+    public SimpleStringProperty typeProperty() {
+        return new SimpleStringProperty(getCourseType());
+    }
+
+    public SimpleStringProperty enrollmentStatusProperty() {
+        return new SimpleStringProperty(getEnrollmentStatus());
+    }
+
+    private String value(String text) {
+        return text == null ? "" : text;
     }
 }

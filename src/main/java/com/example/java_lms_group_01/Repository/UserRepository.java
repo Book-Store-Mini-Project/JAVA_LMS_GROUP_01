@@ -3,7 +3,7 @@ package com.example.java_lms_group_01.Repository;
 import com.example.java_lms_group_01.model.UserManagementRow;
 import com.example.java_lms_group_01.util.DBConnection;
 import com.example.java_lms_group_01.util.PasswordUtil;
-import com.example.java_lms_group_01.util.UserImageRepository;
+import com.example.java_lms_group_01.Repository.UserImageRepository;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserRepository {
+
+    private final UserImageRepository userImageRepository = new UserImageRepository();
 
     public List<UserManagementRow> findAdmins() throws SQLException {
         String sql = """
@@ -282,7 +284,7 @@ public class UserRepository {
                 roleStmt.executeUpdate();
             }
 
-            UserImageRepository.upsertImagePath(connection, requiredText(row.getRegistrationNo(), "Registration No"), row.getProfileImagePath());
+            userImageRepository.upsertImagePath(connection, requiredText(row.getRegistrationNo(), "Registration No"), row.getProfileImagePath());
 
             connection.commit();
             return true;
@@ -334,7 +336,7 @@ public class UserRepository {
             fillUserStatement(stmt, row, true);
             stmt.executeUpdate();
         }
-        UserImageRepository.upsertImagePath(connection, userId(row), row.getProfileImagePath());
+        userImageRepository.upsertImagePath(connection, userId(row), row.getProfileImagePath());
     }
 
     private void fillUserStatement(PreparedStatement stmt, UserManagementRow row, boolean includeUserIdForWhere) throws SQLException {

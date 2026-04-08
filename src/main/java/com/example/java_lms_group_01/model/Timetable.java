@@ -1,5 +1,7 @@
 package com.example.java_lms_group_01.model;
 
+import javafx.beans.property.SimpleStringProperty;
+
 import java.time.LocalTime;
 
 public class Timetable {
@@ -99,5 +101,49 @@ public class Timetable {
 
     public void setSessionType(String sessionType) {
         this.sessionType = sessionType;
+    }
+
+    public SimpleStringProperty timetableIdProperty() {
+        return new SimpleStringProperty(value(timeTableId));
+    }
+
+    public SimpleStringProperty departmentProperty() {
+        return new SimpleStringProperty(value(department));
+    }
+
+    public SimpleStringProperty lecIdProperty() {
+        return new SimpleStringProperty(value(lecId));
+    }
+
+    public SimpleStringProperty lecturerIdProperty() {
+        return lecIdProperty();
+    }
+
+    public SimpleStringProperty courseCodeProperty() {
+        return new SimpleStringProperty(value(courseCode));
+    }
+
+    public SimpleStringProperty adminIdProperty() {
+        return new SimpleStringProperty(value(adminId));
+    }
+
+    public SimpleStringProperty dayProperty() {
+        return new SimpleStringProperty(value(day));
+    }
+
+    public SimpleStringProperty startTimeProperty() {
+        return new SimpleStringProperty(startTime == null ? "" : startTime.toString());
+    }
+
+    public SimpleStringProperty endTimeProperty() {
+        return new SimpleStringProperty(endTime == null ? "" : endTime.toString());
+    }
+
+    public SimpleStringProperty sessionTypeProperty() {
+        return new SimpleStringProperty(value(sessionType));
+    }
+
+    private String value(String text) {
+        return text == null ? "" : text;
     }
 }

@@ -1,20 +1,15 @@
 package com.example.java_lms_group_01.Controller.Lecturer;
 
-import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.Repository.LecturerRepository;
+import com.example.java_lms_group_01.model.Mark;
 import com.example.java_lms_group_01.util.LecturerContext;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class LecturerMarksController {
 
@@ -41,29 +36,31 @@ public class LecturerMarksController {
     @FXML
     private TextField txtSearch;
     @FXML
-    private TableView<MarksRow> tblMarks;
+    private TableView<Mark> tblMarks;
     @FXML
-    private TableColumn<MarksRow, String> colMarkId;
+    private TableColumn<Mark, String> colMarkId;
     @FXML
-    private TableColumn<MarksRow, String> colStudentReg;
+    private TableColumn<Mark, String> colStudentReg;
     @FXML
-    private TableColumn<MarksRow, String> colCourseCode;
+    private TableColumn<Mark, String> colCourseCode;
     @FXML
-    private TableColumn<MarksRow, String> colQuiz1;
+    private TableColumn<Mark, String> colQuiz1;
     @FXML
-    private TableColumn<MarksRow, String> colQuiz2;
+    private TableColumn<Mark, String> colQuiz2;
     @FXML
-    private TableColumn<MarksRow, String> colQuiz3;
+    private TableColumn<Mark, String> colQuiz3;
     @FXML
-    private TableColumn<MarksRow, String> colA1;
+    private TableColumn<Mark, String> colA1;
     @FXML
-    private TableColumn<MarksRow, String> colA2;
+    private TableColumn<Mark, String> colA2;
     @FXML
-    private TableColumn<MarksRow, String> colMid;
+    private TableColumn<Mark, String> colMid;
     @FXML
-    private TableColumn<MarksRow, String> colFinalTheory;
+    private TableColumn<Mark, String> colFinalTheory;
     @FXML
-    private TableColumn<MarksRow, String> colFinalPractical;
+    private TableColumn<Mark, String> colFinalPractical;
+
+    private final LecturerRepository lecturerRepository = new LecturerRepository();
 
     @FXML
     public void initialize() {
@@ -102,28 +99,8 @@ public class LecturerMarksController {
         if (!validForm()) {
             return;
         }
-        String sql = """
-                INSERT INTO marks (
-                  LectureReg, StudentReg, courseCode, quiz_1, quiz_2, quiz_3,
-                  assessment_1, assessment_2, mid_term, final_theory, final_practical
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, currentLecturer());
-                statement.setString(2, value(txtStudentReg));
-                statement.setString(3, value(txtCourseCode));
-                setDecimal(statement, 4, txtQuiz1);
-                setDecimal(statement, 5, txtQuiz2);
-                setDecimal(statement, 6, txtQuiz3);
-                setDecimal(statement, 7, txtAssessment1);
-                setDecimal(statement, 8, txtAssessment2);
-                setDecimal(statement, 9, txtMidTerm);
-                setDecimal(statement, 10, txtFinalTheory);
-                setDecimal(statement, 11, txtFinalPractical);
-                statement.executeUpdate();
-            }
+            lecturerRepository.addMarks(currentLecturer(), buildMutation());
             loadMarks(txtSearch.getText());
             clearForm();
         } catch (Exception e) {
@@ -133,7 +110,7 @@ public class LecturerMarksController {
 
     @FXML
     private void updateMarks() {
-        MarksRow selected = tblMarks.getSelectionModel().getSelectedItem();
+        Mark selected = tblMarks.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showWarn("Select a marks record to update.");
             return;
@@ -141,29 +118,8 @@ public class LecturerMarksController {
         if (!validForm()) {
             return;
         }
-        String sql = """
-                UPDATE marks SET
-                  StudentReg = ?, courseCode = ?, quiz_1 = ?, quiz_2 = ?, quiz_3 = ?,
-                  assessment_1 = ?, assessment_2 = ?, mid_term = ?, final_theory = ?, final_practical = ?
-                WHERE mark_id = ? AND LectureReg = ?
-                """;
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, value(txtStudentReg));
-                statement.setString(2, value(txtCourseCode));
-                setDecimal(statement, 3, txtQuiz1);
-                setDecimal(statement, 4, txtQuiz2);
-                setDecimal(statement, 5, txtQuiz3);
-                setDecimal(statement, 6, txtAssessment1);
-                setDecimal(statement, 7, txtAssessment2);
-                setDecimal(statement, 8, txtMidTerm);
-                setDecimal(statement, 9, txtFinalTheory);
-                setDecimal(statement, 10, txtFinalPractical);
-                statement.setInt(11, Integer.parseInt(selected.getMarkId()));
-                statement.setString(12, currentLecturer());
-                statement.executeUpdate();
-            }
+            lecturerRepository.updateMarks(currentLecturer(), Integer.parseInt(selected.getMarkId()), buildMutation());
             loadMarks(txtSearch.getText());
         } catch (Exception e) {
             showError("Failed to update marks.", e);
@@ -172,19 +128,13 @@ public class LecturerMarksController {
 
     @FXML
     private void deleteMarks() {
-        MarksRow selected = tblMarks.getSelectionModel().getSelectedItem();
+        Mark selected = tblMarks.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showWarn("Select a marks record to delete.");
             return;
         }
-        String sql = "DELETE FROM marks WHERE mark_id = ? AND LectureReg = ?";
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setInt(1, Integer.parseInt(selected.getMarkId()));
-                statement.setString(2, currentLecturer());
-                statement.executeUpdate();
-            }
+            lecturerRepository.deleteMarks(currentLecturer(), Integer.parseInt(selected.getMarkId()));
             loadMarks(txtSearch.getText());
             clearForm();
         } catch (Exception e) {
@@ -219,61 +169,14 @@ public class LecturerMarksController {
     }
 
     private void loadMarks(String keyword) {
-        String safeKeyword = keyword == null ? "" : keyword.trim();
-        String sql = """
-                SELECT mark_id, StudentReg, courseCode, quiz_1, quiz_2, quiz_3, assessment_1, assessment_2, mid_term, final_theory, final_practical
-                FROM marks
-                WHERE LectureReg = ? AND (? = '' OR StudentReg LIKE ? OR courseCode LIKE ?)
-                ORDER BY mark_id DESC
-                """;
-
-        List<MarksRow> rows = new ArrayList<>();
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                String pattern = "%" + safeKeyword + "%";
-                statement.setString(1, currentLecturer());
-                statement.setString(2, safeKeyword);
-                statement.setString(3, pattern);
-                statement.setString(4, pattern);
-                try (ResultSet rs = statement.executeQuery()) {
-                    while (rs.next()) {
-                        rows.add(new MarksRow(
-                                String.valueOf(rs.getInt("mark_id")),
-                                safe(rs.getString("StudentReg")),
-                                safe(rs.getString("courseCode")),
-                                safeDecimal(rs.getObject("quiz_1")),
-                                safeDecimal(rs.getObject("quiz_2")),
-                                safeDecimal(rs.getObject("quiz_3")),
-                                safeDecimal(rs.getObject("assessment_1")),
-                                safeDecimal(rs.getObject("assessment_2")),
-                                safeDecimal(rs.getObject("mid_term")),
-                                safeDecimal(rs.getObject("final_theory")),
-                                safeDecimal(rs.getObject("final_practical"))
-                        ));
-                    }
-                }
-            }
+            var rows = lecturerRepository.findMarksByLecturer(currentLecturer(), keyword).stream()
+                    .map(r -> new Mark(r.markId(), r.studentReg(), r.courseCode(), r.quiz1(), r.quiz2(), r.quiz3(),
+                            r.assessment1(), r.assessment2(), r.midTerm(), r.finalTheory(), r.finalPractical()))
+                    .toList();
             tblMarks.getItems().setAll(rows);
         } catch (SQLException e) {
             showError("Failed to load marks.", e);
-        }
-    }
-
-    private void setDecimal(PreparedStatement statement, int index, TextField textField) throws SQLException {
-        String value = value(textField);
-        if (value.isBlank()) {
-            statement.setNull(index, java.sql.Types.DECIMAL);
-            return;
-        }
-        try {
-            double numeric = Double.parseDouble(value);
-            if (numeric < 0 || numeric > 100) {
-                throw new IllegalArgumentException("Exam marks must be between 0 and 100.");
-            }
-            statement.setDouble(index, numeric);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Marks must be numeric.");
         }
     }
 
@@ -322,15 +225,24 @@ public class LecturerMarksController {
         return textField.getText() == null ? "" : textField.getText().trim();
     }
 
-    private String safe(String value) {
-        return value == null ? "" : value;
+    private LecturerRepository.MarksMutation buildMutation() {
+        return new LecturerRepository.MarksMutation(
+                value(txtStudentReg),
+                value(txtCourseCode),
+                parseDecimal(txtQuiz1),
+                parseDecimal(txtQuiz2),
+                parseDecimal(txtQuiz3),
+                parseDecimal(txtAssessment1),
+                parseDecimal(txtAssessment2),
+                parseDecimal(txtMidTerm),
+                parseDecimal(txtFinalTheory),
+                parseDecimal(txtFinalPractical)
+        );
     }
 
-    private String safeDecimal(Object value) {
-        if (value == null) {
-            return "";
-        }
-        return String.format("%.2f", ((Number) value).doubleValue());
+    private Double parseDecimal(TextField textField) {
+        String value = value(textField);
+        return value.isBlank() ? null : Double.parseDouble(value);
     }
 
     private void showWarn(String message) {
@@ -349,55 +261,4 @@ public class LecturerMarksController {
         alert.showAndWait();
     }
 
-    public static class MarksRow {
-        private final SimpleStringProperty markId;
-        private final SimpleStringProperty studentReg;
-        private final SimpleStringProperty courseCode;
-        private final SimpleStringProperty quiz1;
-        private final SimpleStringProperty quiz2;
-        private final SimpleStringProperty quiz3;
-        private final SimpleStringProperty assessment1;
-        private final SimpleStringProperty assessment2;
-        private final SimpleStringProperty midTerm;
-        private final SimpleStringProperty finalTheory;
-        private final SimpleStringProperty finalPractical;
-
-        public MarksRow(String markId, String studentReg, String courseCode, String quiz1, String quiz2, String quiz3, String assessment1, String assessment2, String midTerm, String finalTheory, String finalPractical) {
-            this.markId = new SimpleStringProperty(markId);
-            this.studentReg = new SimpleStringProperty(studentReg);
-            this.courseCode = new SimpleStringProperty(courseCode);
-            this.quiz1 = new SimpleStringProperty(quiz1);
-            this.quiz2 = new SimpleStringProperty(quiz2);
-            this.quiz3 = new SimpleStringProperty(quiz3);
-            this.assessment1 = new SimpleStringProperty(assessment1);
-            this.assessment2 = new SimpleStringProperty(assessment2);
-            this.midTerm = new SimpleStringProperty(midTerm);
-            this.finalTheory = new SimpleStringProperty(finalTheory);
-            this.finalPractical = new SimpleStringProperty(finalPractical);
-        }
-
-        public SimpleStringProperty markIdProperty() { return markId; }
-        public SimpleStringProperty studentRegProperty() { return studentReg; }
-        public SimpleStringProperty courseCodeProperty() { return courseCode; }
-        public SimpleStringProperty quiz1Property() { return quiz1; }
-        public SimpleStringProperty quiz2Property() { return quiz2; }
-        public SimpleStringProperty quiz3Property() { return quiz3; }
-        public SimpleStringProperty assessment1Property() { return assessment1; }
-        public SimpleStringProperty assessment2Property() { return assessment2; }
-        public SimpleStringProperty midTermProperty() { return midTerm; }
-        public SimpleStringProperty finalTheoryProperty() { return finalTheory; }
-        public SimpleStringProperty finalPracticalProperty() { return finalPractical; }
-
-        public String getMarkId() { return markId.get(); }
-        public String getStudentReg() { return studentReg.get(); }
-        public String getCourseCode() { return courseCode.get(); }
-        public String getQuiz1() { return quiz1.get(); }
-        public String getQuiz2() { return quiz2.get(); }
-        public String getQuiz3() { return quiz3.get(); }
-        public String getAssessment1() { return assessment1.get(); }
-        public String getAssessment2() { return assessment2.get(); }
-        public String getMidTerm() { return midTerm.get(); }
-        public String getFinalTheory() { return finalTheory.get(); }
-        public String getFinalPractical() { return finalPractical.get(); }
-    }
 }

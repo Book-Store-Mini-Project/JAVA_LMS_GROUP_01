@@ -1,5 +1,7 @@
 package com.example.java_lms_group_01.model;
 
+import javafx.beans.property.SimpleStringProperty;
+
 import java.time.LocalDate;
 
 public class Notice {
@@ -64,5 +66,32 @@ public class Notice {
     public void editNotice(){}
     public void removeNotice(){}
 
+    public SimpleStringProperty noticeIdProperty() {
+        return new SimpleStringProperty(String.valueOf(noticeId));
+    }
+
+    public SimpleStringProperty titleProperty() {
+        return new SimpleStringProperty(value(title));
+    }
+
+    public SimpleStringProperty contentProperty() {
+        return new SimpleStringProperty(value(content));
+    }
+
+    public SimpleStringProperty publishDateProperty() {
+        return new SimpleStringProperty(publishDate == null ? "" : publishDate.toString());
+    }
+
+    public SimpleStringProperty dateProperty() {
+        return publishDateProperty();
+    }
+
+    public SimpleStringProperty createdByProperty() {
+        return new SimpleStringProperty(value(createdBy));
+    }
+
+    private String value(String text) {
+        return text == null ? "" : text;
+    }
 
 }

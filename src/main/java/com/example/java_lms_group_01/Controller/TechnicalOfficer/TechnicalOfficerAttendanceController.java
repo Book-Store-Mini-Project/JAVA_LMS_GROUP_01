@@ -1,8 +1,8 @@
 package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
-import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.Repository.TechnicalOfficerRepository;
+import com.example.java_lms_group_01.model.Attendance;
 import com.example.java_lms_group_01.util.TechnicalOfficerContext;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -14,13 +14,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 
 import java.time.LocalDate;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class TechnicalOfficerAttendanceController {
 
@@ -37,21 +31,23 @@ public class TechnicalOfficerAttendanceController {
     @FXML
     private TextField txtSearch;
     @FXML
-    private TableView<AttendanceRow> tblAttendance;
+    private TableView<Attendance> tblAttendance;
     @FXML
-    private TableColumn<AttendanceRow, String> colAttendanceId;
+    private TableColumn<Attendance, String> colAttendanceId;
     @FXML
-    private TableColumn<AttendanceRow, String> colStudentRegNo;
+    private TableColumn<Attendance, String> colStudentRegNo;
     @FXML
-    private TableColumn<AttendanceRow, String> colCourseCode;
+    private TableColumn<Attendance, String> colCourseCode;
     @FXML
-    private TableColumn<AttendanceRow, String> colDate;
+    private TableColumn<Attendance, String> colDate;
     @FXML
-    private TableColumn<AttendanceRow, String> colSessionType;
+    private TableColumn<Attendance, String> colSessionType;
     @FXML
-    private TableColumn<AttendanceRow, String> colStatus;
+    private TableColumn<Attendance, String> colStatus;
     @FXML
-    private TableColumn<AttendanceRow, String> colTechOfficerReg;
+    private TableColumn<Attendance, String> colTechOfficerReg;
+
+    private final TechnicalOfficerRepository technicalOfficerRepository = new TechnicalOfficerRepository();
 
     @FXML
     public void initialize() {
@@ -85,19 +81,8 @@ public class TechnicalOfficerAttendanceController {
         if (!validForm()) {
             return;
         }
-        String sql = "INSERT INTO attendance (StudentReg, courseCode, tech_officer_reg, SubmissionDate, session_type, attendance_status) VALUES (?, ?, ?, ?, ?, ?)";
-
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, value(txtStudentRegNo));
-                statement.setString(2, value(txtCourseCode));
-                statement.setString(3, currentTechOfficerReg());
-                statement.setDate(4, Date.valueOf(dpAttendanceDate.getValue()));
-                statement.setString(5, cmbSessionType.getValue());
-                statement.setString(6, cmbStatus.getValue());
-                statement.executeUpdate();
-            }
+            technicalOfficerRepository.addAttendance(buildAttendanceMutation());
             loadAttendance(txtSearch.getText());
             clearForm(event);
         } catch (Exception e) {
@@ -107,7 +92,7 @@ public class TechnicalOfficerAttendanceController {
 
     @FXML
     private void updateRecord(ActionEvent event) {
-        AttendanceRow selected = tblAttendance.getSelectionModel().getSelectedItem();
+        Attendance selected = tblAttendance.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showWarn("Select a record to update.");
             return;
@@ -115,19 +100,8 @@ public class TechnicalOfficerAttendanceController {
         if (!validForm()) {
             return;
         }
-        String sql = "UPDATE attendance SET StudentReg = ?, courseCode = ?, SubmissionDate = ?, session_type = ?, attendance_status = ?, tech_officer_reg = ? WHERE attendance_id = ?";
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, value(txtStudentRegNo));
-                statement.setString(2, value(txtCourseCode));
-                statement.setDate(3, Date.valueOf(dpAttendanceDate.getValue()));
-                statement.setString(4, cmbSessionType.getValue());
-                statement.setString(5, cmbStatus.getValue());
-                statement.setString(6, currentTechOfficerReg());
-                statement.setInt(7, Integer.parseInt(selected.getAttendanceId()));
-                statement.executeUpdate();
-            }
+            technicalOfficerRepository.updateAttendance(Integer.parseInt(selected.getAttendanceId()), buildAttendanceMutation());
             loadAttendance(txtSearch.getText());
         } catch (Exception e) {
             showError("Failed to update attendance record.", e);
@@ -136,18 +110,13 @@ public class TechnicalOfficerAttendanceController {
 
     @FXML
     private void deleteRecord(ActionEvent event) {
-        AttendanceRow selected = tblAttendance.getSelectionModel().getSelectedItem();
+        Attendance selected = tblAttendance.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showWarn("Select a record to delete.");
             return;
         }
-        String sql = "DELETE FROM attendance WHERE attendance_id = ?";
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setInt(1, Integer.parseInt(selected.getAttendanceId()));
-                statement.executeUpdate();
-            }
+            technicalOfficerRepository.deleteAttendance(Integer.parseInt(selected.getAttendanceId()));
             loadAttendance(txtSearch.getText());
             clearForm(event);
         } catch (Exception e) {
@@ -206,38 +175,11 @@ public class TechnicalOfficerAttendanceController {
     }
 
     private void loadAttendance(String keyword) {
-        String safeKeyword = keyword == null ? "" : keyword.trim();
-        String sql = """
-                SELECT attendance_id, StudentReg, courseCode, SubmissionDate, session_type, attendance_status, tech_officer_reg
-                FROM attendance
-                WHERE (? = '' OR StudentReg LIKE ? OR courseCode LIKE ?)
-                ORDER BY attendance_id DESC
-                """;
-
-        List<AttendanceRow> rows = new ArrayList<>();
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                String pattern = "%" + safeKeyword + "%";
-                statement.setString(1, safeKeyword);
-                statement.setString(2, pattern);
-                statement.setString(3, pattern);
-
-                try (ResultSet rs = statement.executeQuery()) {
-                    while (rs.next()) {
-                        Date submissionDate = rs.getDate("SubmissionDate");
-                        rows.add(new AttendanceRow(
-                                String.valueOf(rs.getInt("attendance_id")),
-                                safe(rs.getString("StudentReg")),
-                                safe(rs.getString("courseCode")),
-                                submissionDate == null ? "" : submissionDate.toString(),
-                                safe(rs.getString("session_type")),
-                                safe(rs.getString("attendance_status")),
-                                safe(rs.getString("tech_officer_reg"))
-                        ));
-                    }
-                }
-            }
+            var rows = technicalOfficerRepository.findAttendance(keyword).stream()
+                    .map(r -> new Attendance(r.attendanceId(), r.studentRegNo(), r.courseCode(), r.date(),
+                            r.sessionType(), r.status(), r.techOfficerReg()))
+                    .toList();
             tblAttendance.getItems().setAll(rows);
         } catch (SQLException e) {
             showError("Failed to load attendance records.", e);
@@ -249,48 +191,15 @@ public class TechnicalOfficerAttendanceController {
         return reg == null ? "" : reg.trim();
     }
 
-    private String safe(String value) {
-        return value == null ? "" : value;
+    private TechnicalOfficerRepository.AttendanceMutation buildAttendanceMutation() {
+        return new TechnicalOfficerRepository.AttendanceMutation(
+                value(txtStudentRegNo),
+                value(txtCourseCode),
+                currentTechOfficerReg(),
+                dpAttendanceDate.getValue(),
+                cmbSessionType.getValue(),
+                cmbStatus.getValue()
+        );
     }
 
-    public static class AttendanceRow {
-        private final SimpleStringProperty attendanceId;
-        private final SimpleStringProperty studentRegNo;
-        private final SimpleStringProperty courseCode;
-        private final SimpleStringProperty date;
-        private final SimpleStringProperty sessionType;
-        private final SimpleStringProperty status;
-        private final SimpleStringProperty techOfficerReg;
-
-        public AttendanceRow(String attendanceId, String studentRegNo, String courseCode, String date, String sessionType, String status, String techOfficerReg) {
-            this.attendanceId = new SimpleStringProperty(attendanceId);
-            this.studentRegNo = new SimpleStringProperty(studentRegNo);
-            this.courseCode = new SimpleStringProperty(courseCode);
-            this.date = new SimpleStringProperty(date);
-            this.sessionType = new SimpleStringProperty(sessionType);
-            this.status = new SimpleStringProperty(status);
-            this.techOfficerReg = new SimpleStringProperty(techOfficerReg);
-        }
-
-        public SimpleStringProperty attendanceIdProperty() { return attendanceId; }
-        public SimpleStringProperty studentRegNoProperty() { return studentRegNo; }
-        public SimpleStringProperty courseCodeProperty() { return courseCode; }
-        public SimpleStringProperty dateProperty() { return date; }
-        public SimpleStringProperty sessionTypeProperty() { return sessionType; }
-        public SimpleStringProperty statusProperty() { return status; }
-        public SimpleStringProperty techOfficerRegProperty() { return techOfficerReg; }
-
-        public String getStudentRegNo() { return studentRegNo.get(); }
-        public String getCourseCode() { return courseCode.get(); }
-        public String getDate() { return date.get(); }
-        public String getSessionType() { return sessionType.get(); }
-        public String getStatus() { return status.get(); }
-        public String getAttendanceId() { return attendanceId.get(); }
-
-        public void setStudentRegNo(String value) { studentRegNo.set(value); }
-        public void setCourseCode(String value) { courseCode.set(value); }
-        public void setDate(String value) { date.set(value); }
-        public void setSessionType(String value) { sessionType.set(value); }
-        public void setStatus(String value) { status.set(value); }
-    }
 }

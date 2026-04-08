@@ -2,7 +2,6 @@ package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
 import com.example.java_lms_group_01.Repository.TimetableRepository;
 import com.example.java_lms_group_01.model.Timetable;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -24,25 +23,25 @@ public class TechnicalOfficerTimetableController {
     @FXML
     private TextField txtSearch;
     @FXML
-    private TableView<TimetableRow> tblTimetables;
+    private TableView<Timetable> tblTimetables;
     @FXML
-    private TableColumn<TimetableRow, String> colTimetableId;
+    private TableColumn<Timetable, String> colTimetableId;
     @FXML
-    private TableColumn<TimetableRow, String> colDepartment;
+    private TableColumn<Timetable, String> colDepartment;
     @FXML
-    private TableColumn<TimetableRow, String> colLecturerId;
+    private TableColumn<Timetable, String> colLecturerId;
     @FXML
-    private TableColumn<TimetableRow, String> colCourseCode;
+    private TableColumn<Timetable, String> colCourseCode;
     @FXML
-    private TableColumn<TimetableRow, String> colAdminId;
+    private TableColumn<Timetable, String> colAdminId;
     @FXML
-    private TableColumn<TimetableRow, String> colDay;
+    private TableColumn<Timetable, String> colDay;
     @FXML
-    private TableColumn<TimetableRow, String> colStartTime;
+    private TableColumn<Timetable, String> colStartTime;
     @FXML
-    private TableColumn<TimetableRow, String> colEndTime;
+    private TableColumn<Timetable, String> colEndTime;
     @FXML
-    private TableColumn<TimetableRow, String> colSessionType;
+    private TableColumn<Timetable, String> colSessionType;
 
     private final TimetableRepository timetableRepository = new TimetableRepository();
 
@@ -87,21 +86,7 @@ public class TechnicalOfficerTimetableController {
     private void loadTimetables(String department, String day, String keyword) {
         try {
             List<Timetable> timetables = timetableRepository.findByFilters(department, day, keyword);
-            List<TimetableRow> rows = timetables.stream()
-                    .map(t -> new TimetableRow(
-                            safe(t.getTimeTableId()),
-                            safe(t.getDepartment()),
-                            safe(t.getLecId()),
-                            safe(t.getCourseCode()),
-                            safe(t.getAdminId()),
-                            safe(t.getDay()),
-                            t.getStartTime() == null ? "" : t.getStartTime().toString(),
-                            t.getEndTime() == null ? "" : t.getEndTime().toString(),
-                            safe(t.getSessionType())
-                    ))
-                    .collect(Collectors.toList());
-
-            tblTimetables.getItems().setAll(rows);
+            tblTimetables.getItems().setAll(timetables);
         } catch (SQLException e) {
             showError("Failed to load timetables.", e);
         }
@@ -119,43 +104,4 @@ public class TechnicalOfficerTimetableController {
         alert.showAndWait();
     }
 
-    public static class TimetableRow {
-        private final SimpleStringProperty timetableId;
-        private final SimpleStringProperty department;
-        private final SimpleStringProperty lecturerId;
-        private final SimpleStringProperty courseCode;
-        private final SimpleStringProperty adminId;
-        private final SimpleStringProperty day;
-        private final SimpleStringProperty startTime;
-        private final SimpleStringProperty endTime;
-        private final SimpleStringProperty sessionType;
-
-        public TimetableRow(String timetableId, String department, String lecturerId, String courseCode, String adminId, String day, String startTime, String endTime, String sessionType) {
-            this.timetableId = new SimpleStringProperty(timetableId);
-            this.department = new SimpleStringProperty(department);
-            this.lecturerId = new SimpleStringProperty(lecturerId);
-            this.courseCode = new SimpleStringProperty(courseCode);
-            this.adminId = new SimpleStringProperty(adminId);
-            this.day = new SimpleStringProperty(day);
-            this.startTime = new SimpleStringProperty(startTime);
-            this.endTime = new SimpleStringProperty(endTime);
-            this.sessionType = new SimpleStringProperty(sessionType);
-        }
-
-        public SimpleStringProperty timetableIdProperty() { return timetableId; }
-        public SimpleStringProperty departmentProperty() { return department; }
-        public SimpleStringProperty lecturerIdProperty() { return lecturerId; }
-        public SimpleStringProperty courseCodeProperty() { return courseCode; }
-        public SimpleStringProperty adminIdProperty() { return adminId; }
-        public SimpleStringProperty dayProperty() { return day; }
-        public SimpleStringProperty startTimeProperty() { return startTime; }
-        public SimpleStringProperty endTimeProperty() { return endTime; }
-        public SimpleStringProperty sessionTypeProperty() { return sessionType; }
-
-        public String getTimetableId() { return timetableId.get(); }
-        public String getDepartment() { return department.get(); }
-        public String getLecturerId() { return lecturerId.get(); }
-        public String getCourseCode() { return courseCode.get(); }
-        public String getDay() { return day.get(); }
-    }
 }

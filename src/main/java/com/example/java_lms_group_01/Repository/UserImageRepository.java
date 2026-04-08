@@ -1,16 +1,20 @@
-package com.example.java_lms_group_01.util;
+package com.example.java_lms_group_01.Repository;
+
+import com.example.java_lms_group_01.util.DBConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public final class UserImageRepository {
+public class UserImageRepository {
 
-    private UserImageRepository() {
+    public String findImagePathByUserId(String userId) throws SQLException {
+        Connection connection = DBConnection.getInstance().getConnection();
+        return findImagePathByUserId(connection, userId);
     }
 
-    public static String findImagePathByUserId(Connection connection, String userId) throws SQLException {
+    public String findImagePathByUserId(Connection connection, String userId) throws SQLException {
         String sql = "SELECT image_path FROM user_profile_images WHERE user_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, userId);
@@ -23,7 +27,7 @@ public final class UserImageRepository {
         }
     }
 
-    public static void upsertImagePath(Connection connection, String userId, String imagePath) throws SQLException {
+    public void upsertImagePath(Connection connection, String userId, String imagePath) throws SQLException {
         if (imagePath == null || imagePath.trim().isBlank()) {
             try (PreparedStatement statement = connection.prepareStatement("DELETE FROM user_profile_images WHERE user_id = ?")) {
                 statement.setString(1, userId);

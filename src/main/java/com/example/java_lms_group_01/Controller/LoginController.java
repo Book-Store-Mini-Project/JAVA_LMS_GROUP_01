@@ -3,11 +3,10 @@ package com.example.java_lms_group_01.Controller;
 import com.example.java_lms_group_01.Controller.LandingPages.RoleLandingController;
 import com.example.java_lms_group_01.Controller.AdminDashboard.AdminDashboard;
 import com.example.java_lms_group_01.Controller.Lecturer.LecturerDashboardController;
+import com.example.java_lms_group_01.Repository.AuthRepository;
 import com.example.java_lms_group_01.Controller.Student.StudentDashboardController;
 import com.example.java_lms_group_01.Controller.TechnicalOfficer.TechnicalOfficerDashboardController;
 import com.example.java_lms_group_01.model.users.UserRole;
-import com.example.java_lms_group_01.util.DBConnection;
-import com.example.java_lms_group_01.util.PasswordUtil;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -18,9 +17,6 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class LoginController {
@@ -30,6 +26,8 @@ public class LoginController {
 
     @FXML
     private PasswordField loginPass;
+
+    private final AuthRepository authRepository = new AuthRepository();
 
     @FXML
     void btnOnActionLogin(ActionEvent event) {
@@ -47,7 +45,7 @@ public class LoginController {
         }
 
         try {
-            UserRole role = findRoleByRegistrationNo(registrationNo, password);
+            UserRole role = authRepository.findRoleByRegistrationNo(registrationNo, password);
 
             if (role == null) {
                 showAlert(Alert.AlertType.ERROR, "Login Failed", "Invalid registration number or password.");
@@ -59,36 +57,6 @@ public class LoginController {
             showAlert(Alert.AlertType.ERROR, "Database Error", e.getMessage());
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Navigation Error", e.getMessage());
-        }
-    }
-
-    private UserRole findRoleByRegistrationNo(String registrationNo, String password) throws SQLException {
-        Connection connection = DBConnection.getInstance().getConnection();
-        if (isPasswordValid(connection, "SELECT password FROM admin WHERE registrationNo = ?", registrationNo, password)) {
-            return UserRole.ADMIN;
-        }
-        if (isPasswordValid(connection, "SELECT password FROM lecturer WHERE registrationNo = ?", registrationNo, password)) {
-            return UserRole.LECTURER;
-        }
-        if (isPasswordValid(connection, "SELECT password FROM student WHERE registrationNo = ?", registrationNo, password)) {
-            return UserRole.STUDENT;
-        }
-        if (isPasswordValid(connection, "SELECT password FROM tech_officer WHERE registrationNo = ?", registrationNo, password)) {
-            return UserRole.TECHNICAL_OFFICER;
-        }
-        return null;
-    }
-
-    private boolean isPasswordValid(Connection connection, String sql, String registrationNo, String rawPassword) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, registrationNo);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    return false;
-                }
-                String storedPassword = resultSet.getString("password");
-                return PasswordUtil.matches(rawPassword, storedPassword);
-            }
         }
     }
 

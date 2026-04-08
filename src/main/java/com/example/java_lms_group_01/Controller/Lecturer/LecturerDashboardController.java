@@ -1,9 +1,8 @@
 package com.example.java_lms_group_01.Controller.Lecturer;
 
+import com.example.java_lms_group_01.Repository.UserImageRepository;
 import com.example.java_lms_group_01.util.LecturerContext;
 import com.example.java_lms_group_01.util.ProfileImageUtil;
-import com.example.java_lms_group_01.util.DBConnection;
-import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -16,9 +15,6 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +31,7 @@ public class LecturerDashboardController {
     private ImageView imgProfile;
 
     private final List<javafx.scene.Node> dashboardHomeNodes = new ArrayList<>();
+    private final UserImageRepository userImageRepository = new UserImageRepository();
 
     @FXML
     public void initialize() {
@@ -136,8 +133,7 @@ public class LecturerDashboardController {
 
     private void loadProfileImage(String registrationNo) {
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            ProfileImageUtil.loadImage(imgProfile, UserImageRepository.findImagePathByUserId(connection, registrationNo));
+            ProfileImageUtil.loadImage(imgProfile, userImageRepository.findImagePathByUserId(registrationNo));
         } catch (SQLException ignored) {
             ProfileImageUtil.loadImage(imgProfile, null);
         }

@@ -1,9 +1,8 @@
 package com.example.java_lms_group_01.Controller.Student;
 
-import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.Repository.UserImageRepository;
 import com.example.java_lms_group_01.util.ProfileImageUtil;
 import com.example.java_lms_group_01.util.StudentContext;
-import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -16,9 +15,6 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class StudentDashboardController {
@@ -30,6 +26,8 @@ public class StudentDashboardController {
 
     @FXML
     private AnchorPane contentArea;
+
+    private final UserImageRepository userImageRepository = new UserImageRepository();
 
     public void setStudentData(String registrationNo) {
         lblRegistrationNo.setText("Registration No: " + registrationNo);
@@ -113,8 +111,7 @@ public class StudentDashboardController {
 
     private void loadProfileImage(String registrationNo) {
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            ProfileImageUtil.loadImage(imgProfile, UserImageRepository.findImagePathByUserId(connection, registrationNo));
+            ProfileImageUtil.loadImage(imgProfile, userImageRepository.findImagePathByUserId(registrationNo));
         } catch (SQLException ignored) {
             ProfileImageUtil.loadImage(imgProfile, null);
         }

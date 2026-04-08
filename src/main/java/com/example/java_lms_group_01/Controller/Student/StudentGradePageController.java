@@ -1,49 +1,46 @@
 package com.example.java_lms_group_01.Controller.Student;
 
-import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.Repository.StudentRepository;
+import com.example.java_lms_group_01.model.Grade;
 import com.example.java_lms_group_01.util.StudentContext;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class StudentGradePageController {
 
     @FXML
-    private TableView<GradeRow> tblGrades;
+    private TableView<Grade> tblGrades;
     @FXML
-    private TableColumn<GradeRow, String> colCourseCode;
+    private TableColumn<Grade, String> colCourseCode;
     @FXML
-    private TableColumn<GradeRow, String> colQuiz1;
+    private TableColumn<Grade, String> colQuiz1;
     @FXML
-    private TableColumn<GradeRow, String> colQuiz2;
+    private TableColumn<Grade, String> colQuiz2;
     @FXML
-    private TableColumn<GradeRow, String> colQuiz3;
+    private TableColumn<Grade, String> colQuiz3;
     @FXML
-    private TableColumn<GradeRow, String> colAssessment1;
+    private TableColumn<Grade, String> colAssessment1;
     @FXML
-    private TableColumn<GradeRow, String> colAssessment2;
+    private TableColumn<Grade, String> colAssessment2;
     @FXML
-    private TableColumn<GradeRow, String> colMidTerm;
+    private TableColumn<Grade, String> colMidTerm;
     @FXML
-    private TableColumn<GradeRow, String> colFinalTheory;
+    private TableColumn<Grade, String> colFinalTheory;
     @FXML
-    private TableColumn<GradeRow, String> colFinalPractical;
+    private TableColumn<Grade, String> colFinalPractical;
     @FXML
-    private TableColumn<GradeRow, String> colTotal;
+    private TableColumn<Grade, String> colTotal;
     @FXML
-    private TableColumn<GradeRow, String> colGrade;
+    private TableColumn<Grade, String> colGrade;
     @FXML
     private Label lblGpa;
+
+    private final StudentRepository studentRepository = new StudentRepository();
 
     @FXML
     public void initialize() {
@@ -67,63 +64,30 @@ public class StudentGradePageController {
             return;
         }
 
-        String marksSql = """
-                SELECT courseCode, quiz_1, quiz_2, quiz_3, assessment_1, assessment_2, mid_term, final_theory, final_practical
-                FROM marks
-                WHERE StudentReg = ?
-                ORDER BY courseCode
-                """;
-
-        List<GradeRow> rows = new ArrayList<>();
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(marksSql)) {
-                statement.setString(1, regNo);
-                try (ResultSet rs = statement.executeQuery()) {
-                    while (rs.next()) {
-                        double total = calculateAverage(rs);
-                        rows.add(new GradeRow(
-                                safe(rs.getString("courseCode")),
-                                safeDecimal(rs.getObject("quiz_1")),
-                                safeDecimal(rs.getObject("quiz_2")),
-                                safeDecimal(rs.getObject("quiz_3")),
-                                safeDecimal(rs.getObject("assessment_1")),
-                                safeDecimal(rs.getObject("assessment_2")),
-                                safeDecimal(rs.getObject("mid_term")),
-                                safeDecimal(rs.getObject("final_theory")),
-                                safeDecimal(rs.getObject("final_practical")),
-                                String.format("%.2f", total),
-                                toGrade(total)
-                        ));
-                    }
-                }
-            }
-
+            var summary = studentRepository.findGradeSummary(regNo);
+            var rows = summary.grades().stream()
+                    .map(r -> {
+                        double total = calculateAverage(r);
+                        return new Grade(r.courseCode(), r.quiz1(), r.quiz2(), r.quiz3(), r.assessment1(),
+                                r.assessment2(), r.midTerm(), r.finalTheory(), r.finalPractical(),
+                                String.format("%.2f", total), toGrade(total));
+                    })
+                    .toList();
             tblGrades.getItems().setAll(rows);
-
-            try (PreparedStatement gpaStmt = connection.prepareStatement("SELECT GPA FROM student WHERE registrationNo = ?")) {
-                gpaStmt.setString(1, regNo);
-                try (ResultSet rs = gpaStmt.executeQuery()) {
-                    if (rs.next() && rs.getObject("GPA") != null) {
-                        lblGpa.setText("GPA : " + String.format("%.2f", ((Number) rs.getObject("GPA")).doubleValue()));
-                    } else {
-                        lblGpa.setText("GPA : 0.00");
-                    }
-                }
-            }
+            lblGpa.setText("GPA : " + String.format("%.2f", summary.gpa()));
         } catch (SQLException e) {
             showError("Failed to load grades and GPA.", e);
         }
     }
 
-    private double calculateAverage(ResultSet rs) throws SQLException {
-        String[] fields = {"quiz_1", "quiz_2", "quiz_3", "assessment_1", "assessment_2", "mid_term", "final_theory", "final_practical"};
+    private double calculateAverage(StudentRepository.GradeRecord row) {
+        String[] fields = {row.quiz1(), row.quiz2(), row.quiz3(), row.assessment1(), row.assessment2(), row.midTerm(), row.finalTheory(), row.finalPractical()};
         double sum = 0.0;
         int count = 0;
-        for (String field : fields) {
-            Object value = rs.getObject(field);
-            if (value != null) {
-                sum += ((Number) value).doubleValue();
+        for (String value : fields) {
+            if (!value.isBlank()) {
+                sum += Double.parseDouble(value);
                 count++;
             }
         }
@@ -143,62 +107,11 @@ public class StudentGradePageController {
         return "F";
     }
 
-    private String safe(String value) {
-        return value == null ? "" : value;
-    }
-
-    private String safeDecimal(Object value) {
-        if (value == null) {
-            return "";
-        }
-        return String.format("%.2f", ((Number) value).doubleValue());
-    }
-
     private void showError(String message, Exception e) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Database Error");
         alert.setHeaderText(null);
         alert.setContentText(message + "\n" + e.getMessage());
         alert.showAndWait();
-    }
-
-    public static class GradeRow {
-        private final SimpleStringProperty courseCode;
-        private final SimpleStringProperty quiz1;
-        private final SimpleStringProperty quiz2;
-        private final SimpleStringProperty quiz3;
-        private final SimpleStringProperty assessment1;
-        private final SimpleStringProperty assessment2;
-        private final SimpleStringProperty midTerm;
-        private final SimpleStringProperty finalTheory;
-        private final SimpleStringProperty finalPractical;
-        private final SimpleStringProperty total;
-        private final SimpleStringProperty grade;
-
-        public GradeRow(String courseCode, String quiz1, String quiz2, String quiz3, String assessment1, String assessment2, String midTerm, String finalTheory, String finalPractical, String total, String grade) {
-            this.courseCode = new SimpleStringProperty(courseCode);
-            this.quiz1 = new SimpleStringProperty(quiz1);
-            this.quiz2 = new SimpleStringProperty(quiz2);
-            this.quiz3 = new SimpleStringProperty(quiz3);
-            this.assessment1 = new SimpleStringProperty(assessment1);
-            this.assessment2 = new SimpleStringProperty(assessment2);
-            this.midTerm = new SimpleStringProperty(midTerm);
-            this.finalTheory = new SimpleStringProperty(finalTheory);
-            this.finalPractical = new SimpleStringProperty(finalPractical);
-            this.total = new SimpleStringProperty(total);
-            this.grade = new SimpleStringProperty(grade);
-        }
-
-        public SimpleStringProperty courseCodeProperty() { return courseCode; }
-        public SimpleStringProperty quiz1Property() { return quiz1; }
-        public SimpleStringProperty quiz2Property() { return quiz2; }
-        public SimpleStringProperty quiz3Property() { return quiz3; }
-        public SimpleStringProperty assessment1Property() { return assessment1; }
-        public SimpleStringProperty assessment2Property() { return assessment2; }
-        public SimpleStringProperty midTermProperty() { return midTerm; }
-        public SimpleStringProperty finalTheoryProperty() { return finalTheory; }
-        public SimpleStringProperty finalPracticalProperty() { return finalPractical; }
-        public SimpleStringProperty totalProperty() { return total; }
-        public SimpleStringProperty gradeProperty() { return grade; }
     }
 }

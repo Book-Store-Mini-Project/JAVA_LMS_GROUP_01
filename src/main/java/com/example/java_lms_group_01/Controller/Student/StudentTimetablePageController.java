@@ -1,42 +1,39 @@
 package com.example.java_lms_group_01.Controller.Student;
 
-import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.Repository.StudentRepository;
+import com.example.java_lms_group_01.model.Timetable;
 import com.example.java_lms_group_01.util.StudentContext;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class StudentTimetablePageController {
 
     @FXML
-    private TableView<TimetableRow> tblTimetable;
+    private TableView<Timetable> tblTimetable;
     @FXML
-    private TableColumn<TimetableRow, String> colTimetableId;
+    private TableColumn<Timetable, String> colTimetableId;
     @FXML
-    private TableColumn<TimetableRow, String> colDepartment;
+    private TableColumn<Timetable, String> colDepartment;
     @FXML
-    private TableColumn<TimetableRow, String> colLecId;
+    private TableColumn<Timetable, String> colLecId;
     @FXML
-    private TableColumn<TimetableRow, String> colCourseCode;
+    private TableColumn<Timetable, String> colCourseCode;
     @FXML
-    private TableColumn<TimetableRow, String> colAdminId;
+    private TableColumn<Timetable, String> colAdminId;
     @FXML
-    private TableColumn<TimetableRow, String> colDay;
+    private TableColumn<Timetable, String> colDay;
     @FXML
-    private TableColumn<TimetableRow, String> colStartTime;
+    private TableColumn<Timetable, String> colStartTime;
     @FXML
-    private TableColumn<TimetableRow, String> colEndTime;
+    private TableColumn<Timetable, String> colEndTime;
     @FXML
-    private TableColumn<TimetableRow, String> colSession;
+    private TableColumn<Timetable, String> colSession;
+
+    private final StudentRepository studentRepository = new StudentRepository();
 
     @FXML
     public void initialize() {
@@ -58,72 +55,15 @@ public class StudentTimetablePageController {
             return;
         }
 
-        List<TimetableRow> rows = new ArrayList<>();
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            String department = findStudentDepartment(connection, regNo);
-            if (department.isBlank()) {
-                tblTimetable.getItems().clear();
-                return;
-            }
-
-            if (!loadFromTable(connection, department, "timetable", rows)) {
-                loadFromTable(connection, department, "timeTable", rows);
-            }
+            var rows = studentRepository.findTimetableByStudent(regNo).stream()
+                    .map(r -> new Timetable(r.timetableId(), r.department(), r.lecId(), r.courseCode(), r.adminId(),
+                            r.day(), parseTime(r.startTime()), parseTime(r.endTime()), r.sessionType()))
+                    .toList();
             tblTimetable.getItems().setAll(rows);
         } catch (SQLException e) {
             showError("Failed to load timetable details.", e);
         }
-    }
-
-    private String findStudentDepartment(Connection connection, String regNo) throws SQLException {
-        String sql = "SELECT department FROM student WHERE registrationNo = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, regNo);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return safe(rs.getString("department"));
-                }
-                return "";
-            }
-        }
-    }
-
-    private boolean loadFromTable(Connection connection, String department, String tableName, List<TimetableRow> rows) throws SQLException {
-        String sql = """
-                SELECT t.time_table_id, t.department, t.lec_id, t.courseCode, t.admin_id, t.day, t.start_time, t.end_time, t.session_type
-                FROM %s t
-                WHERE t.department = ?
-                ORDER BY t.day, t.start_time
-                """.formatted(tableName);
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, department);
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    rows.add(new TimetableRow(
-                            safe(rs.getString("time_table_id")),
-                            safe(rs.getString("department")),
-                            safe(rs.getString("lec_id")),
-                            safe(rs.getString("courseCode")),
-                            safe(rs.getString("admin_id")),
-                            safe(rs.getString("day")),
-                            rs.getTime("start_time") == null ? "" : rs.getTime("start_time").toString(),
-                            rs.getTime("end_time") == null ? "" : rs.getTime("end_time").toString(),
-                            safe(rs.getString("session_type"))
-                    ));
-                }
-                return true;
-            }
-        } catch (SQLException e) {
-            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("doesn't exist")) {
-                return false;
-            }
-            throw e;
-        }
-    }
-
-    private String safe(String value) {
-        return value == null ? "" : value;
     }
 
     private void showError(String message, Exception e) {
@@ -134,37 +74,7 @@ public class StudentTimetablePageController {
         alert.showAndWait();
     }
 
-    public static class TimetableRow {
-        private final SimpleStringProperty timetableId;
-        private final SimpleStringProperty department;
-        private final SimpleStringProperty lecId;
-        private final SimpleStringProperty courseCode;
-        private final SimpleStringProperty adminId;
-        private final SimpleStringProperty day;
-        private final SimpleStringProperty startTime;
-        private final SimpleStringProperty endTime;
-        private final SimpleStringProperty sessionType;
-
-        public TimetableRow(String timetableId, String department, String lecId, String courseCode, String adminId, String day, String startTime, String endTime, String sessionType) {
-            this.timetableId = new SimpleStringProperty(timetableId);
-            this.department = new SimpleStringProperty(department);
-            this.lecId = new SimpleStringProperty(lecId);
-            this.courseCode = new SimpleStringProperty(courseCode);
-            this.adminId = new SimpleStringProperty(adminId);
-            this.day = new SimpleStringProperty(day);
-            this.startTime = new SimpleStringProperty(startTime);
-            this.endTime = new SimpleStringProperty(endTime);
-            this.sessionType = new SimpleStringProperty(sessionType);
-        }
-
-        public SimpleStringProperty timetableIdProperty() { return timetableId; }
-        public SimpleStringProperty departmentProperty() { return department; }
-        public SimpleStringProperty lecIdProperty() { return lecId; }
-        public SimpleStringProperty courseCodeProperty() { return courseCode; }
-        public SimpleStringProperty adminIdProperty() { return adminId; }
-        public SimpleStringProperty dayProperty() { return day; }
-        public SimpleStringProperty startTimeProperty() { return startTime; }
-        public SimpleStringProperty endTimeProperty() { return endTime; }
-        public SimpleStringProperty sessionTypeProperty() { return sessionType; }
+    private java.time.LocalTime parseTime(String value) {
+        return value == null || value.isBlank() ? null : java.time.LocalTime.parse(value);
     }
 }

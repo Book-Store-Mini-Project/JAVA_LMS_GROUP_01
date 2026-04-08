@@ -1,9 +1,9 @@
 package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
-import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.Repository.TechnicalOfficerRepository;
+import com.example.java_lms_group_01.Repository.UserProfileRepository;
 import com.example.java_lms_group_01.util.ProfileImageUtil;
 import com.example.java_lms_group_01.util.TechnicalOfficerContext;
-import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -16,9 +16,6 @@ import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +58,8 @@ public class TechnicalOfficerDashboardController {
     private AnchorPane contentArea;
 
     private final List<javafx.scene.Node> dashboardHomeNodes = new ArrayList<>();
+    private final UserProfileRepository userProfileRepository = new UserProfileRepository();
+    private final TechnicalOfficerRepository technicalOfficerRepository = new TechnicalOfficerRepository();
 
     @FXML
     public void initialize() {
@@ -152,54 +151,32 @@ public class TechnicalOfficerDashboardController {
     }
 
     private void loadOfficerDetails(String registrationNo) {
-        String sql = """
-                SELECT u.firstName, u.lastName, u.email, u.phoneNumber, u.address
-                FROM users u
-                INNER JOIN tech_officer t ON t.registrationNo = u.user_id
-                WHERE t.registrationNo = ?
-                """;
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, registrationNo);
-                try (ResultSet rs = statement.executeQuery()) {
-                    if (!rs.next()) {
-                        return;
-                    }
-                    String firstName = raw(rs.getString("firstName"));
-                    String lastName = raw(rs.getString("lastName"));
-                    String fullName = (firstName + " " + lastName).trim();
-                    lblOfficerName.setText("Name: " + (fullName.isBlank() ? "-" : fullName));
-                    lblOfficerEmail.setText("Email: " + safe(rs.getString("email")));
-                    lblPhone.setText("Phone: " + safe(rs.getString("phoneNumber")));
-                    lblAddress.setText("Address: " + safe(rs.getString("address")));
-                    ProfileImageUtil.loadImage(imgProfile, UserImageRepository.findImagePathByUserId(connection, registrationNo));
-                }
+            var profile = userProfileRepository.findTechnicalOfficerProfile(registrationNo);
+            if (profile == null) {
+                return;
             }
+            String fullName = (raw(profile.getFirstName()) + " " + raw(profile.getLastName())).trim();
+            lblOfficerName.setText("Name: " + (fullName.isBlank() ? "-" : fullName));
+            lblOfficerEmail.setText("Email: " + safe(profile.getEmail()));
+            lblPhone.setText("Phone: " + safe(profile.getPhoneNumber()));
+            lblAddress.setText("Address: " + safe(profile.getAddress()));
+            ProfileImageUtil.loadImage(imgProfile, profile.getProfileImagePath());
         } catch (SQLException e) {
             showError("Failed to load technical officer details.", e);
         }
     }
 
     private void loadDashboardCounts() {
-        lblAttendanceCount.setText(String.valueOf(fetchCount("SELECT COUNT(*) FROM attendance")));
-        lblMedicalCount.setText(String.valueOf(fetchCount("SELECT COUNT(*) FROM medical")));
-        lblUnreadNoticeCount.setText(String.valueOf(fetchCount("SELECT COUNT(*) FROM notice")));
-    }
-
-    private int fetchCount(String sql) {
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql);
-                 ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
-            }
-        } catch (SQLException ignored) {
-            return 0;
+            lblAttendanceCount.setText(String.valueOf(technicalOfficerRepository.countAttendance()));
+            lblMedicalCount.setText(String.valueOf(technicalOfficerRepository.countMedical()));
+            lblUnreadNoticeCount.setText(String.valueOf(technicalOfficerRepository.countNotices()));
+        } catch (SQLException e) {
+            lblAttendanceCount.setText("0");
+            lblMedicalCount.setText("0");
+            lblUnreadNoticeCount.setText("0");
         }
-        return 0;
     }
 
     private void showError(String message, Exception e) {

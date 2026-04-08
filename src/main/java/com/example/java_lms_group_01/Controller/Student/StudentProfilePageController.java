@@ -1,16 +1,13 @@
 package com.example.java_lms_group_01.Controller.Student;
 
+import com.example.java_lms_group_01.Repository.UserProfileRepository;
+import com.example.java_lms_group_01.model.UserManagementRow;
 import com.example.java_lms_group_01.model.users.Student;
-import com.example.java_lms_group_01.util.DBConnection;
 import com.example.java_lms_group_01.util.StudentContext;
-import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class StudentProfilePageController {
@@ -34,6 +31,7 @@ public class StudentProfilePageController {
     @FXML
     private TextField txtStatus;
 
+    private final UserProfileRepository userProfileRepository = new UserProfileRepository();
     private Student currentStudent;
 
     @FXML
@@ -62,17 +60,14 @@ public class StudentProfilePageController {
         currentStudent.setPhoneNumber(value(txtPhone));
         currentStudent.setAddress(value(txtAddress));
 
-        String updateSql = "UPDATE users SET email = ?, phoneNumber = ?, address = ? WHERE user_id = ?";
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(updateSql)) {
-                statement.setString(1, currentStudent.getEmail());
-                statement.setString(2, currentStudent.getPhoneNumber());
-                statement.setString(3, currentStudent.getAddress());
-                statement.setString(4, currentStudent.getRegistrationNo());
-                statement.executeUpdate();
-            }
-            UserImageRepository.upsertImagePath(connection, currentStudent.getRegistrationNo(), value(txtPicturePath));
+            userProfileRepository.updateStudentProfile(
+                    currentStudent.getRegistrationNo(),
+                    currentStudent.getEmail(),
+                    currentStudent.getPhoneNumber(),
+                    currentStudent.getAddress(),
+                    value(txtPicturePath)
+            );
             show(Alert.AlertType.INFORMATION, "Profile Updated",
                     "Contact details and profile picture path updated successfully.");
         } catch (Exception e) {
@@ -86,52 +81,37 @@ public class StudentProfilePageController {
             return;
         }
 
-        String profileSql = """
-                SELECT u.user_id, u.firstName, u.lastName, u.email, u.phoneNumber, u.address,
-                       s.department, s.GPA, s.status
-                FROM users u
-                INNER JOIN student s ON s.registrationNo = u.user_id
-                WHERE s.registrationNo = ?
-                """;
-
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(profileSql)) {
-                statement.setString(1, regNo);
-                try (ResultSet rs = statement.executeQuery()) {
-                    if (!rs.next()) {
-                        return;
-                    }
-                    currentStudent = mapStudent(rs);
-                    txtRegistrationNo.setText(currentStudent.getRegistrationNo());
-                    txtName.setText(safe(currentStudent.getFirstName()) + " " + safe(currentStudent.getLastName()));
-                    txtEmail.setText(safe(currentStudent.getEmail()));
-                    txtPhone.setText(safe(currentStudent.getPhoneNumber()));
-                    txtAddress.setText(safe(currentStudent.getAddress()));
-                    txtDepartment.setText(safe(rs.getString("department")));
-                    Object gpaValue = rs.getObject("GPA");
-                    txtGpa.setText(gpaValue == null ? "0.00" : String.format("%.2f", ((Number) gpaValue).doubleValue()));
-                    txtStatus.setText(safe(rs.getString("status")));
-                    txtPicturePath.setText(safe(UserImageRepository.findImagePathByUserId(connection, regNo)));
-                }
+            UserManagementRow profile = userProfileRepository.findStudentProfile(regNo);
+            if (profile == null) {
+                return;
             }
+            currentStudent = mapStudent(profile);
+            txtRegistrationNo.setText(currentStudent.getRegistrationNo());
+            txtName.setText(safe(currentStudent.getFirstName()) + " " + safe(currentStudent.getLastName()));
+            txtEmail.setText(safe(currentStudent.getEmail()));
+            txtPhone.setText(safe(currentStudent.getPhoneNumber()));
+            txtAddress.setText(safe(currentStudent.getAddress()));
+            txtDepartment.setText(safe(profile.getDepartment()));
+            txtGpa.setText(profile.getGpa() == null ? "0.00" : String.format("%.2f", profile.getGpa()));
+            txtStatus.setText(safe(profile.getStatus()));
+            txtPicturePath.setText(safe(profile.getProfileImagePath()));
         } catch (SQLException e) {
             show(Alert.AlertType.ERROR, "Database Error", e.getMessage());
         }
     }
 
-    private Student mapStudent(ResultSet rs) throws SQLException {
+    private Student mapStudent(UserManagementRow row) {
         Student student = new Student();
-        student.setRegistrationNo(rs.getString("user_id"));
-        student.setUserId(rs.getString("user_id"));
-        student.setFirstName(rs.getString("firstName"));
-        student.setLastName(rs.getString("lastName"));
-        student.setEmail(rs.getString("email"));
-        student.setPhoneNumber(rs.getString("phoneNumber"));
-        student.setAddress(rs.getString("address"));
-        Object gpa = rs.getObject("GPA");
-        student.setGPA(gpa == null ? 0.0f : ((Number) gpa).floatValue());
-        student.setStatus(rs.getString("status"));
+        student.setRegistrationNo(row.getUserId());
+        student.setUserId(row.getUserId());
+        student.setFirstName(row.getFirstName());
+        student.setLastName(row.getLastName());
+        student.setEmail(row.getEmail());
+        student.setPhoneNumber(row.getPhoneNumber());
+        student.setAddress(row.getAddress());
+        student.setGPA(row.getGpa() == null ? 0.0f : row.getGpa().floatValue());
+        student.setStatus(row.getStatus());
         return student;
     }
 

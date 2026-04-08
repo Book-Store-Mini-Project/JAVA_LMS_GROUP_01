@@ -1,8 +1,7 @@
 package com.example.java_lms_group_01.Controller.AdminDashboard;
 
-import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.Repository.UserImageRepository;
 import com.example.java_lms_group_01.util.ProfileImageUtil;
-import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -18,9 +17,6 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
 
@@ -47,6 +43,7 @@ public class AdminDashboard {
     private Label lblAdminRegistrationNo;
     @FXML
     private ImageView imgProfile;
+    private final UserImageRepository userImageRepository = new UserImageRepository();
 
     public void setAdminData(String registrationNo) {
         if (lblAdminRegistrationNo != null) {
@@ -136,8 +133,7 @@ public class AdminDashboard {
 
     private void loadProfileImage(String registrationNo) {
         try {
-            Connection connection = DBConnection.getInstance().getConnection();
-            ProfileImageUtil.loadImage(imgProfile, UserImageRepository.findImagePathByUserId(connection, registrationNo));
+            ProfileImageUtil.loadImage(imgProfile, userImageRepository.findImagePathByUserId(registrationNo));
         } catch (SQLException ignored) {
             ProfileImageUtil.loadImage(imgProfile, null);
         }
