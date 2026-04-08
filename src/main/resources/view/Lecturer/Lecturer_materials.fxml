@@ -44,8 +44,7 @@
             <TableColumn fx:id="colCourseCode" text="Course" prefWidth="130.0" />
             <TableColumn fx:id="colMaterialName" text="Material Name" prefWidth="190.0" />
             <TableColumn fx:id="colPath" text="Path" prefWidth="260.0" />
-            <TableColumn fx:id="colType" text="Type" prefWidth="110.0" />
-            <TableColumn fx:id="colLecturerReg" text="Lecturer" prefWidth="120.0" />
+            <TableColumn fx:id="colType" text="Type" prefWidth="140.0" />
         </columns>
     </TableView>
 </VBox>

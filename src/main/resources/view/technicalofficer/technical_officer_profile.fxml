@@ -35,6 +35,9 @@
 
             <Label text="Address" GridPane.rowIndex="5" GridPane.columnIndex="0" />
             <TextField fx:id="txtAddress" GridPane.rowIndex="5" GridPane.columnIndex="1" />
+
+            <Label text="Profile Picture Path" GridPane.rowIndex="6" GridPane.columnIndex="0" />
+            <TextField fx:id="txtPicturePath" GridPane.rowIndex="6" GridPane.columnIndex="1" />
         </children>
     </GridPane>
 

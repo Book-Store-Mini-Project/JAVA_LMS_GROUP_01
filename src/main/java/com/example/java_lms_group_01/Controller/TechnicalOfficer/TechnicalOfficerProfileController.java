@@ -2,6 +2,7 @@ package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
 import com.example.java_lms_group_01.util.DBConnection;
 import com.example.java_lms_group_01.util.TechnicalOfficerContext;
+import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
@@ -25,6 +26,8 @@ public class TechnicalOfficerProfileController {
     private TextField txtPhone;
     @FXML
     private TextField txtAddress;
+    @FXML
+    private TextField txtPicturePath;
 
     @FXML
     public void initialize() {
@@ -52,6 +55,7 @@ public class TechnicalOfficerProfileController {
                 statement.setString(6, registrationNo);
                 statement.executeUpdate();
             }
+            UserImageRepository.upsertImagePath(connection, registrationNo, value(txtPicturePath));
             show(Alert.AlertType.INFORMATION, "Profile Updated", "Profile details updated successfully.");
         } catch (SQLException e) {
             show(Alert.AlertType.ERROR, "Database Error", e.getMessage());
@@ -85,6 +89,7 @@ public class TechnicalOfficerProfileController {
                     txtEmail.setText(safe(rs.getString("email")));
                     txtPhone.setText(safe(rs.getString("phoneNumber")));
                     txtAddress.setText(safe(rs.getString("address")));
+                    txtPicturePath.setText(safe(UserImageRepository.findImagePathByUserId(connection, registrationNo)));
                 }
             }
         } catch (SQLException e) {

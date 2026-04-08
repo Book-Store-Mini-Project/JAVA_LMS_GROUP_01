@@ -58,12 +58,17 @@ public class LecturerEligibilityController {
         String safeKeyword = keyword == null ? "" : keyword.trim();
         String sql = """
                 SELECT a.StudentReg, u.firstName, u.lastName, a.courseCode,
-                       SUM(CASE WHEN a.attendance_status IN ('present', 'medical') THEN 1 ELSE 0 END) AS eligible_sessions,
+                       SUM(CASE
+                               WHEN a.attendance_status = 'present' THEN 1
+                               WHEN a.attendance_status = 'medical' AND m.approval_status = 'approved' THEN 1
+                               ELSE 0
+                           END) AS eligible_sessions,
                        COUNT(*) AS total_sessions
                 FROM attendance a
                 INNER JOIN course c ON c.courseCode = a.courseCode
                 INNER JOIN student s ON s.registrationNo = a.StudentReg
                 INNER JOIN users u ON u.user_id = s.registrationNo
+                LEFT JOIN medical m ON m.attendance_id = a.attendance_id
                 WHERE c.lecturerRegistrationNo = ?
                   AND (? = '' OR a.StudentReg LIKE ? OR a.courseCode LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
                 GROUP BY a.StudentReg, u.firstName, u.lastName, a.courseCode

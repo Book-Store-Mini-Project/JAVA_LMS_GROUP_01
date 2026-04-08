@@ -1,6 +1,7 @@
 package com.example.java_lms_group_01.Controller;
 
 import com.example.java_lms_group_01.Controller.LandingPages.RoleLandingController;
+import com.example.java_lms_group_01.Controller.AdminDashboard.AdminDashboard;
 import com.example.java_lms_group_01.Controller.Lecturer.LecturerDashboardController;
 import com.example.java_lms_group_01.Controller.Student.StudentDashboardController;
 import com.example.java_lms_group_01.Controller.TechnicalOfficer.TechnicalOfficerDashboardController;
@@ -121,6 +122,9 @@ public class LoginController {
         if (role == UserRole.STUDENT) {
             StudentDashboardController controller = loader.getController();
             controller.setStudentData(registrationNo);
+        } else if (role == UserRole.ADMIN) {
+            AdminDashboard controller = loader.getController();
+            controller.setAdminData(registrationNo);
         } else if (role == UserRole.LECTURER) {
             LecturerDashboardController controller = loader.getController();
             controller.setLecturerData(registrationNo);

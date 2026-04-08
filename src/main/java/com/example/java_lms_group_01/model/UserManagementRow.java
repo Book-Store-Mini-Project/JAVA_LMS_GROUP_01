@@ -19,11 +19,12 @@ public class UserManagementRow {
     private Double gpa;
     private String status;
     private String position;
+    private String profileImagePath;
 
     public UserManagementRow(String userId, String firstName, String lastName, String email, String address,
                              String phoneNumber, LocalDate dateOfBirth, String gender, String role,
                              String registrationNo, String password, String department, Double gpa,
-                             String status, String position) {
+                             String status, String position, String profileImagePath) {
         this.userId = userId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -39,6 +40,7 @@ public class UserManagementRow {
         this.gpa = gpa;
         this.status = status;
         this.position = position;
+        this.profileImagePath = profileImagePath;
     }
 
     public String getUserId() { return userId; }
@@ -56,4 +58,5 @@ public class UserManagementRow {
     public Double getGpa() { return gpa; }
     public String getStatus() { return status; }
     public String getPosition() { return position; }
+    public String getProfileImagePath() { return profileImagePath; }
 }

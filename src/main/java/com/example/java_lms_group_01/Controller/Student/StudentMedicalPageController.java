@@ -34,6 +34,8 @@ public class StudentMedicalPageController {
     @FXML
     private TableColumn<MedicalRow, String> colAttendanceId;
     @FXML
+    private TableColumn<MedicalRow, String> colApprovalStatus;
+    @FXML
     private TableColumn<MedicalRow, String> colTechOfficerReg;
 
     @FXML
@@ -45,6 +47,7 @@ public class StudentMedicalPageController {
         colDescription.setCellValueFactory(d -> d.getValue().descriptionProperty());
         colSessionType.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
         colAttendanceId.setCellValueFactory(d -> d.getValue().attendanceIdProperty());
+        colApprovalStatus.setCellValueFactory(d -> d.getValue().approvalStatusProperty());
         colTechOfficerReg.setCellValueFactory(d -> d.getValue().techOfficerRegProperty());
         loadMedical();
     }
@@ -56,7 +59,7 @@ public class StudentMedicalPageController {
         }
 
         String sql = """
-                SELECT medical_id, StudentReg, courseCode, SubmissionDate, Description, session_type, attendance_id, tech_officer_reg
+                SELECT medical_id, StudentReg, courseCode, SubmissionDate, Description, session_type, attendance_id, tech_officer_reg, approval_status
                 FROM medical
                 WHERE StudentReg = ?
                 ORDER BY SubmissionDate DESC, medical_id DESC
@@ -77,6 +80,7 @@ public class StudentMedicalPageController {
                                 safe(rs.getString("Description")),
                                 safe(rs.getString("session_type")),
                                 String.valueOf(rs.getInt("attendance_id")),
+                                safe(rs.getString("approval_status")),
                                 safe(rs.getString("tech_officer_reg"))
                         ));
                     }
@@ -108,9 +112,10 @@ public class StudentMedicalPageController {
         private final SimpleStringProperty description;
         private final SimpleStringProperty sessionType;
         private final SimpleStringProperty attendanceId;
+        private final SimpleStringProperty approvalStatus;
         private final SimpleStringProperty techOfficerReg;
 
-        public MedicalRow(String medicalId, String studentReg, String courseCode, String submissionDate, String description, String sessionType, String attendanceId, String techOfficerReg) {
+        public MedicalRow(String medicalId, String studentReg, String courseCode, String submissionDate, String description, String sessionType, String attendanceId, String approvalStatus, String techOfficerReg) {
             this.medicalId = new SimpleStringProperty(medicalId);
             this.studentReg = new SimpleStringProperty(studentReg);
             this.courseCode = new SimpleStringProperty(courseCode);
@@ -118,6 +123,7 @@ public class StudentMedicalPageController {
             this.description = new SimpleStringProperty(description);
             this.sessionType = new SimpleStringProperty(sessionType);
             this.attendanceId = new SimpleStringProperty(attendanceId);
+            this.approvalStatus = new SimpleStringProperty(approvalStatus);
             this.techOfficerReg = new SimpleStringProperty(techOfficerReg);
         }
 
@@ -128,6 +134,7 @@ public class StudentMedicalPageController {
         public SimpleStringProperty descriptionProperty() { return description; }
         public SimpleStringProperty sessionTypeProperty() { return sessionType; }
         public SimpleStringProperty attendanceIdProperty() { return attendanceId; }
+        public SimpleStringProperty approvalStatusProperty() { return approvalStatus; }
         public SimpleStringProperty techOfficerRegProperty() { return techOfficerReg; }
     }
 }

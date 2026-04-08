@@ -1,5 +1,8 @@
 package com.example.java_lms_group_01.Controller.AdminDashboard;
 
+import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.util.ProfileImageUtil;
+import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -9,11 +12,16 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Optional;
 
 public class AdminDashboard {
@@ -35,6 +43,17 @@ public class AdminDashboard {
 
     @FXML
     private Label lblTitle;
+    @FXML
+    private Label lblAdminRegistrationNo;
+    @FXML
+    private ImageView imgProfile;
+
+    public void setAdminData(String registrationNo) {
+        if (lblAdminRegistrationNo != null) {
+            lblAdminRegistrationNo.setText("Registration No: " + registrationNo);
+        }
+        loadProfileImage(registrationNo);
+    }
 
     @FXML
     void btnOnActionLogout(ActionEvent event) {
@@ -112,6 +131,15 @@ public class AdminDashboard {
         } catch (IOException e) {
             System.err.println("Error loading FXML: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private void loadProfileImage(String registrationNo) {
+        try {
+            Connection connection = DBConnection.getInstance().getConnection();
+            ProfileImageUtil.loadImage(imgProfile, UserImageRepository.findImagePathByUserId(connection, registrationNo));
+        } catch (SQLException ignored) {
+            ProfileImageUtil.loadImage(imgProfile, null);
         }
     }
 

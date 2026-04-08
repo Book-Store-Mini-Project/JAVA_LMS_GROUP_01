@@ -2,6 +2,7 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.util.DBConnection;
 import com.example.java_lms_group_01.util.LecturerContext;
+import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
@@ -29,6 +30,8 @@ public class LecturerProfileController {
     private TextField txtDepartment;
     @FXML
     private TextField txtPosition;
+    @FXML
+    private TextField txtPicturePath;
 
     @FXML
     public void initialize() {
@@ -61,6 +64,8 @@ public class LecturerProfileController {
                     userStmt.setString(6, regNo);
                     userStmt.executeUpdate();
                 }
+
+                UserImageRepository.upsertImagePath(connection, regNo, value(txtPicturePath));
 
                 try (PreparedStatement roleStmt = connection.prepareStatement(lecturerSql)) {
                     roleStmt.setString(1, value(txtDepartment));
@@ -112,6 +117,7 @@ public class LecturerProfileController {
                     txtPhone.setText(safe(rs.getString("phoneNumber")));
                     txtDepartment.setText(safe(rs.getString("department")));
                     txtPosition.setText(safe(rs.getString("position")));
+                    txtPicturePath.setText(safe(UserImageRepository.findImagePathByUserId(connection, regNo)));
                 }
             }
         } catch (SQLException e) {
