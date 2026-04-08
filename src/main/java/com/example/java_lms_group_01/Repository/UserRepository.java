@@ -3,6 +3,7 @@ package com.example.java_lms_group_01.Repository;
 import com.example.java_lms_group_01.model.UserManagementRow;
 import com.example.java_lms_group_01.util.DBConnection;
 import com.example.java_lms_group_01.util.PasswordUtil;
+import com.example.java_lms_group_01.util.UserImageRepository;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -18,9 +19,10 @@ public class UserRepository {
     public List<UserManagementRow> findAdmins() throws SQLException {
         String sql = """
                 SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender,
-                       'Admin' AS role, a.registrationNo, NULL AS password, NULL AS department, NULL AS GPA, NULL AS status, NULL AS position
+                       'Admin' AS role, a.registrationNo, NULL AS password, NULL AS department, NULL AS GPA, NULL AS status, NULL AS position, img.image_path AS profile_image_path
                 FROM users u
                 INNER JOIN admin a ON a.registrationNo = u.user_id
+                LEFT JOIN user_profile_images img ON img.user_id = u.user_id
                 ORDER BY u.user_id DESC
                 """;
         return executeQuery(sql);
@@ -29,9 +31,10 @@ public class UserRepository {
     public List<UserManagementRow> findLecturers() throws SQLException {
         String sql = """
                 SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender,
-                       'Lecturer' AS role, l.registrationNo, NULL AS password, l.department, NULL AS GPA, NULL AS status, l.position
+                       'Lecturer' AS role, l.registrationNo, NULL AS password, l.department, NULL AS GPA, NULL AS status, l.position, img.image_path AS profile_image_path
                 FROM users u
                 INNER JOIN lecturer l ON l.registrationNo = u.user_id
+                LEFT JOIN user_profile_images img ON img.user_id = u.user_id
                 ORDER BY u.user_id DESC
                 """;
         return executeQuery(sql);
@@ -40,9 +43,10 @@ public class UserRepository {
     public List<UserManagementRow> findStudents() throws SQLException {
         String sql = """
                 SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender,
-                       'Student' AS role, s.registrationNo, NULL AS password, s.department, s.GPA, s.status, NULL AS position
+                       'Student' AS role, s.registrationNo, NULL AS password, s.department, s.GPA, s.status, NULL AS position, img.image_path AS profile_image_path
                 FROM users u
                 INNER JOIN student s ON s.registrationNo = u.user_id
+                LEFT JOIN user_profile_images img ON img.user_id = u.user_id
                 ORDER BY u.user_id DESC
                 """;
         return executeQuery(sql);
@@ -51,9 +55,10 @@ public class UserRepository {
     public List<UserManagementRow> findTechnicalOfficers() throws SQLException {
         String sql = """
                 SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender,
-                       'TechnicalOfficer' AS role, t.registrationNo, NULL AS password, NULL AS department, NULL AS GPA, NULL AS status, NULL AS position
+                       'TechnicalOfficer' AS role, t.registrationNo, NULL AS password, NULL AS department, NULL AS GPA, NULL AS status, NULL AS position, img.image_path AS profile_image_path
                 FROM users u
                 INNER JOIN tech_officer t ON t.registrationNo = u.user_id
+                LEFT JOIN user_profile_images img ON img.user_id = u.user_id
                 ORDER BY u.user_id DESC
                 """;
         return executeQuery(sql);
@@ -277,6 +282,8 @@ public class UserRepository {
                 roleStmt.executeUpdate();
             }
 
+            UserImageRepository.upsertImagePath(connection, requiredText(row.getRegistrationNo(), "Registration No"), row.getProfileImagePath());
+
             connection.commit();
             return true;
         } catch (Exception e) {
@@ -327,6 +334,7 @@ public class UserRepository {
             fillUserStatement(stmt, row, true);
             stmt.executeUpdate();
         }
+        UserImageRepository.upsertImagePath(connection, userId(row), row.getProfileImagePath());
     }
 
     private void fillUserStatement(PreparedStatement stmt, UserManagementRow row, boolean includeUserIdForWhere) throws SQLException {
@@ -393,7 +401,8 @@ public class UserRepository {
                 rs.getString("department"),
                 gpaValue == null ? null : ((Number) gpaValue).doubleValue(),
                 rs.getString("status"),
-                rs.getString("position")
+                rs.getString("position"),
+                rs.getString("profile_image_path")
         );
     }
 
@@ -414,6 +423,10 @@ public class UserRepository {
 
     private String hashRequiredPassword(String rawPassword) {
         return PasswordUtil.hashPassword(requiredText(rawPassword, "Password"));
+    }
+
+    private String userId(UserManagementRow row) {
+        return requiredText(row.getRegistrationNo(), "Registration No");
     }
 
     @FunctionalInterface

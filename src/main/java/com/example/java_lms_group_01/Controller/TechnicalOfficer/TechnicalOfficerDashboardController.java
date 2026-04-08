@@ -1,7 +1,9 @@
 package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
 import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.util.ProfileImageUtil;
 import com.example.java_lms_group_01.util.TechnicalOfficerContext;
+import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -9,6 +11,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 
@@ -51,6 +54,8 @@ public class TechnicalOfficerDashboardController {
 
     @FXML
     private Label lblAddress;
+    @FXML
+    private ImageView imgProfile;
 
     @FXML
     private AnchorPane contentArea;
@@ -168,6 +173,7 @@ public class TechnicalOfficerDashboardController {
                     lblOfficerEmail.setText("Email: " + safe(rs.getString("email")));
                     lblPhone.setText("Phone: " + safe(rs.getString("phoneNumber")));
                     lblAddress.setText("Address: " + safe(rs.getString("address")));
+                    ProfileImageUtil.loadImage(imgProfile, UserImageRepository.findImagePathByUserId(connection, registrationNo));
                 }
             }
         } catch (SQLException e) {

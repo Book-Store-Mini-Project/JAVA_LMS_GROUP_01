@@ -2,6 +2,7 @@ module com.example.java_lms_group_01 {
     requires javafx.controls;
     requires javafx.fxml;
     requires com.jfoenix;
+    requires java.desktop;
     requires java.sql;
 
 

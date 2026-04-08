@@ -53,6 +53,7 @@
             <TableColumn fx:id="colDescription" prefWidth="250.0" text="Description" />
             <TableColumn fx:id="colSessionType" prefWidth="130.0" text="Session Type" />
             <TableColumn fx:id="colAttendanceId" prefWidth="120.0" text="Attendance ID" />
+            <TableColumn fx:id="colApprovalStatus" prefWidth="120.0" text="Approval Status" />
             <TableColumn fx:id="colTechOfficerReg" prefWidth="140.0" text="Tech Officer Reg" />
         </columns>
     </TableView>

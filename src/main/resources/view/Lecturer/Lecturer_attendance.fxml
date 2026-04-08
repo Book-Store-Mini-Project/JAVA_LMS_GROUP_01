@@ -21,6 +21,8 @@
             <TextField fx:id="txtSearch" promptText="Search by student/course" />
             <Button text="Search" onAction="#searchRecords" />
             <Button text="Refresh" onAction="#refreshRecords" />
+            <Button fx:id="btnApproveMedical" text="Approve Medical" onAction="#approveMedical" disable="true" />
+            <Button fx:id="btnRejectMedical" text="Reject Medical" onAction="#rejectMedical" disable="true" />
         </children>
     </HBox>
 
@@ -34,6 +36,7 @@
             <TableColumn fx:id="colAttendanceStatus" text="Status" prefWidth="90.0" />
             <TableColumn fx:id="colMedicalId" text="Medical ID" prefWidth="90.0" />
             <TableColumn fx:id="colMedicalDescription" text="Medical Description" prefWidth="260.0" />
+            <TableColumn fx:id="colMedicalApproval" text="Approval" prefWidth="110.0" />
             <TableColumn fx:id="colTechOfficerReg" text="Tech Officer" prefWidth="110.0" />
         </columns>
     </TableView>

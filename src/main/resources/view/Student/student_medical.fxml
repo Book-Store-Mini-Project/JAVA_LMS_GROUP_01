@@ -15,6 +15,7 @@
             <TableColumn fx:id="colDescription" text="Description" prefWidth="260"/>
             <TableColumn fx:id="colSessionType" text="session_type" prefWidth="110"/>
             <TableColumn fx:id="colAttendanceId" text="attendance_id" prefWidth="110"/>
+            <TableColumn fx:id="colApprovalStatus" text="approval_status" prefWidth="120"/>
             <TableColumn fx:id="colTechOfficerReg" text="tech_officer_reg" prefWidth="130"/>
         </columns>
     </TableView>

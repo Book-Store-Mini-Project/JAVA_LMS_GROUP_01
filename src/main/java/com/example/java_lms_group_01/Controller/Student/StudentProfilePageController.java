@@ -3,21 +3,15 @@ package com.example.java_lms_group_01.Controller.Student;
 import com.example.java_lms_group_01.model.users.Student;
 import com.example.java_lms_group_01.util.DBConnection;
 import com.example.java_lms_group_01.util.StudentContext;
+import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Properties;
 
 public class StudentProfilePageController {
 
@@ -78,8 +72,7 @@ public class StudentProfilePageController {
                 statement.setString(4, currentStudent.getRegistrationNo());
                 statement.executeUpdate();
             }
-
-            savePicturePath(regNo, value(txtPicturePath));
+            UserImageRepository.upsertImagePath(connection, currentStudent.getRegistrationNo(), value(txtPicturePath));
             show(Alert.AlertType.INFORMATION, "Profile Updated",
                     "Contact details and profile picture path updated successfully.");
         } catch (Exception e) {
@@ -119,7 +112,7 @@ public class StudentProfilePageController {
                     Object gpaValue = rs.getObject("GPA");
                     txtGpa.setText(gpaValue == null ? "0.00" : String.format("%.2f", ((Number) gpaValue).doubleValue()));
                     txtStatus.setText(safe(rs.getString("status")));
-                    txtPicturePath.setText(loadPicturePath(regNo));
+                    txtPicturePath.setText(safe(UserImageRepository.findImagePathByUserId(connection, regNo)));
                 }
             }
         } catch (SQLException e) {
@@ -140,52 +133,6 @@ public class StudentProfilePageController {
         student.setGPA(gpa == null ? 0.0f : ((Number) gpa).floatValue());
         student.setStatus(rs.getString("status"));
         return student;
-    }
-
-    private String pictureStoreKey(String regNo) {
-        return "student.picture." + regNo;
-    }
-
-    private Path pictureStoreFile() throws IOException {
-        Path dir = Paths.get(System.getProperty("user.home"), ".lms");
-        if (!Files.exists(dir)) {
-            Files.createDirectories(dir);
-        }
-        return dir.resolve("student_profile_pictures.properties");
-    }
-
-    private String loadPicturePath(String regNo) {
-        try {
-            Path file = pictureStoreFile();
-            if (!Files.exists(file)) {
-                return "";
-            }
-            Properties properties = new Properties();
-            try (InputStream in = Files.newInputStream(file)) {
-                properties.load(in);
-            }
-            return properties.getProperty(pictureStoreKey(regNo), "");
-        } catch (Exception ignored) {
-            return "";
-        }
-    }
-
-    private void savePicturePath(String regNo, String picturePath) {
-        try {
-            Path file = pictureStoreFile();
-            Properties properties = new Properties();
-            if (Files.exists(file)) {
-                try (InputStream in = Files.newInputStream(file)) {
-                    properties.load(in);
-                }
-            }
-            properties.setProperty(pictureStoreKey(regNo), picturePath);
-            try (OutputStream out = Files.newOutputStream(file)) {
-                properties.store(out, "Student profile picture paths");
-            }
-        } catch (Exception ignored) {
-            // Keep profile update successful even if local picture path persistence fails.
-        }
     }
 
     private String value(TextField field) {

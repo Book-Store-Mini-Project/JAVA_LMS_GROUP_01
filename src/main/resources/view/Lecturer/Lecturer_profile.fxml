@@ -40,6 +40,9 @@
 
             <Label text="Position" GridPane.rowIndex="7" GridPane.columnIndex="0" />
             <TextField fx:id="txtPosition" GridPane.rowIndex="7" GridPane.columnIndex="1" />
+
+            <Label text="Profile Picture Path" GridPane.rowIndex="8" GridPane.columnIndex="0" />
+            <TextField fx:id="txtPicturePath" GridPane.rowIndex="8" GridPane.columnIndex="1" />
         </children>
     </GridPane>
 

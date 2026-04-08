@@ -56,6 +56,8 @@ public class TechnicalOfficerMedicalController {
     @FXML
     private TableColumn<MedicalRow, String> colAttendanceId;
     @FXML
+    private TableColumn<MedicalRow, String> colApprovalStatus;
+    @FXML
     private TableColumn<MedicalRow, String> colTechOfficerReg;
 
     @FXML
@@ -69,6 +71,7 @@ public class TechnicalOfficerMedicalController {
         colDescription.setCellValueFactory(d -> d.getValue().descriptionProperty());
         colSessionType.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
         colAttendanceId.setCellValueFactory(d -> d.getValue().attendanceIdProperty());
+        colApprovalStatus.setCellValueFactory(d -> d.getValue().approvalStatusProperty());
         colTechOfficerReg.setCellValueFactory(d -> d.getValue().techOfficerRegProperty());
 
         loadMedical(null);
@@ -91,19 +94,10 @@ public class TechnicalOfficerMedicalController {
         if (!validForm()) {
             return;
         }
-        String sql = "INSERT INTO medical (StudentReg, courseCode, tech_officer_reg, SubmissionDate, Description, session_type, attendance_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try {
             Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, value(txtStudentRegNo));
-                statement.setString(2, value(txtCourseCode));
-                statement.setString(3, currentTechOfficerReg());
-                statement.setDate(4, Date.valueOf(dpSubmissionDate.getValue()));
-                statement.setString(5, value(txtDescription));
-                statement.setString(6, cmbSessionType.getValue());
-                statement.setInt(7, Integer.parseInt(value(txtAttendanceId)));
-                statement.executeUpdate();
-            }
+            ensureMedicalAttendance(connection, Integer.parseInt(value(txtAttendanceId)));
+            executeMedicalUpsert(connection, null);
             loadMedical(txtSearch.getText());
             clearForm(event);
         } catch (Exception e) {
@@ -121,20 +115,10 @@ public class TechnicalOfficerMedicalController {
         if (!validForm()) {
             return;
         }
-        String sql = "UPDATE medical SET StudentReg = ?, courseCode = ?, tech_officer_reg = ?, SubmissionDate = ?, Description = ?, session_type = ?, attendance_id = ? WHERE medical_id = ?";
         try {
             Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setString(1, value(txtStudentRegNo));
-                statement.setString(2, value(txtCourseCode));
-                statement.setString(3, currentTechOfficerReg());
-                statement.setDate(4, Date.valueOf(dpSubmissionDate.getValue()));
-                statement.setString(5, value(txtDescription));
-                statement.setString(6, cmbSessionType.getValue());
-                statement.setInt(7, Integer.parseInt(value(txtAttendanceId)));
-                statement.setInt(8, Integer.parseInt(selected.getMedicalId()));
-                statement.executeUpdate();
-            }
+            ensureMedicalAttendance(connection, Integer.parseInt(value(txtAttendanceId)));
+            executeMedicalUpsert(connection, Integer.parseInt(selected.getMedicalId()));
             loadMedical(txtSearch.getText());
         } catch (Exception e) {
             showError("Failed to update medical record.", e);
@@ -148,12 +132,24 @@ public class TechnicalOfficerMedicalController {
             showWarn("Select a record to delete.");
             return;
         }
-        String sql = "DELETE FROM medical WHERE medical_id = ?";
         try {
             Connection connection = DBConnection.getInstance().getConnection();
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.setInt(1, Integer.parseInt(selected.getMedicalId()));
-                statement.executeUpdate();
+            boolean previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try (PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM medical WHERE medical_id = ?");
+                 PreparedStatement attendanceStatement = connection.prepareStatement("UPDATE attendance SET attendance_status = 'absent' WHERE attendance_id = ?")) {
+                deleteStatement.setInt(1, Integer.parseInt(selected.getMedicalId()));
+                deleteStatement.executeUpdate();
+
+                attendanceStatement.setInt(1, Integer.parseInt(selected.getAttendanceId()));
+                attendanceStatement.executeUpdate();
+
+                connection.commit();
+            } catch (Exception e) {
+                connection.rollback();
+                throw e;
+            } finally {
+                connection.setAutoCommit(previousAutoCommit);
             }
             loadMedical(txtSearch.getText());
             clearForm(event);
@@ -199,6 +195,70 @@ public class TechnicalOfficerMedicalController {
         return true;
     }
 
+    private void ensureMedicalAttendance(Connection connection, int attendanceId) throws SQLException {
+        String sql = """
+                SELECT attendance_id
+                FROM attendance
+                WHERE attendance_id = ?
+                  AND StudentReg = ?
+                  AND courseCode = ?
+                  AND session_type = ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, attendanceId);
+            statement.setString(2, value(txtStudentRegNo));
+            statement.setString(3, value(txtCourseCode));
+            statement.setString(4, cmbSessionType.getValue());
+            try (ResultSet rs = statement.executeQuery()) {
+                if (!rs.next()) {
+                    throw new SQLException("Attendance record does not match the given student, course, and session type.");
+                }
+            }
+        }
+    }
+
+    private void executeMedicalUpsert(Connection connection, Integer medicalId) throws SQLException {
+        String insertSql = """
+                INSERT INTO medical (StudentReg, courseCode, tech_officer_reg, SubmissionDate, Description, session_type, attendance_id, approval_status, approved_by_lecturer, approved_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NULL, NULL)
+                """;
+        String updateSql = """
+                UPDATE medical
+                SET StudentReg = ?, courseCode = ?, tech_officer_reg = ?, SubmissionDate = ?, Description = ?, session_type = ?, attendance_id = ?,
+                    approval_status = 'pending', approved_by_lecturer = NULL, approved_at = NULL
+                WHERE medical_id = ?
+                """;
+        String attendanceSql = "UPDATE attendance SET attendance_status = 'medical', tech_officer_reg = ? WHERE attendance_id = ?";
+
+        boolean previousAutoCommit = connection.getAutoCommit();
+        connection.setAutoCommit(false);
+        try (PreparedStatement medicalStatement = connection.prepareStatement(medicalId == null ? insertSql : updateSql);
+             PreparedStatement attendanceStatement = connection.prepareStatement(attendanceSql)) {
+            medicalStatement.setString(1, value(txtStudentRegNo));
+            medicalStatement.setString(2, value(txtCourseCode));
+            medicalStatement.setString(3, currentTechOfficerReg());
+            medicalStatement.setDate(4, Date.valueOf(dpSubmissionDate.getValue()));
+            medicalStatement.setString(5, value(txtDescription));
+            medicalStatement.setString(6, cmbSessionType.getValue());
+            medicalStatement.setInt(7, Integer.parseInt(value(txtAttendanceId)));
+            if (medicalId != null) {
+                medicalStatement.setInt(8, medicalId);
+            }
+            medicalStatement.executeUpdate();
+
+            attendanceStatement.setString(1, currentTechOfficerReg());
+            attendanceStatement.setInt(2, Integer.parseInt(value(txtAttendanceId)));
+            attendanceStatement.executeUpdate();
+
+            connection.commit();
+        } catch (Exception e) {
+            connection.rollback();
+            throw e;
+        } finally {
+            connection.setAutoCommit(previousAutoCommit);
+        }
+    }
+
     private String value(TextField textField) {
         return textField.getText() == null ? "" : textField.getText().trim();
     }
@@ -226,7 +286,7 @@ public class TechnicalOfficerMedicalController {
     private void loadMedical(String keyword) {
         String safeKeyword = keyword == null ? "" : keyword.trim();
         String sql = """
-                SELECT medical_id, StudentReg, courseCode, SubmissionDate, Description, session_type, attendance_id, tech_officer_reg
+                SELECT medical_id, StudentReg, courseCode, SubmissionDate, Description, session_type, attendance_id, tech_officer_reg, approval_status
                 FROM medical
                 WHERE (? = '' OR StudentReg LIKE ? OR courseCode LIKE ?)
                 ORDER BY medical_id DESC
@@ -252,6 +312,7 @@ public class TechnicalOfficerMedicalController {
                                 safe(rs.getString("Description")),
                                 safe(rs.getString("session_type")),
                                 String.valueOf(rs.getInt("attendance_id")),
+                                safe(rs.getString("approval_status")),
                                 safe(rs.getString("tech_officer_reg"))
                         ));
                     }
@@ -280,9 +341,10 @@ public class TechnicalOfficerMedicalController {
         private final SimpleStringProperty description;
         private final SimpleStringProperty sessionType;
         private final SimpleStringProperty attendanceId;
+        private final SimpleStringProperty approvalStatus;
         private final SimpleStringProperty techOfficerReg;
 
-        public MedicalRow(String medicalId, String studentRegNo, String courseCode, String date, String description, String sessionType, String attendanceId, String techOfficerReg) {
+        public MedicalRow(String medicalId, String studentRegNo, String courseCode, String date, String description, String sessionType, String attendanceId, String approvalStatus, String techOfficerReg) {
             this.medicalId = new SimpleStringProperty(medicalId);
             this.studentRegNo = new SimpleStringProperty(studentRegNo);
             this.courseCode = new SimpleStringProperty(courseCode);
@@ -290,6 +352,7 @@ public class TechnicalOfficerMedicalController {
             this.description = new SimpleStringProperty(description);
             this.sessionType = new SimpleStringProperty(sessionType);
             this.attendanceId = new SimpleStringProperty(attendanceId);
+            this.approvalStatus = new SimpleStringProperty(approvalStatus);
             this.techOfficerReg = new SimpleStringProperty(techOfficerReg);
         }
 
@@ -300,6 +363,7 @@ public class TechnicalOfficerMedicalController {
         public SimpleStringProperty descriptionProperty() { return description; }
         public SimpleStringProperty sessionTypeProperty() { return sessionType; }
         public SimpleStringProperty attendanceIdProperty() { return attendanceId; }
+        public SimpleStringProperty approvalStatusProperty() { return approvalStatus; }
         public SimpleStringProperty techOfficerRegProperty() { return techOfficerReg; }
 
         public String getStudentRegNo() { return studentRegNo.get(); }

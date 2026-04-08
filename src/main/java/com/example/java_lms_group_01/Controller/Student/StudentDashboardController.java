@@ -1,6 +1,9 @@
 package com.example.java_lms_group_01.Controller.Student;
 
+import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.util.ProfileImageUtil;
 import com.example.java_lms_group_01.util.StudentContext;
+import com.example.java_lms_group_01.util.UserImageRepository;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -8,15 +11,22 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class StudentDashboardController {
 
     @FXML
     private Label lblRegistrationNo;
+    @FXML
+    private ImageView imgProfile;
 
     @FXML
     private AnchorPane contentArea;
@@ -24,6 +34,7 @@ public class StudentDashboardController {
     public void setStudentData(String registrationNo) {
         lblRegistrationNo.setText("Registration No: " + registrationNo);
         StudentContext.setRegistrationNo(registrationNo);
+        loadProfileImage(registrationNo);
         loadContent("/view/Student/student_profile.fxml");
     }
 
@@ -45,6 +56,11 @@ public class StudentDashboardController {
     @FXML
     private void navCourses(ActionEvent event) {
         loadContent("/view/Student/student_courses.fxml");
+    }
+
+    @FXML
+    private void navMaterials(ActionEvent event) {
+        loadContent("/view/Student/student_materials.fxml");
     }
 
     @FXML
@@ -92,6 +108,15 @@ public class StudentDashboardController {
             alert.setHeaderText(null);
             alert.setContentText("Cannot open: " + fxmlPath);
             alert.showAndWait();
+        }
+    }
+
+    private void loadProfileImage(String registrationNo) {
+        try {
+            Connection connection = DBConnection.getInstance().getConnection();
+            ProfileImageUtil.loadImage(imgProfile, UserImageRepository.findImagePathByUserId(connection, registrationNo));
+        } catch (SQLException ignored) {
+            ProfileImageUtil.loadImage(imgProfile, null);
         }
     }
 }

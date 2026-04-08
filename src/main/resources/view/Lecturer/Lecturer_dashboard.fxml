@@ -4,6 +4,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
@@ -26,6 +27,11 @@
                         <Insets left="20.0" top="8.0" bottom="16.0" />
                     </VBox.margin>
                 </Label>
+                <ImageView fx:id="imgProfile" fitHeight="88.0" fitWidth="88.0" pickOnBounds="true" preserveRatio="true">
+                    <VBox.margin>
+                        <Insets left="20.0" bottom="16.0" />
+                    </VBox.margin>
+                </ImageView>
                 <Separator opacity="0.3" prefWidth="240.0">
                     <VBox.margin>
                         <Insets left="20.0" right="20.0" bottom="12.0" />
@@ -34,6 +40,7 @@
                 <Button onAction="#navDashboard" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Dashboard" />
                 <Button onAction="#navProfile" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Update Profile" />
                 <Button onAction="#navMaterials" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Manage Course Materials" />
+                <Button onAction="#navTimetable" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  My Timetable" />
                 <Button onAction="#navMarks" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Upload Exam Marks" />
                 <Button onAction="#navStudents" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Undergraduate Details" />
                 <Button onAction="#navEligibility" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Undergraduate Eligibility" />

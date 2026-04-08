@@ -8,6 +8,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
@@ -19,8 +20,11 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.GridPane;
+import javafx.stage.FileChooser;
 
+import java.io.File;
 import java.net.URL;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -318,7 +322,8 @@ public class ManageUsersController implements Initializable {
                     null,
                     null,
                     null,
-                    null
+                    null,
+                    value(common[5])
             );
         });
 
@@ -376,7 +381,8 @@ public class ManageUsersController implements Initializable {
                     required(txtDepartment, "Department"),
                     null,
                     null,
-                    required(txtPosition, "Position")
+                    required(txtPosition, "Position"),
+                    value(common[5])
             );
         });
 
@@ -439,7 +445,8 @@ public class ManageUsersController implements Initializable {
                     required(txtDepartment, "Department"),
                     parseOptionalDouble(txtGpa),
                     requiredCombo(cmbStatus, "Status"),
-                    null
+                    null,
+                    value(common[5])
             );
         });
 
@@ -491,7 +498,8 @@ public class ManageUsersController implements Initializable {
                     null,
                     null,
                     null,
-                    null
+                    null,
+                    value(common[5])
             );
         });
 
@@ -513,7 +521,8 @@ public class ManageUsersController implements Initializable {
         TextField txtEmail = new TextField(existing == null ? "" : value(existing.getEmail()));
         TextField txtAddress = new TextField(existing == null ? "" : value(existing.getAddress()));
         TextField txtPhone = new TextField(existing == null ? "" : value(existing.getPhoneNumber()));
-        return new TextField[]{txtFirstName, txtLastName, txtEmail, txtAddress, txtPhone};
+        TextField txtImagePath = new TextField(existing == null ? "" : value(existing.getProfileImagePath()));
+        return new TextField[]{txtFirstName, txtLastName, txtEmail, txtAddress, txtPhone, txtImagePath};
     }
 
     private DatePicker dateOfBirthPicker(UserManagementRow existing) {
@@ -539,11 +548,29 @@ public class ManageUsersController implements Initializable {
         grid.add(common[3], 1, r++);
         grid.add(new Label("Phone:"), 0, r);
         grid.add(common[4], 1, r++);
+        grid.add(new Label("Profile Image:"), 0, r);
+        HBox imageBox = new HBox(8.0);
+        Button btnBrowseImage = new Button("Browse");
+        btnBrowseImage.setOnAction(event -> chooseImageFile(common[5]));
+        imageBox.getChildren().addAll(common[5], btnBrowseImage);
+        grid.add(imageBox, 1, r++);
         grid.add(new Label("Date of Birth:"), 0, r);
         grid.add(dob, 1, r++);
         grid.add(new Label("Gender:"), 0, r);
         grid.add(gender, 1, r++);
         return r;
+    }
+
+    private void chooseImageFile(TextField targetField) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Select Profile Image");
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp")
+        );
+        File file = chooser.showOpenDialog(targetField.getScene() == null ? null : targetField.getScene().getWindow());
+        if (file != null) {
+            targetField.setText(file.getAbsolutePath());
+        }
     }
 
     private void loadAllTables() {

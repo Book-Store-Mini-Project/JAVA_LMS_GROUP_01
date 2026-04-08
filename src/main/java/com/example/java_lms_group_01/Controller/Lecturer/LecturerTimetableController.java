@@ -1,12 +1,13 @@
-package com.example.java_lms_group_01.Controller.Student;
+package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.util.DBConnection;
-import com.example.java_lms_group_01.util.StudentContext;
+import com.example.java_lms_group_01.util.LecturerContext;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -15,8 +16,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StudentTimetablePageController {
+public class LecturerTimetableController {
 
+    @FXML
+    private TextField txtSearch;
     @FXML
     private TableView<TimetableRow> tblTimetable;
     @FXML
@@ -49,76 +52,64 @@ public class StudentTimetablePageController {
         colStartTime.setCellValueFactory(d -> d.getValue().startTimeProperty());
         colEndTime.setCellValueFactory(d -> d.getValue().endTimeProperty());
         colSession.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
-        loadTimetable();
+        loadTimetable(null);
     }
 
-    private void loadTimetable() {
-        String regNo = StudentContext.getRegistrationNo();
-        if (regNo == null || regNo.isBlank()) {
+    @FXML
+    private void searchTimetable() {
+        loadTimetable(txtSearch.getText());
+    }
+
+    @FXML
+    private void refreshTimetable() {
+        txtSearch.clear();
+        loadTimetable(null);
+    }
+
+    private void loadTimetable(String keyword) {
+        String lecturerReg = LecturerContext.getRegistrationNo();
+        if (lecturerReg == null || lecturerReg.isBlank()) {
             return;
         }
+
+        String safeKeyword = keyword == null ? "" : keyword.trim();
+        String sql = """
+                SELECT time_table_id, department, lec_id, courseCode, admin_id, day, start_time, end_time, session_type
+                FROM timetable
+                WHERE lec_id = ?
+                  AND (? = '' OR courseCode LIKE ? OR day LIKE ? OR time_table_id LIKE ?)
+                ORDER BY day, start_time
+                """;
 
         List<TimetableRow> rows = new ArrayList<>();
         try {
             Connection connection = DBConnection.getInstance().getConnection();
-            String department = findStudentDepartment(connection, regNo);
-            if (department.isBlank()) {
-                tblTimetable.getItems().clear();
-                return;
-            }
-
-            if (!loadFromTable(connection, department, "timetable", rows)) {
-                loadFromTable(connection, department, "timeTable", rows);
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                String pattern = "%" + safeKeyword + "%";
+                statement.setString(1, lecturerReg);
+                statement.setString(2, safeKeyword);
+                statement.setString(3, pattern);
+                statement.setString(4, pattern);
+                statement.setString(5, pattern);
+                try (ResultSet rs = statement.executeQuery()) {
+                    while (rs.next()) {
+                        rows.add(new TimetableRow(
+                                safe(rs.getString("time_table_id")),
+                                safe(rs.getString("department")),
+                                safe(rs.getString("lec_id")),
+                                safe(rs.getString("courseCode")),
+                                safe(rs.getString("admin_id")),
+                                safe(rs.getString("day")),
+                                rs.getTime("start_time") == null ? "" : rs.getTime("start_time").toString(),
+                                rs.getTime("end_time") == null ? "" : rs.getTime("end_time").toString(),
+                                safe(rs.getString("session_type"))
+                        ));
+                    }
+                }
             }
             tblTimetable.getItems().setAll(rows);
         } catch (SQLException e) {
-            showError("Failed to load timetable details.", e);
-        }
-    }
-
-    private String findStudentDepartment(Connection connection, String regNo) throws SQLException {
-        String sql = "SELECT department FROM student WHERE registrationNo = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, regNo);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    return safe(rs.getString("department"));
-                }
-                return "";
-            }
-        }
-    }
-
-    private boolean loadFromTable(Connection connection, String department, String tableName, List<TimetableRow> rows) throws SQLException {
-        String sql = """
-                SELECT t.time_table_id, t.department, t.lec_id, t.courseCode, t.admin_id, t.day, t.start_time, t.end_time, t.session_type
-                FROM %s t
-                WHERE t.department = ?
-                ORDER BY t.day, t.start_time
-                """.formatted(tableName);
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, department);
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    rows.add(new TimetableRow(
-                            safe(rs.getString("time_table_id")),
-                            safe(rs.getString("department")),
-                            safe(rs.getString("lec_id")),
-                            safe(rs.getString("courseCode")),
-                            safe(rs.getString("admin_id")),
-                            safe(rs.getString("day")),
-                            rs.getTime("start_time") == null ? "" : rs.getTime("start_time").toString(),
-                            rs.getTime("end_time") == null ? "" : rs.getTime("end_time").toString(),
-                            safe(rs.getString("session_type"))
-                    ));
-                }
-                return true;
-            }
-        } catch (SQLException e) {
-            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("doesn't exist")) {
-                return false;
-            }
-            throw e;
+            showError("Failed to load lecturer timetable.", e);
         }
     }
 

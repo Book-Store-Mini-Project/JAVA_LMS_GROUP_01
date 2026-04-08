@@ -42,8 +42,6 @@ public class LecturerMaterialsController {
     private TableColumn<MaterialRow, String> colPath;
     @FXML
     private TableColumn<MaterialRow, String> colType;
-    @FXML
-    private TableColumn<MaterialRow, String> colLecturerReg;
 
     @FXML
     public void initialize() {
@@ -53,7 +51,6 @@ public class LecturerMaterialsController {
         colMaterialName.setCellValueFactory(d -> d.getValue().nameProperty());
         colPath.setCellValueFactory(d -> d.getValue().pathProperty());
         colType.setCellValueFactory(d -> d.getValue().typeProperty());
-        colLecturerReg.setCellValueFactory(d -> d.getValue().lecturerRegProperty());
         loadMaterials(null);
 
         tblMaterials.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, row) -> {
@@ -72,17 +69,30 @@ public class LecturerMaterialsController {
         if (!validForm()) {
             return;
         }
-        String sql = "INSERT INTO lecture_materials (courseCode, lecturerRegistrationNo, name, path, material_type) VALUES (?, ?, ?, ?, ?)";
+        String sql = """
+                INSERT INTO lecture_materials (courseCode, name, path, material_type)
+                SELECT ?, ?, ?, ?
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM course
+                    WHERE courseCode = ? AND lecturerRegistrationNo = ?
+                )
+                """;
 
         try {
             Connection connection = DBConnection.getInstance().getConnection();
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, value(txtCourseCode));
-                statement.setString(2, currentLecturer());
-                statement.setString(3, value(txtMaterialName));
-                statement.setString(4, value(txtPath));
-                statement.setString(5, cmbMaterialType.getValue());
-                statement.executeUpdate();
+                statement.setString(2, value(txtMaterialName));
+                statement.setString(3, value(txtPath));
+                statement.setString(4, cmbMaterialType.getValue());
+                statement.setString(5, value(txtCourseCode));
+                statement.setString(6, currentLecturer());
+                int affectedRows = statement.executeUpdate();
+                if (affectedRows == 0) {
+                    showWarn("You can add materials only for courses assigned to you.");
+                    return;
+                }
             }
             loadMaterials(txtSearch.getText());
             clearForm();
@@ -101,7 +111,21 @@ public class LecturerMaterialsController {
         if (!validForm()) {
             return;
         }
-        String sql = "UPDATE lecture_materials SET courseCode = ?, name = ?, path = ?, material_type = ? WHERE material_id = ? AND lecturerRegistrationNo = ?";
+        String sql = """
+                UPDATE lecture_materials
+                SET courseCode = ?, name = ?, path = ?, material_type = ?
+                WHERE material_id = ?
+                  AND courseCode IN (
+                      SELECT courseCode
+                      FROM course
+                      WHERE lecturerRegistrationNo = ?
+                  )
+                  AND ? IN (
+                      SELECT courseCode
+                      FROM course
+                      WHERE lecturerRegistrationNo = ?
+                  )
+                """;
         try {
             Connection connection = DBConnection.getInstance().getConnection();
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -111,7 +135,13 @@ public class LecturerMaterialsController {
                 statement.setString(4, cmbMaterialType.getValue());
                 statement.setInt(5, Integer.parseInt(selected.getMaterialId()));
                 statement.setString(6, currentLecturer());
-                statement.executeUpdate();
+                statement.setString(7, value(txtCourseCode));
+                statement.setString(8, currentLecturer());
+                int affectedRows = statement.executeUpdate();
+                if (affectedRows == 0) {
+                    showWarn("You can update only materials for your own courses.");
+                    return;
+                }
             }
             loadMaterials(txtSearch.getText());
         } catch (Exception e) {
@@ -126,13 +156,25 @@ public class LecturerMaterialsController {
             showWarn("Select a material to delete.");
             return;
         }
-        String sql = "DELETE FROM lecture_materials WHERE material_id = ? AND lecturerRegistrationNo = ?";
+        String sql = """
+                DELETE FROM lecture_materials
+                WHERE material_id = ?
+                  AND courseCode IN (
+                      SELECT courseCode
+                      FROM course
+                      WHERE lecturerRegistrationNo = ?
+                  )
+                """;
         try {
             Connection connection = DBConnection.getInstance().getConnection();
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setInt(1, Integer.parseInt(selected.getMaterialId()));
                 statement.setString(2, currentLecturer());
-                statement.executeUpdate();
+                int affectedRows = statement.executeUpdate();
+                if (affectedRows == 0) {
+                    showWarn("You can delete only materials for your own courses.");
+                    return;
+                }
             }
             loadMaterials(txtSearch.getText());
             clearForm();
@@ -164,9 +206,14 @@ public class LecturerMaterialsController {
     private void loadMaterials(String keyword) {
         String safeKeyword = keyword == null ? "" : keyword.trim();
         String sql = """
-                SELECT material_id, courseCode, lecturerRegistrationNo, name, path, material_type
+                SELECT material_id, courseCode, name, path, material_type
                 FROM lecture_materials
-                WHERE lecturerRegistrationNo = ? AND (? = '' OR courseCode LIKE ? OR name LIKE ?)
+                WHERE courseCode IN (
+                    SELECT courseCode
+                    FROM course
+                    WHERE lecturerRegistrationNo = ?
+                )
+                AND (? = '' OR courseCode LIKE ? OR name LIKE ?)
                 ORDER BY material_id DESC
                 """;
 
@@ -186,8 +233,7 @@ public class LecturerMaterialsController {
                                 safe(rs.getString("courseCode")),
                                 safe(rs.getString("name")),
                                 safe(rs.getString("path")),
-                                safe(rs.getString("material_type")),
-                                safe(rs.getString("lecturerRegistrationNo"))
+                                safe(rs.getString("material_type"))
                         ));
                     }
                 }
@@ -241,15 +287,13 @@ public class LecturerMaterialsController {
         private final SimpleStringProperty name;
         private final SimpleStringProperty path;
         private final SimpleStringProperty type;
-        private final SimpleStringProperty lecturerReg;
 
-        public MaterialRow(String materialId, String courseCode, String name, String path, String type, String lecturerReg) {
+        public MaterialRow(String materialId, String courseCode, String name, String path, String type) {
             this.materialId = new SimpleStringProperty(materialId);
             this.courseCode = new SimpleStringProperty(courseCode);
             this.name = new SimpleStringProperty(name);
             this.path = new SimpleStringProperty(path);
             this.type = new SimpleStringProperty(type);
-            this.lecturerReg = new SimpleStringProperty(lecturerReg);
         }
 
         public SimpleStringProperty materialIdProperty() { return materialId; }
@@ -257,7 +301,6 @@ public class LecturerMaterialsController {
         public SimpleStringProperty nameProperty() { return name; }
         public SimpleStringProperty pathProperty() { return path; }
         public SimpleStringProperty typeProperty() { return type; }
-        public SimpleStringProperty lecturerRegProperty() { return lecturerReg; }
 
         public String getMaterialId() { return materialId.get(); }
         public String getCourseCode() { return courseCode.get(); }
