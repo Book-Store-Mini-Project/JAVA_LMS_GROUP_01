@@ -1,6 +1,8 @@
 package com.example.java_lms_group_01.Repository;
 
+import com.example.java_lms_group_01.util.AssessmentStructureUtil;
 import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.util.GradeScaleUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,6 +34,41 @@ public class StudentRepository {
                             safe(rs.getString("session_type")),
                             safe(rs.getString("attendance_status")),
                             safe(rs.getString("tech_officer_reg"))
+                    ));
+                }
+                return rows;
+            }
+        }
+    }
+
+    public List<AttendanceEligibilityRecord> findAttendanceEligibilityByStudent(String registrationNo) throws SQLException {
+        String sql = """
+                SELECT e.courseCode,
+                       SUM(CASE
+                               WHEN a.attendance_id IS NOT NULL
+                                    AND (a.attendance_status = 'present'
+                                         OR (a.attendance_status = 'medical' AND m.approval_status = 'approved'))
+                               THEN 1
+                               ELSE 0
+                           END) AS eligible_sessions,
+                       COUNT(a.attendance_id) AS total_sessions
+                FROM enrollment e
+                LEFT JOIN attendance a ON a.StudentReg = e.studentReg AND a.courseCode = e.courseCode
+                LEFT JOIN medical m ON m.attendance_id = a.attendance_id
+                WHERE e.studentReg = ?
+                GROUP BY e.courseCode
+                ORDER BY e.courseCode
+                """;
+        Connection connection = DBConnection.getInstance().getConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, registrationNo);
+            try (ResultSet rs = statement.executeQuery()) {
+                List<AttendanceEligibilityRecord> rows = new ArrayList<>();
+                while (rs.next()) {
+                    rows.add(new AttendanceEligibilityRecord(
+                            safe(rs.getString("courseCode")),
+                            rs.getInt("eligible_sessions"),
+                            rs.getInt("total_sessions")
                     ));
                 }
                 return rows;
@@ -71,42 +108,78 @@ public class StudentRepository {
 
     public GradeSummary findGradeSummary(String registrationNo) throws SQLException {
         String marksSql = """
-                SELECT courseCode, quiz_1, quiz_2, quiz_3, assessment_1, assessment_2, mid_term, final_theory, final_practical
-                FROM marks
-                WHERE StudentReg = ?
-                ORDER BY courseCode
+                SELECT m.courseCode, c.name, c.credit, m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical,
+                       EXISTS (
+                           SELECT 1
+                           FROM exam_attendance ea
+                           WHERE ea.studentReg = m.StudentReg
+                             AND ea.courseCode = m.courseCode
+                             AND ea.status = 'present'
+                       ) AS exam_present,
+                       EXISTS (
+                           SELECT 1
+                           FROM medical md
+                           WHERE md.StudentReg = m.StudentReg
+                             AND md.courseCode = m.courseCode
+                             AND md.approval_status = 'approved'
+                             AND LOWER(COALESCE(md.session_type, '')) = 'exam'
+                       ) AS approved_exam_medical
+                FROM marks m
+                INNER JOIN course c ON c.courseCode = m.courseCode
+                WHERE m.StudentReg = ?
+                ORDER BY m.courseCode
                 """;
         Connection connection = DBConnection.getInstance().getConnection();
         List<GradeRecord> grades = new ArrayList<>();
+        double gpaWeightedPoints = 0.0;
+        int gpaCredits = 0;
+        double sgpaWeightedPoints = 0.0;
+        int sgpaCredits = 0;
         try (PreparedStatement statement = connection.prepareStatement(marksSql)) {
             statement.setString(1, registrationNo);
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
+                    String courseCode = safe(rs.getString("courseCode"));
+                    double totalMarks = AssessmentStructureUtil.calculateMarkBreakdown(
+                            connection,
+                            courseCode,
+                            nullableDecimal(rs.getObject("quiz_1")),
+                            nullableDecimal(rs.getObject("quiz_2")),
+                            nullableDecimal(rs.getObject("quiz_3")),
+                            nullableDecimal(rs.getObject("assessment")),
+                            nullableDecimal(rs.getObject("Project")),
+                            nullableDecimal(rs.getObject("mid_term")),
+                            nullableDecimal(rs.getObject("final_theory")),
+                            nullableDecimal(rs.getObject("final_practical"))
+                    ).totalMarks();
+                    boolean examPresent = rs.getInt("exam_present") == 1;
+                    boolean approvedExamMedical = rs.getInt("approved_exam_medical") == 1;
+                    int credit = rs.getInt("credit");
+                    Double gradePoint = GradeScaleUtil.toGradePoint(totalMarks, examPresent, approvedExamMedical);
+                    String publishedGrade = GradeScaleUtil.toPublishedGrade(totalMarks, examPresent, approvedExamMedical);
+
                     grades.add(new GradeRecord(
-                            safe(rs.getString("courseCode")),
-                            decimal(rs.getObject("quiz_1")),
-                            decimal(rs.getObject("quiz_2")),
-                            decimal(rs.getObject("quiz_3")),
-                            decimal(rs.getObject("assessment_1")),
-                            decimal(rs.getObject("assessment_2")),
-                            decimal(rs.getObject("mid_term")),
-                            decimal(rs.getObject("final_theory")),
-                            decimal(rs.getObject("final_practical"))
+                            courseCode,
+                            safe(rs.getString("name")),
+                            publishedGrade,
+                            totalMarks
                     ));
+
+                    if (gradePoint != null) {
+                        sgpaWeightedPoints += gradePoint * credit;
+                        sgpaCredits += credit;
+                        if (!GradeScaleUtil.isEnglishCourse(courseCode)) {
+                            gpaWeightedPoints += gradePoint * credit;
+                            gpaCredits += credit;
+                        }
+                    }
                 }
             }
         }
 
-        double gpa = 0.0;
-        try (PreparedStatement statement = connection.prepareStatement("SELECT GPA FROM student WHERE registrationNo = ?")) {
-            statement.setString(1, registrationNo);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next() && rs.getObject("GPA") != null) {
-                    gpa = ((Number) rs.getObject("GPA")).doubleValue();
-                }
-            }
-        }
-        return new GradeSummary(grades, gpa);
+        double gpa = gpaCredits == 0 ? 0.0 : gpaWeightedPoints / gpaCredits;
+        double sgpa = sgpaCredits == 0 ? 0.0 : sgpaWeightedPoints / sgpaCredits;
+        return new GradeSummary(grades, gpa, sgpa);
     }
 
     public List<MaterialRecord> findMaterialsByStudent(String registrationNo, String keyword) throws SQLException {
@@ -239,13 +312,17 @@ public class StudentRepository {
         return String.format("%.2f", ((Number) value).doubleValue());
     }
 
+    private static Double nullableDecimal(Object value) {
+        return value == null ? null : ((Number) value).doubleValue();
+    }
+
     public record AttendanceRecord(String attendanceId, String studentReg, String courseCode, String submissionDate,
                                    String sessionType, String attendanceStatus, String techOfficerReg) {}
+    public record AttendanceEligibilityRecord(String courseCode, int eligibleSessions, int totalSessions) {}
     public record CourseRecord(String courseCode, String name, String lecturer, String department,
                                String semester, String credit, String type, String enrollmentStatus) {}
-    public record GradeRecord(String courseCode, String quiz1, String quiz2, String quiz3, String assessment1,
-                              String assessment2, String midTerm, String finalTheory, String finalPractical) {}
-    public record GradeSummary(List<GradeRecord> grades, double gpa) {}
+    public record GradeRecord(String courseCode, String courseName, String grade, double totalMarks) {}
+    public record GradeSummary(List<GradeRecord> grades, double gpa, double sgpa) {}
     public record MaterialRecord(String materialId, String courseCode, String name, String path, String type) {}
     public record MedicalRecord(String medicalId, String studentReg, String courseCode, String submissionDate,
                                 String description, String sessionType, String attendanceId, String approvalStatus,

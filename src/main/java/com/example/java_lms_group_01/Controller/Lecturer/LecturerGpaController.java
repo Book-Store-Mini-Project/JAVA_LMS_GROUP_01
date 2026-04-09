@@ -2,6 +2,7 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Performance;
+import com.example.java_lms_group_01.util.GradeScaleUtil;
 import com.example.java_lms_group_01.util.LecturerContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -24,11 +25,17 @@ public class LecturerGpaController {
     @FXML
     private TableColumn<Performance, String> colCourseCode;
     @FXML
+    private TableColumn<Performance, String> colCaMarks;
+    @FXML
+    private TableColumn<Performance, String> colEndMarks;
+    @FXML
     private TableColumn<Performance, String> colTotalMarks;
     @FXML
     private TableColumn<Performance, String> colGrade;
     @FXML
     private TableColumn<Performance, String> colGpa;
+    @FXML
+    private TableColumn<Performance, String> colSgpa;
 
     private final LecturerRepository lecturerRepository = new LecturerRepository();
 
@@ -37,9 +44,12 @@ public class LecturerGpaController {
         colStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
         colStudentName.setCellValueFactory(d -> d.getValue().studentNameProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
+        colCaMarks.setCellValueFactory(d -> d.getValue().caMarksProperty());
+        colEndMarks.setCellValueFactory(d -> d.getValue().endMarksProperty());
         colTotalMarks.setCellValueFactory(d -> d.getValue().totalMarksProperty());
         colGrade.setCellValueFactory(d -> d.getValue().gradeProperty());
         colGpa.setCellValueFactory(d -> d.getValue().gpaProperty());
+        colSgpa.setCellValueFactory(d -> d.getValue().sgpaProperty());
         loadPerformance(null);
     }
 
@@ -61,28 +71,18 @@ public class LecturerGpaController {
                             r.studentReg(),
                             r.studentName(),
                             r.courseCode(),
+                            String.format("%.2f", r.caMarks()),
+                            String.format("%.2f", r.endMarks()),
                             String.format("%.2f", r.totalMarks()),
-                            toGrade(r.totalMarks()),
-                            r.gpa() == null ? "" : String.format("%.2f", r.gpa())
+                            GradeScaleUtil.toLetterGrade(r.totalMarks()),
+                            r.gpa() == null ? "" : String.format("%.2f", r.gpa()),
+                            r.sgpa() == null ? "" : String.format("%.2f", r.sgpa())
                     ))
                     .toList();
             tblPerformance.getItems().setAll(rows);
         } catch (SQLException e) {
             showError("Failed to load marks/grades/GPA.", e);
         }
-    }
-
-    private String toGrade(double marks) {
-        if (marks >= 85) return "A+";
-        if (marks >= 75) return "A";
-        if (marks >= 70) return "A-";
-        if (marks >= 65) return "B+";
-        if (marks >= 60) return "B";
-        if (marks >= 55) return "B-";
-        if (marks >= 50) return "C+";
-        if (marks >= 45) return "C";
-        if (marks >= 40) return "C-";
-        return "F";
     }
 
     private String currentLecturer() {

@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox spacing="10" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
@@ -8,18 +11,57 @@
     <Label text="Grades and GPA" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
     <TableView fx:id="tblGrades" prefHeight="420">
         <columns>
-            <TableColumn fx:id="colCourseCode" text="courseCode" prefWidth="120"/>
-            <TableColumn fx:id="colQuiz1" text="quiz_1" prefWidth="85"/>
-            <TableColumn fx:id="colQuiz2" text="quiz_2" prefWidth="85"/>
-            <TableColumn fx:id="colQuiz3" text="quiz_3" prefWidth="85"/>
-            <TableColumn fx:id="colAssessment1" text="assessment_1" prefWidth="100"/>
-            <TableColumn fx:id="colAssessment2" text="assessment_2" prefWidth="100"/>
-            <TableColumn fx:id="colMidTerm" text="mid_term" prefWidth="90"/>
-            <TableColumn fx:id="colFinalTheory" text="final_theory" prefWidth="100"/>
-            <TableColumn fx:id="colFinalPractical" text="final_practical" prefWidth="110"/>
-            <TableColumn fx:id="colTotal" text="Total" prefWidth="85"/>
-            <TableColumn fx:id="colGrade" text="Grade" prefWidth="80"/>
+            <TableColumn fx:id="colCourseCode" text="Course Code" prefWidth="180"/>
+            <TableColumn fx:id="colCourseName" text="Course Name" prefWidth="340"/>
+            <TableColumn fx:id="colGrade" text="Grade" prefWidth="140"/>
         </columns>
     </TableView>
-    <Label fx:id="lblGpa" text="GPA : 0.00" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+    <Label fx:id="lblGpa" text="GPA (without English) : 0.00" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+    <Label fx:id="lblSgpa" text="SGPA (with English) : 0.00" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+    <Separator />
+    <Label text="Key to Gradings" style="-fx-font-size: 18px; -fx-font-weight: bold;" />
+    <HBox spacing="40">
+        <children>
+            <GridPane hgap="18" vgap="8">
+                <padding>
+                    <Insets top="4" right="0" bottom="4" left="0" />
+                </padding>
+                <children>
+                    <Label text="A+" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+                    <Label text="4.00" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+                    <Label text="A" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+                    <Label text="4.00" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+                    <Label text="A-" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+                    <Label text="3.70" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                    <Label text="B+" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+                    <Label text="3.30" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+                    <Label text="B" GridPane.rowIndex="4" GridPane.columnIndex="0" />
+                    <Label text="3.00" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+                    <Label text="B-" GridPane.rowIndex="5" GridPane.columnIndex="0" />
+                    <Label text="2.70" GridPane.rowIndex="5" GridPane.columnIndex="1" />
+                    <Label text="C+" GridPane.rowIndex="6" GridPane.columnIndex="0" />
+                    <Label text="2.30" GridPane.rowIndex="6" GridPane.columnIndex="1" />
+                    <Label text="C" GridPane.rowIndex="7" GridPane.columnIndex="0" />
+                    <Label text="2.00" GridPane.rowIndex="7" GridPane.columnIndex="1" />
+                    <Label text="C-" GridPane.rowIndex="8" GridPane.columnIndex="0" />
+                    <Label text="1.70" GridPane.rowIndex="8" GridPane.columnIndex="1" />
+                    <Label text="D" GridPane.rowIndex="9" GridPane.columnIndex="0" />
+                    <Label text="1.30" GridPane.rowIndex="9" GridPane.columnIndex="1" />
+                    <Label text="E" GridPane.rowIndex="10" GridPane.columnIndex="0" />
+                    <Label text="0.00" GridPane.rowIndex="10" GridPane.columnIndex="1" />
+                </children>
+            </GridPane>
+            <VBox spacing="8">
+                <children>
+                    <Label text="E : Both CA and ESA marks are below the prescribed minimum" wrapText="true" />
+                    <Label text="E : Absent or not eligible for ESA while failing CA (Incomplete CA &amp; ESA)" wrapText="true" />
+                    <Label text="EC : Only CA mark is below the prescribed minimum" wrapText="true" />
+                    <Label text="EE : Only ESA mark is below the prescribed minimum" wrapText="true" />
+                    <Label text="WH : Absent or not eligible for ESA while passing CA (Incomplete ESA)" wrapText="true" />
+                    <Label text="MC : Medical concession" wrapText="true" />
+                    <Label text="AC : Academic concession due to reasons other than medicals" wrapText="true" />
+                </children>
+            </VBox>
+        </children>
+    </HBox>
 </VBox>

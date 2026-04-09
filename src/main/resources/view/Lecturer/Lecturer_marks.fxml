@@ -31,11 +31,11 @@
 
             <Label text="Quiz 3" GridPane.rowIndex="2" GridPane.columnIndex="0" />
             <TextField fx:id="txtQuiz3" GridPane.rowIndex="2" GridPane.columnIndex="1" />
-            <Label text="Assessment 1" GridPane.rowIndex="2" GridPane.columnIndex="2" />
-            <TextField fx:id="txtAssessment1" GridPane.rowIndex="2" GridPane.columnIndex="3" />
+            <Label text="Assessment" GridPane.rowIndex="2" GridPane.columnIndex="2" />
+            <TextField fx:id="txtAssessment" GridPane.rowIndex="2" GridPane.columnIndex="3" />
 
-            <Label text="Assessment 2" GridPane.rowIndex="3" GridPane.columnIndex="0" />
-            <TextField fx:id="txtAssessment2" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+            <Label text="Project" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+            <TextField fx:id="txtProject" GridPane.rowIndex="3" GridPane.columnIndex="1" />
             <Label text="Mid Term" GridPane.rowIndex="3" GridPane.columnIndex="2" />
             <TextField fx:id="txtMidTerm" GridPane.rowIndex="3" GridPane.columnIndex="3" />
 
@@ -66,8 +66,8 @@
             <TableColumn fx:id="colQuiz1" text="Q1" prefWidth="60.0" />
             <TableColumn fx:id="colQuiz2" text="Q2" prefWidth="60.0" />
             <TableColumn fx:id="colQuiz3" text="Q3" prefWidth="60.0" />
-            <TableColumn fx:id="colA1" text="A1" prefWidth="60.0" />
-            <TableColumn fx:id="colA2" text="A2" prefWidth="60.0" />
+            <TableColumn fx:id="colAssessment" text="Assessment" prefWidth="90.0" />
+            <TableColumn fx:id="colProject" text="Project" prefWidth="80.0" />
             <TableColumn fx:id="colMid" text="Mid" prefWidth="70.0" />
             <TableColumn fx:id="colFinalTheory" text="Final T" prefWidth="80.0" />
             <TableColumn fx:id="colFinalPractical" text="Final P" prefWidth="80.0" />

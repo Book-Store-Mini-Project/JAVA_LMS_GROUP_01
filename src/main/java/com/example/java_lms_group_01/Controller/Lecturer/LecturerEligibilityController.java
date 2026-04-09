@@ -2,6 +2,7 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Eligibility;
+import com.example.java_lms_group_01.util.AttendanceEligibilityUtil;
 import com.example.java_lms_group_01.util.LecturerContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -24,6 +25,10 @@ public class LecturerEligibilityController {
     @FXML
     private TableColumn<Eligibility, String> colCourseCode;
     @FXML
+    private TableColumn<Eligibility, String> colEligibleSessions;
+    @FXML
+    private TableColumn<Eligibility, String> colTotalSessions;
+    @FXML
     private TableColumn<Eligibility, String> colAttendancePct;
     @FXML
     private TableColumn<Eligibility, String> colEligibility;
@@ -35,6 +40,8 @@ public class LecturerEligibilityController {
         colStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
         colStudentName.setCellValueFactory(d -> d.getValue().studentNameProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
+        colEligibleSessions.setCellValueFactory(d -> d.getValue().eligibleSessionsProperty());
+        colTotalSessions.setCellValueFactory(d -> d.getValue().totalSessionsProperty());
         colAttendancePct.setCellValueFactory(d -> d.getValue().attendancePctProperty());
         colEligibility.setCellValueFactory(d -> d.getValue().eligibilityProperty());
         loadEligibility(null);
@@ -54,16 +61,15 @@ public class LecturerEligibilityController {
     private void loadEligibility(String keyword) {
         try {
             var rows = lecturerRepository.findEligibilityByLecturer(currentLecturer(), keyword).stream()
-                    .map(r -> {
-                        double pct = r.totalSessions() == 0 ? 0.0 : (r.eligibleSessions() * 100.0) / r.totalSessions();
-                        return new Eligibility(
-                                r.studentReg(),
-                                r.studentName(),
-                                r.courseCode(),
-                                String.format("%.2f%%", pct),
-                                pct >= 80.0 ? "Eligible" : "Not Eligible"
-                        );
-                    })
+                    .map(r -> new Eligibility(
+                            r.studentReg(),
+                            r.studentName(),
+                            r.courseCode(),
+                            String.valueOf(r.eligibleSessions()),
+                            String.valueOf(r.totalSessions()),
+                            AttendanceEligibilityUtil.formatPercentage(r.eligibleSessions(), r.totalSessions()),
+                            AttendanceEligibilityUtil.toEligibilityStatus(r.eligibleSessions(), r.totalSessions())
+                    ))
                     .toList();
             tblEligibility.getItems().setAll(rows);
         } catch (SQLException e) {

@@ -6,6 +6,16 @@
       fx:controller="com.example.java_lms_group_01.Controller.Student.StudentAttendancePageController"
       style="-fx-padding: 18; -fx-background-color: white;">
     <Label text="Attendance Details" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+    <Label fx:id="lblEligibilityRule" />
+    <TableView fx:id="tblEligibilitySummary" prefHeight="180">
+        <columns>
+            <TableColumn fx:id="colSummaryCourseCode" text="courseCode" prefWidth="140"/>
+            <TableColumn fx:id="colSummaryEligibleSessions" text="eligible_sessions" prefWidth="130"/>
+            <TableColumn fx:id="colSummaryTotalSessions" text="total_sessions" prefWidth="130"/>
+            <TableColumn fx:id="colSummaryAttendancePct" text="attendance_%" prefWidth="120"/>
+            <TableColumn fx:id="colSummaryEligibility" text="eligibility" prefWidth="120"/>
+        </columns>
+    </TableView>
     <TableView fx:id="tblAttendance" prefHeight="450">
         <columns>
             <TableColumn fx:id="colAttendanceId" text="attendance_id" prefWidth="100"/>

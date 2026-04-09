@@ -24,9 +24,9 @@ public class LecturerMarksController {
     @FXML
     private TextField txtQuiz3;
     @FXML
-    private TextField txtAssessment1;
+    private TextField txtAssessment;
     @FXML
-    private TextField txtAssessment2;
+    private TextField txtProject;
     @FXML
     private TextField txtMidTerm;
     @FXML
@@ -50,9 +50,9 @@ public class LecturerMarksController {
     @FXML
     private TableColumn<Mark, String> colQuiz3;
     @FXML
-    private TableColumn<Mark, String> colA1;
+    private TableColumn<Mark, String> colAssessment;
     @FXML
-    private TableColumn<Mark, String> colA2;
+    private TableColumn<Mark, String> colProject;
     @FXML
     private TableColumn<Mark, String> colMid;
     @FXML
@@ -70,8 +70,8 @@ public class LecturerMarksController {
         colQuiz1.setCellValueFactory(d -> d.getValue().quiz1Property());
         colQuiz2.setCellValueFactory(d -> d.getValue().quiz2Property());
         colQuiz3.setCellValueFactory(d -> d.getValue().quiz3Property());
-        colA1.setCellValueFactory(d -> d.getValue().assessment1Property());
-        colA2.setCellValueFactory(d -> d.getValue().assessment2Property());
+        colAssessment.setCellValueFactory(d -> d.getValue().assessmentProperty());
+        colProject.setCellValueFactory(d -> d.getValue().projectProperty());
         colMid.setCellValueFactory(d -> d.getValue().midTermProperty());
         colFinalTheory.setCellValueFactory(d -> d.getValue().finalTheoryProperty());
         colFinalPractical.setCellValueFactory(d -> d.getValue().finalPracticalProperty());
@@ -86,8 +86,8 @@ public class LecturerMarksController {
             txtQuiz1.setText(row.getQuiz1());
             txtQuiz2.setText(row.getQuiz2());
             txtQuiz3.setText(row.getQuiz3());
-            txtAssessment1.setText(row.getAssessment1());
-            txtAssessment2.setText(row.getAssessment2());
+            txtAssessment.setText(row.getAssessment());
+            txtProject.setText(row.getProject());
             txtMidTerm.setText(row.getMidTerm());
             txtFinalTheory.setText(row.getFinalTheory());
             txtFinalPractical.setText(row.getFinalPractical());
@@ -160,8 +160,8 @@ public class LecturerMarksController {
         txtQuiz1.clear();
         txtQuiz2.clear();
         txtQuiz3.clear();
-        txtAssessment1.clear();
-        txtAssessment2.clear();
+        txtAssessment.clear();
+        txtProject.clear();
         txtMidTerm.clear();
         txtFinalTheory.clear();
         txtFinalPractical.clear();
@@ -172,7 +172,7 @@ public class LecturerMarksController {
         try {
             var rows = lecturerRepository.findMarksByLecturer(currentLecturer(), keyword).stream()
                     .map(r -> new Mark(r.markId(), r.studentReg(), r.courseCode(), r.quiz1(), r.quiz2(), r.quiz3(),
-                            r.assessment1(), r.assessment2(), r.midTerm(), r.finalTheory(), r.finalPractical()))
+                            r.assessment(), r.project(), r.midTerm(), r.finalTheory(), r.finalPractical()))
                     .toList();
             tblMarks.getItems().setAll(rows);
         } catch (SQLException e) {
@@ -189,8 +189,8 @@ public class LecturerMarksController {
             validateDecimal(txtQuiz1);
             validateDecimal(txtQuiz2);
             validateDecimal(txtQuiz3);
-            validateDecimal(txtAssessment1);
-            validateDecimal(txtAssessment2);
+            validateDecimal(txtAssessment);
+            validateDecimal(txtProject);
             validateDecimal(txtMidTerm);
             validateDecimal(txtFinalTheory);
             validateDecimal(txtFinalPractical);
@@ -232,8 +232,8 @@ public class LecturerMarksController {
                 parseDecimal(txtQuiz1),
                 parseDecimal(txtQuiz2),
                 parseDecimal(txtQuiz3),
-                parseDecimal(txtAssessment1),
-                parseDecimal(txtAssessment2),
+                parseDecimal(txtAssessment),
+                parseDecimal(txtProject),
                 parseDecimal(txtMidTerm),
                 parseDecimal(txtFinalTheory),
                 parseDecimal(txtFinalPractical)

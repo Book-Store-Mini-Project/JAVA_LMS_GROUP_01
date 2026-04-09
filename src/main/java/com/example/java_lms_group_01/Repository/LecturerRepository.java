@@ -1,6 +1,8 @@
 package com.example.java_lms_group_01.Repository;
 
+import com.example.java_lms_group_01.util.AssessmentStructureUtil;
 import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.util.GradeScaleUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,7 +10,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class LecturerRepository {
 
@@ -97,22 +101,25 @@ public class LecturerRepository {
     public List<EligibilityRecord> findEligibilityByLecturer(String lecturerReg, String keyword) throws SQLException {
         String safeKeyword = keyword == null ? "" : keyword.trim();
         String sql = """
-                SELECT a.StudentReg, u.firstName, u.lastName, a.courseCode,
+                SELECT e.studentReg AS StudentReg, u.firstName, u.lastName, e.courseCode,
                        SUM(CASE
-                               WHEN a.attendance_status = 'present' THEN 1
-                               WHEN a.attendance_status = 'medical' AND m.approval_status = 'approved' THEN 1
+                               WHEN a.attendance_id IS NOT NULL
+                                    AND (a.attendance_status = 'present'
+                                         OR (a.attendance_status = 'medical' AND m.approval_status = 'approved'))
+                               THEN 1
                                ELSE 0
                            END) AS eligible_sessions,
-                       COUNT(*) AS total_sessions
-                FROM attendance a
-                INNER JOIN course c ON c.courseCode = a.courseCode
-                INNER JOIN student s ON s.registrationNo = a.StudentReg
+                       COUNT(a.attendance_id) AS total_sessions
+                FROM enrollment e
+                INNER JOIN course c ON c.courseCode = e.courseCode
+                INNER JOIN student s ON s.registrationNo = e.studentReg
                 INNER JOIN users u ON u.user_id = s.registrationNo
+                LEFT JOIN attendance a ON a.StudentReg = e.studentReg AND a.courseCode = e.courseCode
                 LEFT JOIN medical m ON m.attendance_id = a.attendance_id
                 WHERE c.lecturerRegistrationNo = ?
-                  AND (? = '' OR a.StudentReg LIKE ? OR a.courseCode LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
-                GROUP BY a.StudentReg, u.firstName, u.lastName, a.courseCode
-                ORDER BY a.StudentReg, a.courseCode
+                  AND (? = '' OR e.studentReg LIKE ? OR e.courseCode LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
+                GROUP BY e.studentReg, u.firstName, u.lastName, e.courseCode
+                ORDER BY e.studentReg, e.courseCode
                 """;
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -143,7 +150,7 @@ public class LecturerRepository {
         String safeKeyword = keyword == null ? "" : keyword.trim();
         String sql = """
                 SELECT m.StudentReg, u.firstName, u.lastName, m.courseCode, s.GPA,
-                       m.quiz_1, m.quiz_2, m.quiz_3, m.assessment_1, m.assessment_2, m.mid_term, m.final_theory, m.final_practical
+                       m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical
                 FROM marks m
                 INNER JOIN course c ON c.courseCode = m.courseCode
                 INNER JOIN student s ON s.registrationNo = m.StudentReg
@@ -163,25 +170,103 @@ public class LecturerRepository {
             statement.setString(6, pattern);
             try (ResultSet rs = statement.executeQuery()) {
                 List<PerformanceRecord> rows = new ArrayList<>();
+                Map<String, AcademicSummary> academicSummaryByStudent = new HashMap<>();
                 while (rs.next()) {
+                    String studentReg = safe(rs.getString("StudentReg"));
+                    String courseCode = safe(rs.getString("courseCode"));
+                    var breakdown = AssessmentStructureUtil.calculateMarkBreakdown(
+                            connection,
+                            courseCode,
+                            nullableDecimal(rs.getObject("quiz_1")),
+                            nullableDecimal(rs.getObject("quiz_2")),
+                            nullableDecimal(rs.getObject("quiz_3")),
+                            nullableDecimal(rs.getObject("assessment")),
+                            nullableDecimal(rs.getObject("Project")),
+                            nullableDecimal(rs.getObject("mid_term")),
+                            nullableDecimal(rs.getObject("final_theory")),
+                            nullableDecimal(rs.getObject("final_practical"))
+                    );
+                    AcademicSummary summary = academicSummaryByStudent.computeIfAbsent(
+                            studentReg,
+                            reg -> {
+                                try {
+                                    return calculateAcademicSummary(connection, reg);
+                                } catch (SQLException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                    );
                     rows.add(new PerformanceRecord(
-                            safe(rs.getString("StudentReg")),
+                            studentReg,
                             (safe(rs.getString("firstName")) + " " + safe(rs.getString("lastName"))).trim(),
-                            safe(rs.getString("courseCode")),
-                            averageOfMarks(rs),
-                            rs.getObject("GPA") == null ? null : ((Number) rs.getObject("GPA")).doubleValue()
+                            courseCode,
+                            breakdown.caMarks(),
+                            breakdown.endMarks(),
+                            breakdown.totalMarks(),
+                            summary.gpa(),
+                            summary.sgpa()
                     ));
                 }
                 return rows;
+            } catch (RuntimeException e) {
+                if (e.getCause() instanceof SQLException sqlException) {
+                    throw sqlException;
+                }
+                throw e;
             }
         }
+    }
+
+    private AcademicSummary calculateAcademicSummary(Connection connection, String studentReg) throws SQLException {
+        String sql = """
+                SELECT m.courseCode, c.credit, m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical
+                FROM marks m
+                INNER JOIN course c ON c.courseCode = m.courseCode
+                WHERE m.StudentReg = ?
+                """;
+        double gpaWeightedPoints = 0.0;
+        int gpaCredits = 0;
+        double sgpaWeightedPoints = 0.0;
+        int sgpaCredits = 0;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, studentReg);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    String courseCode = safe(rs.getString("courseCode"));
+                    double totalMarks = AssessmentStructureUtil.calculateMarkBreakdown(
+                            connection,
+                            courseCode,
+                            nullableDecimal(rs.getObject("quiz_1")),
+                            nullableDecimal(rs.getObject("quiz_2")),
+                            nullableDecimal(rs.getObject("quiz_3")),
+                            nullableDecimal(rs.getObject("assessment")),
+                            nullableDecimal(rs.getObject("Project")),
+                            nullableDecimal(rs.getObject("mid_term")),
+                            nullableDecimal(rs.getObject("final_theory")),
+                            nullableDecimal(rs.getObject("final_practical"))
+                    ).totalMarks();
+                    int credit = rs.getInt("credit");
+                    double gradePoint = GradeScaleUtil.toGradePoint(totalMarks);
+                    sgpaWeightedPoints += gradePoint * credit;
+                    sgpaCredits += credit;
+                    if (!GradeScaleUtil.isEnglishCourse(courseCode)) {
+                        gpaWeightedPoints += gradePoint * credit;
+                        gpaCredits += credit;
+                    }
+                }
+            }
+        }
+        return new AcademicSummary(
+                gpaCredits == 0 ? 0.0 : gpaWeightedPoints / gpaCredits,
+                sgpaCredits == 0 ? 0.0 : sgpaWeightedPoints / sgpaCredits
+        );
     }
 
     public void addMarks(String lecturerReg, MarksMutation mutation) throws SQLException {
         String sql = """
                 INSERT INTO marks (
                   LectureReg, StudentReg, courseCode, quiz_1, quiz_2, quiz_3,
-                  assessment_1, assessment_2, mid_term, final_theory, final_practical
+                  assessment, Project, mid_term, final_theory, final_practical
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         Connection connection = DBConnection.getInstance().getConnection();
@@ -196,7 +281,7 @@ public class LecturerRepository {
         String sql = """
                 UPDATE marks SET
                   StudentReg = ?, courseCode = ?, quiz_1 = ?, quiz_2 = ?, quiz_3 = ?,
-                  assessment_1 = ?, assessment_2 = ?, mid_term = ?, final_theory = ?, final_practical = ?
+                  assessment = ?, Project = ?, mid_term = ?, final_theory = ?, final_practical = ?
                 WHERE mark_id = ? AND LectureReg = ?
                 """;
         Connection connection = DBConnection.getInstance().getConnection();
@@ -221,7 +306,7 @@ public class LecturerRepository {
     public List<MarksRecord> findMarksByLecturer(String lecturerReg, String keyword) throws SQLException {
         String safeKeyword = keyword == null ? "" : keyword.trim();
         String sql = """
-                SELECT mark_id, StudentReg, courseCode, quiz_1, quiz_2, quiz_3, assessment_1, assessment_2, mid_term, final_theory, final_practical
+                SELECT mark_id, StudentReg, courseCode, quiz_1, quiz_2, quiz_3, assessment, Project, mid_term, final_theory, final_practical
                 FROM marks
                 WHERE LectureReg = ? AND (? = '' OR StudentReg LIKE ? OR courseCode LIKE ?)
                 ORDER BY mark_id DESC
@@ -243,8 +328,8 @@ public class LecturerRepository {
                             decimal(rs.getObject("quiz_1")),
                             decimal(rs.getObject("quiz_2")),
                             decimal(rs.getObject("quiz_3")),
-                            decimal(rs.getObject("assessment_1")),
-                            decimal(rs.getObject("assessment_2")),
+                            decimal(rs.getObject("assessment")),
+                            decimal(rs.getObject("Project")),
                             decimal(rs.getObject("mid_term")),
                             decimal(rs.getObject("final_theory")),
                             decimal(rs.getObject("final_practical"))
@@ -443,25 +528,11 @@ public class LecturerRepository {
         setNullableDecimal(statement, 3, mutation.quiz1());
         setNullableDecimal(statement, 4, mutation.quiz2());
         setNullableDecimal(statement, 5, mutation.quiz3());
-        setNullableDecimal(statement, 6, mutation.assessment1());
-        setNullableDecimal(statement, 7, mutation.assessment2());
+        setNullableDecimal(statement, 6, mutation.assessment());
+        setNullableDecimal(statement, 7, mutation.project());
         setNullableDecimal(statement, 8, mutation.midTerm());
         setNullableDecimal(statement, 9, mutation.finalTheory());
         setNullableDecimal(statement, 10, mutation.finalPractical());
-    }
-
-    private static double averageOfMarks(ResultSet rs) throws SQLException {
-        String[] columns = {"quiz_1", "quiz_2", "quiz_3", "assessment_1", "assessment_2", "mid_term", "final_theory", "final_practical"};
-        double sum = 0.0;
-        int count = 0;
-        for (String column : columns) {
-            Object value = rs.getObject(column);
-            if (value != null) {
-                sum += ((Number) value).doubleValue();
-                count++;
-            }
-        }
-        return count == 0 ? 0.0 : sum / count;
     }
 
     private static void setNullableDecimal(PreparedStatement statement, int index, Double value) throws SQLException {
@@ -483,16 +554,21 @@ public class LecturerRepository {
         return String.format("%.2f", ((Number) value).doubleValue());
     }
 
+    private static Double nullableDecimal(Object value) {
+        return value == null ? null : ((Number) value).doubleValue();
+    }
+
     public record AttendanceMedicalRecord(String attendanceId, String studentReg, String courseCode, String date,
                                           String sessionType, String attendanceStatus, String medicalId,
                                           String medicalDescription, String medicalApprovalStatus, String techOfficerReg) {}
     public record EligibilityRecord(String studentReg, String studentName, String courseCode, int eligibleSessions, int totalSessions) {}
-    public record PerformanceRecord(String studentReg, String studentName, String courseCode, double totalMarks, Double gpa) {}
+    public record PerformanceRecord(String studentReg, String studentName, String courseCode, double caMarks, double endMarks, double totalMarks, Double gpa, Double sgpa) {}
+    private record AcademicSummary(double gpa, double sgpa) {}
     public record MarksMutation(String studentReg, String courseCode, Double quiz1, Double quiz2, Double quiz3,
-                                Double assessment1, Double assessment2, Double midTerm, Double finalTheory,
+                                Double assessment, Double project, Double midTerm, Double finalTheory,
                                 Double finalPractical) {}
     public record MarksRecord(String markId, String studentReg, String courseCode, String quiz1, String quiz2,
-                              String quiz3, String assessment1, String assessment2, String midTerm,
+                              String quiz3, String assessment, String project, String midTerm,
                               String finalTheory, String finalPractical) {}
     public record MaterialMutation(String courseCode, String name, String path, String materialType) {}
     public record MaterialRecord(String materialId, String courseCode, String name, String path, String type) {}

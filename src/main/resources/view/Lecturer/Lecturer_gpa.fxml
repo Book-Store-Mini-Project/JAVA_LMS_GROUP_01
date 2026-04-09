@@ -15,6 +15,7 @@
             <Font name="System Bold" size="22.0" />
         </font>
     </Label>
+    <Label text="CA Marks = Best 2 Quizzes + Assessment + Project + Mid Term, using assessment_structure weights." />
 
     <HBox spacing="10.0">
         <children>
@@ -29,9 +30,12 @@
             <TableColumn fx:id="colStudentReg" text="Student Reg" prefWidth="120.0" />
             <TableColumn fx:id="colStudentName" text="Student Name" prefWidth="220.0" />
             <TableColumn fx:id="colCourseCode" text="Course" prefWidth="120.0" />
+            <TableColumn fx:id="colCaMarks" text="CA Marks" prefWidth="110.0" />
+            <TableColumn fx:id="colEndMarks" text="End Marks" prefWidth="110.0" />
             <TableColumn fx:id="colTotalMarks" text="Total Marks" prefWidth="120.0" />
             <TableColumn fx:id="colGrade" text="Grade" prefWidth="90.0" />
             <TableColumn fx:id="colGpa" text="GPA" prefWidth="90.0" />
+            <TableColumn fx:id="colSgpa" text="SGPA" prefWidth="90.0" />
         </columns>
     </TableView>
 </VBox>
