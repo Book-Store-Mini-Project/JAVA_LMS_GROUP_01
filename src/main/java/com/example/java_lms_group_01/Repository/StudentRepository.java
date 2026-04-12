@@ -51,10 +51,19 @@ public class StudentRepository {
                                THEN 1
                                ELSE 0
                            END) AS eligible_sessions,
-                       COUNT(a.attendance_id) AS total_sessions
+                       COUNT(a.attendance_id) AS total_sessions,
+                       MAX(mk.quiz_1) AS quiz_1,
+                       MAX(mk.quiz_2) AS quiz_2,
+                       MAX(mk.quiz_3) AS quiz_3,
+                       MAX(mk.assessment) AS assessment,
+                       MAX(mk.Project) AS Project,
+                       MAX(mk.mid_term) AS mid_term,
+                       MAX(mk.final_theory) AS final_theory,
+                       MAX(mk.final_practical) AS final_practical
                 FROM enrollment e
                 LEFT JOIN attendance a ON a.StudentReg = e.studentReg AND a.courseCode = e.courseCode
                 LEFT JOIN medical m ON m.attendance_id = a.attendance_id
+                LEFT JOIN marks mk ON mk.StudentReg = e.studentReg AND mk.courseCode = e.courseCode
                 WHERE e.studentReg = ?
                 GROUP BY e.courseCode
                 ORDER BY e.courseCode
@@ -65,7 +74,21 @@ public class StudentRepository {
             try (ResultSet rs = statement.executeQuery()) {
                 List<AttendanceEligibilityRecord> rows = new ArrayList<>();
                 while (rs.next()) {
-                    rows.add(mapAttendanceEligibilityRecord(rs));
+                    String courseCode = safe(rs.getString("courseCode"));
+                    AssessmentStructureUtil.MarkBreakdown breakdown = calculateMarkBreakdown(connection, courseCode, rs);
+                    double caThreshold = GradeScaleUtil.minimumRequiredMark(breakdown.getCaMaximum());
+                    rows.add(new AttendanceEligibilityRecord(
+                            courseCode,
+                            rs.getInt("eligible_sessions"),
+                            rs.getInt("total_sessions"),
+                            breakdown.getCaMarks(),
+                            caThreshold,
+                            AttendanceEligibilityUtil.calculatePercentage(
+                                    rs.getInt("eligible_sessions"),
+                                    rs.getInt("total_sessions")
+                            ) >= AttendanceEligibilityUtil.MIN_ELIGIBILITY_PERCENTAGE,
+                            GradeScaleUtil.meetsCaRequirement(breakdown)
+                    ));
                 }
                 return rows;
             }
@@ -132,8 +155,10 @@ public class StudentRepository {
                     grades.add(new GradeRecord(
                             gradeCalculation.courseCode,
                             gradeCalculation.courseName,
+                            gradeCalculation.finalMarks,
+                            gradeCalculation.totalMarks,
                             gradeCalculation.publishedGrade,
-                            gradeCalculation.totalMarks
+                            gradeCalculation.gradePoint
                     ));
 
                     if (gradeCalculation.gradePoint != null) {
@@ -148,9 +173,9 @@ public class StudentRepository {
             }
         }
 
-        double gpa = gpaCredits == 0 ? 0.0 : gpaWeightedPoints / gpaCredits;
+        double cgpa = gpaCredits == 0 ? 0.0 : gpaWeightedPoints / gpaCredits;
         double sgpa = sgpaCredits == 0 ? 0.0 : sgpaWeightedPoints / sgpaCredits;
-        return new GradeSummary(grades, gpa, sgpa);
+        return new GradeSummary(grades, cgpa, sgpa);
     }
 
     public List<MaterialRecord> findMaterialsByStudent(String registrationNo, String keyword) throws SQLException {
@@ -225,14 +250,6 @@ public class StudentRepository {
         );
     }
 
-    private AttendanceEligibilityRecord mapAttendanceEligibilityRecord(ResultSet rs) throws SQLException {
-        return new AttendanceEligibilityRecord(
-                safe(rs.getString("courseCode")),
-                rs.getInt("eligible_sessions"),
-                rs.getInt("total_sessions")
-        );
-    }
-
     private CourseRecord mapCourseRecord(ResultSet rs) throws SQLException {
         return new CourseRecord(
                 safe(rs.getString("courseCode")),
@@ -270,6 +287,7 @@ public class StudentRepository {
         GradeCalculation result = new GradeCalculation();
         result.courseCode = courseCode;
         result.courseName = safe(rs.getString("name"));
+        result.finalMarks = breakdown.getEndMarks();
         result.totalMarks = breakdown.getTotalMarks();
         result.credit = credit;
         result.gradePoint = gradeResult.getGradePoint();
@@ -343,6 +361,22 @@ public class StudentRepository {
         }
     }
 
+    private AssessmentStructureUtil.MarkBreakdown calculateMarkBreakdown(Connection connection, String courseCode,
+                                                                         ResultSet rs) throws SQLException {
+        return AssessmentStructureUtil.calculateMarkBreakdown(
+                connection,
+                courseCode,
+                nullableDecimal(rs.getObject("quiz_1")),
+                nullableDecimal(rs.getObject("quiz_2")),
+                nullableDecimal(rs.getObject("quiz_3")),
+                nullableDecimal(rs.getObject("assessment")),
+                nullableDecimal(rs.getObject("Project")),
+                nullableDecimal(rs.getObject("mid_term")),
+                nullableDecimal(rs.getObject("final_theory")),
+                nullableDecimal(rs.getObject("final_practical"))
+        );
+    }
+
     private boolean loadTimetableRows(Connection connection, String department, String tableName, List<TimetableRecord> rows) throws SQLException {
         String sql = """
                 SELECT t.time_table_id, t.department, t.lec_id, t.courseCode, t.admin_id, t.day, t.start_time, t.end_time, t.session_type
@@ -407,6 +441,7 @@ public class StudentRepository {
         private String courseCode;
         private String courseName;
         private String publishedGrade;
+        private double finalMarks;
         private double totalMarks;
         private Double gradePoint;
         private int credit;
@@ -445,16 +480,30 @@ public class StudentRepository {
         private final String courseCode;
         private final int eligibleSessions;
         private final int totalSessions;
+        private final double caMarks;
+        private final double caThreshold;
+        private final boolean attendanceEligible;
+        private final boolean caEligible;
 
-        public AttendanceEligibilityRecord(String courseCode, int eligibleSessions, int totalSessions) {
+        public AttendanceEligibilityRecord(String courseCode, int eligibleSessions, int totalSessions,
+                                           double caMarks, double caThreshold, boolean attendanceEligible,
+                                           boolean caEligible) {
             this.courseCode = courseCode;
             this.eligibleSessions = eligibleSessions;
             this.totalSessions = totalSessions;
+            this.caMarks = caMarks;
+            this.caThreshold = caThreshold;
+            this.attendanceEligible = attendanceEligible;
+            this.caEligible = caEligible;
         }
 
         public String getCourseCode() { return courseCode; }
         public int getEligibleSessions() { return eligibleSessions; }
         public int getTotalSessions() { return totalSessions; }
+        public double getCaMarks() { return caMarks; }
+        public double getCaThreshold() { return caThreshold; }
+        public boolean isAttendanceEligible() { return attendanceEligible; }
+        public boolean isCaEligible() { return caEligible; }
     }
 
     public static class CourseRecord {
@@ -492,35 +541,43 @@ public class StudentRepository {
     public static class GradeRecord {
         private final String courseCode;
         private final String courseName;
-        private final String grade;
+        private final double finalMarks;
         private final double totalMarks;
+        private final String grade;
+        private final Double gradePoint;
 
-        public GradeRecord(String courseCode, String courseName, String grade, double totalMarks) {
+        public GradeRecord(String courseCode, String courseName, double finalMarks, double totalMarks,
+                           String grade, Double gradePoint) {
             this.courseCode = courseCode;
             this.courseName = courseName;
-            this.grade = grade;
+            this.finalMarks = finalMarks;
             this.totalMarks = totalMarks;
+            this.grade = grade;
+            this.gradePoint = gradePoint;
         }
 
         public String getCourseCode() { return courseCode; }
         public String getCourseName() { return courseName; }
-        public String getGrade() { return grade; }
+        public double getFinalMarks() { return finalMarks; }
         public double getTotalMarks() { return totalMarks; }
+        public String getGrade() { return grade; }
+        public Double getGradePoint() { return gradePoint; }
     }
 
     public static class GradeSummary {
         private final List<GradeRecord> grades;
-        private final double gpa;
+        private final double cgpa;
         private final double sgpa;
 
-        public GradeSummary(List<GradeRecord> grades, double gpa, double sgpa) {
+        public GradeSummary(List<GradeRecord> grades, double cgpa, double sgpa) {
             this.grades = grades;
-            this.gpa = gpa;
+            this.cgpa = cgpa;
             this.sgpa = sgpa;
         }
 
         public List<GradeRecord> getGrades() { return grades; }
-        public double getGpa() { return gpa; }
+        public double getCgpa() { return cgpa; }
+        public double getGpa() { return cgpa; }
         public double getSgpa() { return sgpa; }
     }
 

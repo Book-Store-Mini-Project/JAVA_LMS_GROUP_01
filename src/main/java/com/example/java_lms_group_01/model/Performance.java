@@ -9,43 +9,48 @@ public class Performance {
     private final SimpleStringProperty studentReg;
     private final SimpleStringProperty studentName;
     private final SimpleStringProperty courseCode;
+    private final SimpleStringProperty courseName;
     private final SimpleStringProperty caMarks;
-    private final SimpleStringProperty endMarks;
+    private final SimpleStringProperty finalMarks;
     private final SimpleStringProperty totalMarks;
     private final SimpleStringProperty grade;
-    private final SimpleStringProperty gpa;
     private final SimpleStringProperty sgpa;
+    private final SimpleStringProperty cgpa;
 
-    public Performance(String studentReg, String studentName, String courseCode, String caMarks,
-                       String endMarks, String totalMarks, String grade, String gpa, String sgpa) {
+    public Performance(String studentReg, String studentName, String courseCode, String courseName,
+                       String caMarks, String finalMarks, String totalMarks, String grade,
+                       String sgpa, String cgpa) {
         this.studentReg = new SimpleStringProperty(studentReg);
         this.studentName = new SimpleStringProperty(studentName);
         this.courseCode = new SimpleStringProperty(courseCode);
+        this.courseName = new SimpleStringProperty(courseName);
         this.caMarks = new SimpleStringProperty(caMarks);
-        this.endMarks = new SimpleStringProperty(endMarks);
+        this.finalMarks = new SimpleStringProperty(finalMarks);
         this.totalMarks = new SimpleStringProperty(totalMarks);
         this.grade = new SimpleStringProperty(grade);
-        this.gpa = new SimpleStringProperty(gpa);
         this.sgpa = new SimpleStringProperty(sgpa);
+        this.cgpa = new SimpleStringProperty(cgpa);
     }
 
     public SimpleStringProperty studentRegProperty() { return studentReg; }
     public SimpleStringProperty studentNameProperty() { return studentName; }
     public SimpleStringProperty courseCodeProperty() { return courseCode; }
+    public SimpleStringProperty courseNameProperty() { return courseName; }
     public SimpleStringProperty caMarksProperty() { return caMarks; }
-    public SimpleStringProperty endMarksProperty() { return endMarks; }
+    public SimpleStringProperty finalMarksProperty() { return finalMarks; }
     public SimpleStringProperty totalMarksProperty() { return totalMarks; }
     public SimpleStringProperty gradeProperty() { return grade; }
-    public SimpleStringProperty gpaProperty() { return gpa; }
     public SimpleStringProperty sgpaProperty() { return sgpa; }
+    public SimpleStringProperty cgpaProperty() { return cgpa; }
 
     public String getStudentReg() { return studentReg.get(); }
     public String getStudentName() { return studentName.get(); }
     public String getCourseCode() { return courseCode.get(); }
+    public String getCourseName() { return courseName.get(); }
     public String getCaMarks() { return caMarks.get(); }
-    public String getEndMarks() { return endMarks.get(); }
+    public String getFinalMarks() { return finalMarks.get(); }
     public String getTotalMarks() { return totalMarks.get(); }
     public String getGrade() { return grade.get(); }
-    public String getGpa() { return gpa.get(); }
     public String getSgpa() { return sgpa.get(); }
+    public String getCgpa() { return cgpa.get(); }
 }

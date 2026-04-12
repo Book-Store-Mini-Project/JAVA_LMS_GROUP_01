@@ -49,7 +49,7 @@ public class UserRepository {
     public List<UserManagementRow> findStudents() throws SQLException {
         String sql = """
                 SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender,
-                       'Student' AS role, s.registrationNo, NULL AS password, s.department, s.GPA, s.status, NULL AS position, img.image_path AS profile_image_path
+                       'Student' AS role, s.registrationNo, NULL AS password, s.department, s.batch, s.GPA, s.status, NULL AS position, img.image_path AS profile_image_path
                 FROM users u
                 INNER JOIN student s ON s.registrationNo = u.user_id
                 LEFT JOIN user_profile_images img ON img.user_id = u.user_id
@@ -125,7 +125,7 @@ public class UserRepository {
     }
 
     public boolean createStudent(UserManagementRow row) throws SQLException {
-        String roleSql = "INSERT INTO student (registrationNo, password, department, GPA, status) VALUES (?, ?, ?, ?, ?)";
+        String roleSql = "INSERT INTO student (registrationNo, password, department, batch, GPA, status) VALUES (?, ?, ?, ?, ?, ?)";
         Connection connection = DBConnection.getInstance().getConnection();
         boolean originalAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
@@ -135,8 +135,9 @@ public class UserRepository {
                 stmt.setString(1, requiredText(row.getRegistrationNo(), "Registration No"));
                 stmt.setString(2, hashRequiredPassword(row.getPassword()));
                 stmt.setString(3, requiredText(row.getDepartment(), "Department"));
-                setNullableDecimal(stmt, 4, row.getGpa());
-                stmt.setString(5, requiredText(row.getStatus(), "Status"));
+                stmt.setString(4, emptyToNull(row.getBatch()));
+                setNullableDecimal(stmt, 5, row.getGpa());
+                stmt.setString(6, requiredText(row.getStatus(), "Status"));
                 stmt.executeUpdate();
             }
             userImageRepository.upsertImagePath(connection, requiredText(row.getRegistrationNo(), "Registration No"), row.getProfileImagePath());
@@ -260,23 +261,25 @@ public class UserRepository {
             boolean updatePassword = hasText(row.getPassword());
             String roleSql;
             if (updatePassword) {
-                roleSql = "UPDATE student SET password = ?, department = ?, GPA = ?, status = ? WHERE registrationNo = ?";
+                roleSql = "UPDATE student SET password = ?, department = ?, batch = ?, GPA = ?, status = ? WHERE registrationNo = ?";
             } else {
-                roleSql = "UPDATE student SET department = ?, GPA = ?, status = ? WHERE registrationNo = ?";
+                roleSql = "UPDATE student SET department = ?, batch = ?, GPA = ?, status = ? WHERE registrationNo = ?";
             }
 
             try (PreparedStatement stmt = connection.prepareStatement(roleSql)) {
                 if (!updatePassword) {
                     stmt.setString(1, requiredText(row.getDepartment(), "Department"));
-                    setNullableDecimal(stmt, 2, row.getGpa());
-                    stmt.setString(3, requiredText(row.getStatus(), "Status"));
-                    stmt.setString(4, requiredText(row.getRegistrationNo(), "Registration No"));
-                } else {
-                    stmt.setString(1, PasswordUtil.hashPassword(row.getPassword().trim()));
-                    stmt.setString(2, requiredText(row.getDepartment(), "Department"));
+                    stmt.setString(2, emptyToNull(row.getBatch()));
                     setNullableDecimal(stmt, 3, row.getGpa());
                     stmt.setString(4, requiredText(row.getStatus(), "Status"));
                     stmt.setString(5, requiredText(row.getRegistrationNo(), "Registration No"));
+                } else {
+                    stmt.setString(1, PasswordUtil.hashPassword(row.getPassword().trim()));
+                    stmt.setString(2, requiredText(row.getDepartment(), "Department"));
+                    stmt.setString(3, emptyToNull(row.getBatch()));
+                    setNullableDecimal(stmt, 4, row.getGpa());
+                    stmt.setString(5, requiredText(row.getStatus(), "Status"));
+                    stmt.setString(6, requiredText(row.getRegistrationNo(), "Registration No"));
                 }
                 stmt.executeUpdate();
             }
@@ -441,6 +444,7 @@ public class UserRepository {
                 rs.getString("registrationNo"),
                 rs.getString("password"),
                 rs.getString("department"),
+                rs.getString("batch"),
                 gpaValue == null ? null : ((Number) gpaValue).doubleValue(),
                 rs.getString("status"),
                 rs.getString("position"),

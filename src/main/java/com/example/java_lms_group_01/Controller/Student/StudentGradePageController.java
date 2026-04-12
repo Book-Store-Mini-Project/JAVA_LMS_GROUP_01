@@ -26,9 +26,13 @@ public class StudentGradePageController {
     @FXML
     private TableColumn<Grade, String> colCourseName;
     @FXML
+    private TableColumn<Grade, String> colFinalMarks;
+    @FXML
+    private TableColumn<Grade, String> colTotalMarks;
+    @FXML
     private TableColumn<Grade, String> colGrade;
     @FXML
-    private Label lblGpa;
+    private Label lblCgpa;
     @FXML
     private Label lblSgpa;
 
@@ -38,6 +42,8 @@ public class StudentGradePageController {
     public void initialize() {
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
         colCourseName.setCellValueFactory(d -> d.getValue().courseNameProperty());
+        colFinalMarks.setCellValueFactory(d -> d.getValue().finalMarksProperty());
+        colTotalMarks.setCellValueFactory(d -> d.getValue().totalProperty());
         colGrade.setCellValueFactory(d -> d.getValue().gradeProperty());
         loadGradesAndGpa();
     }
@@ -55,12 +61,13 @@ public class StudentGradePageController {
                 rows.add(new Grade(
                         record.getCourseCode(),
                         record.getCourseName(),
-                        "",
+                        String.format("%.2f", record.getFinalMarks()),
+                        String.format("%.2f", record.getTotalMarks()),
                         record.getGrade()
                 ));
             }
             tblGrades.getItems().setAll(rows);
-            lblGpa.setText("GPA   : " + String.format("%.2f", summary.getGpa()));
+            lblCgpa.setText("CGPA : " + String.format("%.2f", summary.getCgpa()));
             lblSgpa.setText("SGPA : " + String.format("%.2f", summary.getSgpa()));
         } catch (SQLException e) {
             showError("Failed to load grades and GPA.", e);

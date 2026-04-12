@@ -376,6 +376,7 @@ public class ManageUsersController implements Initializable {
         txtReg.setDisable(edit);
         TextField txtPassword = new TextField("");
         TextField txtDepartment = new TextField(edit ? value(existing.getDepartment()) : "");
+        TextField txtBatch = new TextField(edit ? value(existing.getBatch()) : "");
         TextField txtGpa = new TextField(edit && existing.getGpa() != null ? String.valueOf(existing.getGpa()) : "");
         ComboBox<String> cmbStatus = new ComboBox<>();
         cmbStatus.getItems().addAll("proper", "repeat");
@@ -391,6 +392,8 @@ public class ManageUsersController implements Initializable {
         grid.add(txtPassword, 1, rowIndex++);
         grid.add(new Label("Department:"), 0, rowIndex);
         grid.add(txtDepartment, 1, rowIndex++);
+        grid.add(new Label("Batch:"), 0, rowIndex);
+        grid.add(txtBatch, 1, rowIndex++);
         grid.add(new Label("GPA (optional):"), 0, rowIndex);
         grid.add(txtGpa, 1, rowIndex++);
         grid.add(new Label("Status:"), 0, rowIndex);
@@ -401,7 +404,7 @@ public class ManageUsersController implements Initializable {
             if (button.getButtonData() != ButtonBar.ButtonData.OK_DONE) {
                 return null;
             }
-            return buildStudentRow(existing, edit, formFields, dob, gender, txtReg, txtPassword, txtDepartment, txtGpa, cmbStatus);
+            return buildStudentRow(existing, edit, formFields, dob, gender, txtReg, txtPassword, txtDepartment, txtBatch, txtGpa, cmbStatus);
         });
 
         return dialog.showAndWait().orElse(null);
@@ -514,6 +517,7 @@ public class ManageUsersController implements Initializable {
                 null,
                 null,
                 null,
+                null,
                 value(fields.imagePathField)
         );
     }
@@ -537,6 +541,7 @@ public class ManageUsersController implements Initializable {
                 required(txtDepartment, "Department"),
                 null,
                 null,
+                null,
                 required(txtPosition, "Position"),
                 value(fields.imagePathField)
         );
@@ -544,7 +549,8 @@ public class ManageUsersController implements Initializable {
 
     private UserManagementRow buildStudentRow(UserManagementRow existing, boolean edit, CommonUserFields fields,
                                               DatePicker dob, ComboBox<String> gender, TextField txtReg, TextField txtPassword,
-                                              TextField txtDepartment, TextField txtGpa, ComboBox<String> cmbStatus) {
+                                              TextField txtDepartment, TextField txtBatch, TextField txtGpa,
+                                              ComboBox<String> cmbStatus) {
         String password = requirePasswordForCreate(edit, txtPassword);
         return new UserManagementRow(
                 edit ? existing.getUserId() : required(txtReg, "Registration No"),
@@ -559,6 +565,7 @@ public class ManageUsersController implements Initializable {
                 required(txtReg, "Registration No"),
                 password,
                 required(txtDepartment, "Department"),
+                required(txtBatch, "Batch"),
                 parseOptionalDouble(txtGpa),
                 requiredCombo(cmbStatus, "Status"),
                 null,
@@ -581,6 +588,7 @@ public class ManageUsersController implements Initializable {
                 UserRole.TECHNICAL_OFFICER.getValue(),
                 required(txtReg, "Registration No"),
                 password,
+                null,
                 null,
                 null,
                 null,
@@ -652,7 +660,7 @@ public class ManageUsersController implements Initializable {
         stuGender.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getGender())));
         stuRegNo.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getRegistrationNo())));
         stuDeptId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getDepartment())));
-        stuBatchId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getGpa())));
+        stuBatchId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getBatch())));
         stuStatus.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getStatus())));
     }
 

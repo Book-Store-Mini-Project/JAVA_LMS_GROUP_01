@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -10,27 +11,30 @@
 <?import javafx.scene.text.Font?>
 
 <VBox spacing="12.0" style="-fx-padding: 18; -fx-background-color: white;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.example.java_lms_group_01.Controller.Lecturer.LecturerEligibilityController">
-    <Label text="Undergraduate Eligibility">
+    <Label text="Undergraduate Eligibility (Attendance + CA Marks)">
         <font>
             <Font name="System Bold" size="22.0" />
         </font>
     </Label>
     <HBox spacing="10.0">
         <children>
-            <TextField fx:id="txtSearch" promptText="Search by student/course" />
-            <Button text="Search" onAction="#searchEligibility" />
+            <ComboBox fx:id="cmbBatch" prefWidth="150.0" promptText="Batch" />
+            <TextField fx:id="txtStudentSearch" prefWidth="220.0" promptText="Search one student by reg or name" />
+            <Button text="Submit" onAction="#submitFilters" />
         </children>
     </HBox>
 
     <TableView fx:id="tblEligibility" VBox.vgrow="ALWAYS">
         <columns>
             <TableColumn fx:id="colStudentReg" text="Student Reg" prefWidth="120.0" />
-            <TableColumn fx:id="colStudentName" text="Student Name" prefWidth="220.0" />
+            <TableColumn fx:id="colStudentName" text="Student Name" prefWidth="200.0" />
             <TableColumn fx:id="colCourseCode" text="Course" prefWidth="120.0" />
             <TableColumn fx:id="colEligibleSessions" text="Eligible Sessions" prefWidth="120.0" />
             <TableColumn fx:id="colTotalSessions" text="Total Sessions" prefWidth="120.0" />
             <TableColumn fx:id="colAttendancePct" text="Attendance %" prefWidth="120.0" />
-            <TableColumn fx:id="colEligibility" text="Eligibility" prefWidth="120.0" />
+            <TableColumn fx:id="colCaMarks" text="CA Marks" prefWidth="100.0" />
+            <TableColumn fx:id="colCaThreshold" text="CA Threshold" prefWidth="100.0" />
+            <TableColumn fx:id="colEligibility" text="Eligibility" prefWidth="170.0" />
         </columns>
     </TableView>
 </VBox>

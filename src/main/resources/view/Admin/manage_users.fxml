@@ -79,7 +79,7 @@
                                         <TableColumn fx:id="stuGender" prefWidth="90.0" text="Gender" />
                                         <TableColumn fx:id="stuRegNo" prefWidth="120.0" text="Reg No" />
                                         <TableColumn fx:id="stuDeptId" prefWidth="90.0" text="Department" />
-                                        <TableColumn fx:id="stuBatchId" prefWidth="90.0" text="GPA" />
+                                        <TableColumn fx:id="stuBatchId" prefWidth="90.0" text="Batch" />
                                         <TableColumn fx:id="stuStatus" prefWidth="120.0" text="Status" />
                                     </columns>
                                 </TableView>

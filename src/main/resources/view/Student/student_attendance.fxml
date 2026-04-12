@@ -5,12 +5,25 @@
 <VBox spacing="10" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.example.java_lms_group_01.Controller.Student.StudentAttendancePageController"
       style="-fx-padding: 18; -fx-background-color: white;">
-    <Label text="Attendance Details" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
-    <TableView fx:id="tblAttendance" prefHeight="450">
+    <Label text="Eligibility Summary" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+    <TableView fx:id="tblEligibilitySummary" prefHeight="220">
         <columns>
-            <TableColumn fx:id="colCourseCode" text="CourseCode" prefWidth="140"/>
-            <TableColumn fx:id="colSessionType" text="Session_type" prefWidth="120"/>
-            <TableColumn fx:id="colAttendanceStatus" text="Attendance_status" prefWidth="130"/>
+            <TableColumn fx:id="colSummaryCourseCode" text="Course Code" prefWidth="130"/>
+            <TableColumn fx:id="colEligibleSessions" text="Eligible Sessions" prefWidth="120"/>
+            <TableColumn fx:id="colTotalSessions" text="Total Sessions" prefWidth="120"/>
+            <TableColumn fx:id="colAttendancePct" text="Attendance %" prefWidth="120"/>
+            <TableColumn fx:id="colCaMarks" text="CA Marks" prefWidth="120"/>
+            <TableColumn fx:id="colCaThreshold" text="CA Threshold" prefWidth="120"/>
+            <TableColumn fx:id="colEligibility" text="Eligibility" prefWidth="180"/>
+        </columns>
+    </TableView>
+    <Separator />
+    <Label text="Attendance Details" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+    <TableView fx:id="tblAttendance" prefHeight="300">
+        <columns>
+            <TableColumn fx:id="colCourseCode" text="Course Code" prefWidth="140"/>
+            <TableColumn fx:id="colSessionType" text="Session Type" prefWidth="120"/>
+            <TableColumn fx:id="colAttendanceStatus" text="Attendance Status" prefWidth="130"/>
             <TableColumn fx:id="colSubmissionDate" text="Date" prefWidth="140"/>
         </columns>
     </TableView>

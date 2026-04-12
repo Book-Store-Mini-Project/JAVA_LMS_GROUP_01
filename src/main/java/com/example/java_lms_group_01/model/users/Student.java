@@ -8,6 +8,7 @@ import java.time.LocalDate;
 public class Student extends User {
     private String registrationNo;
     private String password;
+    private String batch;
     private float gpa;
     private String status;
 
@@ -32,6 +33,14 @@ public class Student extends User {
 
     public void setGPA(float GPA) {
         this.gpa = GPA;
+    }
+
+    public String getBatch() {
+        return batch;
+    }
+
+    public void setBatch(String batch) {
+        this.batch = batch;
     }
 
     public String getStatus() {

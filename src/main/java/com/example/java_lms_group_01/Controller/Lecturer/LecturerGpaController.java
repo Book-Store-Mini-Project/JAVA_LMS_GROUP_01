@@ -2,9 +2,11 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Performance;
+import com.example.java_lms_group_01.model.UndergraduateSummary;
 import com.example.java_lms_group_01.util.LecturerContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -19,7 +21,21 @@ import java.util.List;
 public class LecturerGpaController {
 
     @FXML
-    private TextField txtSearch;
+    private ComboBox<String> cmbBatch;
+    @FXML
+    private TextField txtStudentSearch;
+    @FXML
+    private TableView<Performance> tblFinalMarks;
+    @FXML
+    private TableColumn<Performance, String> colFinalStudentReg;
+    @FXML
+    private TableColumn<Performance, String> colFinalStudentName;
+    @FXML
+    private TableColumn<Performance, String> colFinalCourseCode;
+    @FXML
+    private TableColumn<Performance, String> colFinalCourseName;
+    @FXML
+    private TableColumn<Performance, String> colFinalMarks;
     @FXML
     private TableView<Performance> tblPerformance;
     @FXML
@@ -29,58 +45,118 @@ public class LecturerGpaController {
     @FXML
     private TableColumn<Performance, String> colCourseCode;
     @FXML
+    private TableColumn<Performance, String> colCourseName;
+    @FXML
     private TableColumn<Performance, String> colCaMarks;
     @FXML
-    private TableColumn<Performance, String> colEndMarks;
+    private TableColumn<Performance, String> colResultFinalMarks;
     @FXML
     private TableColumn<Performance, String> colTotalMarks;
     @FXML
     private TableColumn<Performance, String> colGrade;
     @FXML
-    private TableColumn<Performance, String> colGpa;
-    @FXML
     private TableColumn<Performance, String> colSgpa;
+    @FXML
+    private TableColumn<Performance, String> colCgpa;
+    @FXML
+    private TableView<UndergraduateSummary> tblUndergraduateSummary;
+    @FXML
+    private TableColumn<UndergraduateSummary, String> colSummaryStudentReg;
+    @FXML
+    private TableColumn<UndergraduateSummary, String> colSummaryStudentName;
+    @FXML
+    private TableColumn<UndergraduateSummary, String> colSummarySgpa;
+    @FXML
+    private TableColumn<UndergraduateSummary, String> colSummaryCgpa;
 
     private final LecturerRepository lecturerRepository = new LecturerRepository();
 
     @FXML
     public void initialize() {
+        colFinalStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
+        colFinalStudentName.setCellValueFactory(d -> d.getValue().studentNameProperty());
+        colFinalCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
+        colFinalCourseName.setCellValueFactory(d -> d.getValue().courseNameProperty());
+        colFinalMarks.setCellValueFactory(d -> d.getValue().finalMarksProperty());
+
         colStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
         colStudentName.setCellValueFactory(d -> d.getValue().studentNameProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
+        colCourseName.setCellValueFactory(d -> d.getValue().courseNameProperty());
         colCaMarks.setCellValueFactory(d -> d.getValue().caMarksProperty());
-        colEndMarks.setCellValueFactory(d -> d.getValue().endMarksProperty());
+        colResultFinalMarks.setCellValueFactory(d -> d.getValue().finalMarksProperty());
         colTotalMarks.setCellValueFactory(d -> d.getValue().totalMarksProperty());
         colGrade.setCellValueFactory(d -> d.getValue().gradeProperty());
-        colGpa.setCellValueFactory(d -> d.getValue().gpaProperty());
         colSgpa.setCellValueFactory(d -> d.getValue().sgpaProperty());
-        loadPerformance(null);
+        colCgpa.setCellValueFactory(d -> d.getValue().cgpaProperty());
+
+        colSummaryStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
+        colSummaryStudentName.setCellValueFactory(d -> d.getValue().studentNameProperty());
+        colSummarySgpa.setCellValueFactory(d -> d.getValue().sgpaProperty());
+        colSummaryCgpa.setCellValueFactory(d -> d.getValue().cgpaProperty());
+
+        loadBatchOptions();
+        loadReports("", "", "");
     }
 
     @FXML
-    private void searchPerformance() {
-        loadPerformance(txtSearch.getText());
+    private void submitFilters() {
+        loadReports(value(txtStudentSearch), "", selectedBatch());
     }
 
-    private void loadPerformance(String keyword) {
+    private void loadBatchOptions() {
+        try {
+            List<String> batches = lecturerRepository.findBatchesByLecturer(currentLecturer());
+            List<String> options = new ArrayList<>();
+            options.add("All Batches");
+            options.addAll(batches);
+            cmbBatch.getItems().setAll(options);
+            cmbBatch.setValue("All Batches");
+        } catch (SQLException e) {
+            showError("Failed to load batch list.", e);
+        }
+    }
+
+    private String selectedBatch() {
+        String batch = cmbBatch.getValue();
+        return batch == null || "All Batches".equals(batch) ? "" : batch.trim();
+    }
+
+    private void loadReports(String studentReg, String courseCode, String batch) {
         try {
             List<LecturerRepository.PerformanceRecord> recordList =
-                    lecturerRepository.findPerformanceByLecturer(currentLecturer(), keyword);
-            List<Performance> rows = new ArrayList<>();
+                    lecturerRepository.findPerformanceByLecturer(currentLecturer(), studentReg, courseCode, batch);
+            List<Performance> performanceRows = new ArrayList<>();
             for (LecturerRepository.PerformanceRecord record : recordList) {
-                rows.add(new Performance(
+                performanceRows.add(new Performance(
                         record.getStudentReg(),
                         record.getStudentName(),
                         record.getCourseCode(),
+                        record.getCourseName(),
                         String.format("%.2f", record.getCaMarks()),
-                        String.format("%.2f", record.getEndMarks()),
+                        String.format("%.2f", record.getFinalMarks()),
                         String.format("%.2f", record.getTotalMarks()),
                         record.getPublishedGrade(),
-                        record.getGpa() == null ? "" : String.format("%.2f", record.getGpa()),
-                        record.getSgpa() == null ? "" : String.format("%.2f", record.getSgpa())
+                        record.getSgpa() == null ? "" : String.format("%.2f", record.getSgpa()),
+                        record.getCgpa() == null ? "" : String.format("%.2f", record.getCgpa())
                 ));
             }
-            tblPerformance.getItems().setAll(rows);
+
+            List<LecturerRepository.UndergraduateSummaryRecord> summaryRecordList =
+                    lecturerRepository.findUndergraduateSummariesByLecturer(currentLecturer(), studentReg, courseCode, batch);
+            List<UndergraduateSummary> summaryRows = new ArrayList<>();
+            for (LecturerRepository.UndergraduateSummaryRecord record : summaryRecordList) {
+                summaryRows.add(new UndergraduateSummary(
+                        record.getStudentReg(),
+                        record.getStudentName(),
+                        String.format("%.2f", record.getSgpa()),
+                        String.format("%.2f", record.getCgpa())
+                ));
+            }
+
+            tblFinalMarks.getItems().setAll(performanceRows);
+            tblPerformance.getItems().setAll(performanceRows);
+            tblUndergraduateSummary.getItems().setAll(summaryRows);
         } catch (SQLException e) {
             showError("Failed to load marks/grades/GPA.", e);
         }
@@ -89,6 +165,10 @@ public class LecturerGpaController {
     private String currentLecturer() {
         String reg = LecturerContext.getRegistrationNo();
         return reg == null ? "" : reg.trim();
+    }
+
+    private String value(TextField textField) {
+        return textField.getText() == null ? "" : textField.getText().trim();
     }
 
     private void showError(String message, Exception e) {

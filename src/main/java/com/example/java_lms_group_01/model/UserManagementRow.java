@@ -19,6 +19,7 @@ public class UserManagementRow {
     private String registrationNo;
     private String password;
     private String department;
+    private String batch;
     private Double gpa;
     private String status;
     private String position;
@@ -26,7 +27,7 @@ public class UserManagementRow {
 
     public UserManagementRow(String userId, String firstName, String lastName, String email, String address,
                              String phoneNumber, LocalDate dateOfBirth, String gender, String role,
-                             String registrationNo, String password, String department, Double gpa,
+                             String registrationNo, String password, String department, String batch, Double gpa,
                              String status, String position, String profileImagePath) {
         this.userId = userId;
         this.firstName = firstName;
@@ -40,6 +41,7 @@ public class UserManagementRow {
         this.registrationNo = registrationNo;
         this.password = password;
         this.department = department;
+        this.batch = batch;
         this.gpa = gpa;
         this.status = status;
         this.position = position;
@@ -58,6 +60,7 @@ public class UserManagementRow {
     public String getRegistrationNo() { return registrationNo; }
     public String getPassword() { return password; }
     public String getDepartment() { return department; }
+    public String getBatch() { return batch; }
     public Double getGpa() { return gpa; }
     public String getStatus() { return status; }
     public String getPosition() { return position; }

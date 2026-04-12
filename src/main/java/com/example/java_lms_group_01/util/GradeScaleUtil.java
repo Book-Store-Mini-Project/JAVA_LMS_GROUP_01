@@ -40,6 +40,25 @@ public final class GradeScaleUtil {
         return 0.0;
     }
 
+    public static double minimumRequiredMark(double maximum) {
+        if (maximum <= EPSILON) {
+            return 0.0;
+        }
+        return maximum * COMPONENT_MINIMUM_RATIO;
+    }
+
+    public static boolean meetsComponentRequirement(double marks, double maximum) {
+        return maximum <= EPSILON || meetsComponentMinimum(marks, maximum);
+    }
+
+    public static boolean meetsCaRequirement(AssessmentStructureUtil.MarkBreakdown breakdown) {
+        return meetsComponentRequirement(breakdown.getCaMarks(), breakdown.getCaMaximum());
+    }
+
+    public static boolean meetsEndRequirement(AssessmentStructureUtil.MarkBreakdown breakdown) {
+        return meetsComponentRequirement(breakdown.getEndMarks(), breakdown.getEndMaximum());
+    }
+
     public static GradeResult evaluatePublishedGrade(AssessmentStructureUtil.MarkBreakdown breakdown,
                                                      boolean attendanceEligible,
                                                      boolean examPresent,
@@ -54,8 +73,8 @@ public final class GradeScaleUtil {
 
         boolean hasCaComponent = breakdown.getCaMaximum() > EPSILON;
         boolean hasEndComponent = breakdown.getEndMaximum() > EPSILON;
-        boolean caPassed = !hasCaComponent || meetsComponentMinimum(breakdown.getCaMarks(), breakdown.getCaMaximum());
-        boolean endPassed = !hasEndComponent || meetsComponentMinimum(breakdown.getEndMarks(), breakdown.getEndMaximum());
+        boolean caPassed = meetsCaRequirement(breakdown);
+        boolean endPassed = meetsEndRequirement(breakdown);
 
         if (hasEndComponent && !examPresent) {
             return caPassed ? new GradeResult("EE", null) : new GradeResult("E", 0.0);

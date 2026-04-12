@@ -94,8 +94,11 @@ public class LecturerRepository {
         }
     }
 
-    public List<EligibilityRecord> findEligibilityByLecturer(String lecturerReg, String keyword) throws SQLException {
-        String safeKeyword = keyword == null ? "" : keyword.trim();
+    public List<EligibilityRecord> findEligibilityByLecturer(String lecturerReg, String studentKeyword,
+                                                             String courseCode, String batch) throws SQLException {
+        String safeStudentKeyword = studentKeyword == null ? "" : studentKeyword.trim();
+        String safeCourseCode = courseCode == null ? "" : courseCode.trim();
+        String safeBatch = batch == null ? "" : batch.trim();
         String sql = """
                 SELECT e.studentReg AS StudentReg, u.firstName, u.lastName, e.courseCode,
                        SUM(CASE
@@ -105,31 +108,45 @@ public class LecturerRepository {
                                THEN 1
                                ELSE 0
                            END) AS eligible_sessions,
-                       COUNT(a.attendance_id) AS total_sessions
+                       COUNT(a.attendance_id) AS total_sessions,
+                       MAX(mk.quiz_1) AS quiz_1,
+                       MAX(mk.quiz_2) AS quiz_2,
+                       MAX(mk.quiz_3) AS quiz_3,
+                       MAX(mk.assessment) AS assessment,
+                       MAX(mk.Project) AS Project,
+                       MAX(mk.mid_term) AS mid_term,
+                       MAX(mk.final_theory) AS final_theory,
+                       MAX(mk.final_practical) AS final_practical
                 FROM enrollment e
                 INNER JOIN course c ON c.courseCode = e.courseCode
                 INNER JOIN student s ON s.registrationNo = e.studentReg
                 INNER JOIN users u ON u.user_id = s.registrationNo
                 LEFT JOIN attendance a ON a.StudentReg = e.studentReg AND a.courseCode = e.courseCode
                 LEFT JOIN medical m ON m.attendance_id = a.attendance_id
+                LEFT JOIN marks mk ON mk.StudentReg = e.studentReg AND mk.courseCode = e.courseCode
                 WHERE c.lecturerRegistrationNo = ?
-                  AND (? = '' OR e.studentReg LIKE ? OR e.courseCode LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
+                  AND (? = '' OR COALESCE(s.batch, '') = ?)
+                  AND (? = '' OR e.studentReg LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
+                  AND (? = '' OR e.courseCode = ?)
                 GROUP BY e.studentReg, u.firstName, u.lastName, e.courseCode
                 ORDER BY e.studentReg, e.courseCode
                 """;
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            String pattern = "%" + safeKeyword + "%";
+            String studentPattern = "%" + safeStudentKeyword + "%";
             statement.setString(1, lecturerReg);
-            statement.setString(2, safeKeyword);
-            statement.setString(3, pattern);
-            statement.setString(4, pattern);
-            statement.setString(5, pattern);
-            statement.setString(6, pattern);
+            statement.setString(2, safeBatch);
+            statement.setString(3, safeBatch);
+            statement.setString(4, safeStudentKeyword);
+            statement.setString(5, studentPattern);
+            statement.setString(6, studentPattern);
+            statement.setString(7, studentPattern);
+            statement.setString(8, safeCourseCode);
+            statement.setString(9, safeCourseCode);
             try (ResultSet rs = statement.executeQuery()) {
                 List<EligibilityRecord> rows = new ArrayList<>();
                 while (rs.next()) {
-                    rows.add(mapEligibilityRecord(rs));
+                    rows.add(mapEligibilityRecord(connection, rs));
                 }
                 return rows;
             }
@@ -137,10 +154,13 @@ public class LecturerRepository {
     }
 
     // Load marks and calculated performance for students taught by this lecturer.
-    public List<PerformanceRecord> findPerformanceByLecturer(String lecturerReg, String keyword) throws SQLException {
-        String safeKeyword = keyword == null ? "" : keyword.trim();
+    public List<PerformanceRecord> findPerformanceByLecturer(String lecturerReg, String studentKeyword,
+                                                             String courseCode, String batch) throws SQLException {
+        String safeStudentKeyword = studentKeyword == null ? "" : studentKeyword.trim();
+        String safeCourseCode = courseCode == null ? "" : courseCode.trim();
+        String safeBatch = batch == null ? "" : batch.trim();
         String sql = """
-                SELECT m.StudentReg, u.firstName, u.lastName, m.courseCode, s.GPA,
+                SELECT m.StudentReg, u.firstName, u.lastName, m.courseCode, c.name,
                        m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical,
                        EXISTS (
                            SELECT 1
@@ -162,30 +182,80 @@ public class LecturerRepository {
                 INNER JOIN student s ON s.registrationNo = m.StudentReg
                 INNER JOIN users u ON u.user_id = s.registrationNo
                 WHERE c.lecturerRegistrationNo = ?
-                  AND (? = '' OR m.StudentReg LIKE ? OR m.courseCode LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
+                  AND (? = '' OR COALESCE(s.batch, '') = ?)
+                  AND (? = '' OR m.StudentReg LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
+                  AND (? = '' OR m.courseCode = ?)
                 ORDER BY m.StudentReg, m.courseCode
                 """;
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            String pattern = "%" + safeKeyword + "%";
+            String studentPattern = "%" + safeStudentKeyword + "%";
             statement.setString(1, lecturerReg);
-            statement.setString(2, safeKeyword);
-            statement.setString(3, pattern);
-            statement.setString(4, pattern);
-            statement.setString(5, pattern);
-            statement.setString(6, pattern);
+            statement.setString(2, safeBatch);
+            statement.setString(3, safeBatch);
+            statement.setString(4, safeStudentKeyword);
+            statement.setString(5, studentPattern);
+            statement.setString(6, studentPattern);
+            statement.setString(7, studentPattern);
+            statement.setString(8, safeCourseCode);
+            statement.setString(9, safeCourseCode);
             try (ResultSet rs = statement.executeQuery()) {
                 List<PerformanceRecord> rows = new ArrayList<>();
                 Map<String, AcademicSummary> academicSummaryByStudent = new HashMap<>();
                 while (rs.next()) {
-                    String studentReg = safe(rs.getString("StudentReg"));
-                    String courseCode = safe(rs.getString("courseCode"));
-                    AcademicSummary summary = academicSummaryByStudent.get(studentReg);
+                    String currentStudentReg = safe(rs.getString("StudentReg"));
+                    String currentCourseCode = safe(rs.getString("courseCode"));
+                    AcademicSummary summary = academicSummaryByStudent.get(currentStudentReg);
                     if (summary == null) {
-                        summary = calculateAcademicSummary(connection, studentReg);
-                        academicSummaryByStudent.put(studentReg, summary);
+                        summary = calculateAcademicSummary(connection, currentStudentReg);
+                        academicSummaryByStudent.put(currentStudentReg, summary);
                     }
-                    rows.add(mapPerformanceRecord(connection, rs, courseCode, summary));
+                    rows.add(mapPerformanceRecord(connection, rs, currentCourseCode, summary));
+                }
+                return rows;
+            }
+        }
+    }
+
+    public List<UndergraduateSummaryRecord> findUndergraduateSummariesByLecturer(String lecturerReg, String studentKeyword,
+                                                                                 String courseCode, String batch) throws SQLException {
+        String safeStudentKeyword = studentKeyword == null ? "" : studentKeyword.trim();
+        String safeCourseCode = courseCode == null ? "" : courseCode.trim();
+        String safeBatch = batch == null ? "" : batch.trim();
+        String sql = """
+                SELECT DISTINCT s.registrationNo, u.firstName, u.lastName
+                FROM student s
+                INNER JOIN users u ON u.user_id = s.registrationNo
+                INNER JOIN enrollment e ON e.studentReg = s.registrationNo
+                INNER JOIN course c ON c.courseCode = e.courseCode
+                WHERE c.lecturerRegistrationNo = ?
+                  AND (? = '' OR COALESCE(s.batch, '') = ?)
+                  AND (? = '' OR s.registrationNo LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
+                  AND (? = '' OR e.courseCode = ?)
+                ORDER BY s.registrationNo
+                """;
+        Connection connection = DBConnection.getInstance().getConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            String studentPattern = "%" + safeStudentKeyword + "%";
+            statement.setString(1, lecturerReg);
+            statement.setString(2, safeBatch);
+            statement.setString(3, safeBatch);
+            statement.setString(4, safeStudentKeyword);
+            statement.setString(5, studentPattern);
+            statement.setString(6, studentPattern);
+            statement.setString(7, studentPattern);
+            statement.setString(8, safeCourseCode);
+            statement.setString(9, safeCourseCode);
+            try (ResultSet rs = statement.executeQuery()) {
+                List<UndergraduateSummaryRecord> rows = new ArrayList<>();
+                while (rs.next()) {
+                    AcademicSummary summary = calculateAcademicSummary(connection, safe(rs.getString("registrationNo")));
+                    rows.add(new UndergraduateSummaryRecord(
+                            safe(rs.getString("registrationNo")),
+                            fullName(rs),
+                            summary.getSgpa(),
+                            summary.getCgpa()
+                    ));
                 }
                 return rows;
             }
@@ -319,6 +389,56 @@ public class LecturerRepository {
                 List<MarksRecord> rows = new ArrayList<>();
                 while (rs.next()) {
                     rows.add(mapMarksRecord(rs));
+                }
+                return rows;
+            }
+        }
+    }
+
+    public List<String> findBatchesByLecturer(String lecturerReg) throws SQLException {
+        String sql = """
+                SELECT DISTINCT s.batch
+                FROM student s
+                INNER JOIN enrollment e ON e.studentReg = s.registrationNo
+                INNER JOIN course c ON c.courseCode = e.courseCode
+                WHERE c.lecturerRegistrationNo = ?
+                  AND s.batch IS NOT NULL
+                  AND TRIM(s.batch) <> ''
+                ORDER BY s.batch
+                """;
+        Connection connection = DBConnection.getInstance().getConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, lecturerReg);
+            try (ResultSet rs = statement.executeQuery()) {
+                List<String> rows = new ArrayList<>();
+                while (rs.next()) {
+                    rows.add(safe(rs.getString("batch")));
+                }
+                return rows;
+            }
+        }
+    }
+
+    public List<String> findStudentRegistrationsByLecturer(String lecturerReg, String batch) throws SQLException {
+        String safeBatch = batch == null ? "" : batch.trim();
+        String sql = """
+                SELECT DISTINCT s.registrationNo
+                FROM student s
+                INNER JOIN enrollment e ON e.studentReg = s.registrationNo
+                INNER JOIN course c ON c.courseCode = e.courseCode
+                WHERE c.lecturerRegistrationNo = ?
+                  AND (? = '' OR COALESCE(s.batch, '') = ?)
+                ORDER BY s.registrationNo
+                """;
+        Connection connection = DBConnection.getInstance().getConnection();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, lecturerReg);
+            statement.setString(2, safeBatch);
+            statement.setString(3, safeBatch);
+            try (ResultSet rs = statement.executeQuery()) {
+                List<String> rows = new ArrayList<>();
+                while (rs.next()) {
+                    rows.add(safe(rs.getString("registrationNo")));
                 }
                 return rows;
             }
@@ -462,7 +582,7 @@ public class LecturerRepository {
                             baseRow.getPhone(),
                             baseRow.getDepartment(),
                             baseRow.getStatus(),
-                            String.format("%.2f", summary.getGpa())
+                            String.format("%.2f", summary.getCgpa())
                     ));
                 }
                 return rows;
@@ -512,13 +632,23 @@ public class LecturerRepository {
         );
     }
 
-    private EligibilityRecord mapEligibilityRecord(ResultSet rs) throws SQLException {
+    private EligibilityRecord mapEligibilityRecord(Connection connection, ResultSet rs) throws SQLException {
+        String courseCode = safe(rs.getString("courseCode"));
+        AssessmentStructureUtil.MarkBreakdown breakdown = calculateMarkBreakdown(connection, courseCode, rs);
+        double attendancePercentage = AttendanceEligibilityUtil.calculatePercentage(
+                rs.getInt("eligible_sessions"),
+                rs.getInt("total_sessions")
+        );
         return new EligibilityRecord(
                 safe(rs.getString("StudentReg")),
                 fullName(rs),
-                safe(rs.getString("courseCode")),
+                courseCode,
                 rs.getInt("eligible_sessions"),
-                rs.getInt("total_sessions")
+                rs.getInt("total_sessions"),
+                breakdown.getCaMarks(),
+                GradeScaleUtil.minimumRequiredMark(breakdown.getCaMaximum()),
+                attendancePercentage >= AttendanceEligibilityUtil.MIN_ELIGIBILITY_PERCENTAGE,
+                GradeScaleUtil.meetsCaRequirement(breakdown)
         );
     }
 
@@ -535,12 +665,13 @@ public class LecturerRepository {
                 safe(rs.getString("StudentReg")),
                 fullName(rs),
                 courseCode,
+                safe(rs.getString("name")),
                 breakdown.getCaMarks(),
                 breakdown.getEndMarks(),
                 breakdown.getTotalMarks(),
                 gradeResult.getPublishedGrade(),
-                summary.getGpa(),
-                summary.getSgpa()
+                summary.getSgpa(),
+                summary.getCgpa()
         );
     }
 
@@ -736,13 +867,23 @@ public class LecturerRepository {
         private final String courseCode;
         private final int eligibleSessions;
         private final int totalSessions;
+        private final double caMarks;
+        private final double caThreshold;
+        private final boolean attendanceEligible;
+        private final boolean caEligible;
 
-        public EligibilityRecord(String studentReg, String studentName, String courseCode, int eligibleSessions, int totalSessions) {
+        public EligibilityRecord(String studentReg, String studentName, String courseCode, int eligibleSessions,
+                                 int totalSessions, double caMarks, double caThreshold,
+                                 boolean attendanceEligible, boolean caEligible) {
             this.studentReg = studentReg;
             this.studentName = studentName;
             this.courseCode = courseCode;
             this.eligibleSessions = eligibleSessions;
             this.totalSessions = totalSessions;
+            this.caMarks = caMarks;
+            this.caThreshold = caThreshold;
+            this.attendanceEligible = attendanceEligible;
+            this.caEligible = caEligible;
         }
 
         public String getStudentReg() { return studentReg; }
@@ -750,41 +891,68 @@ public class LecturerRepository {
         public String getCourseCode() { return courseCode; }
         public int getEligibleSessions() { return eligibleSessions; }
         public int getTotalSessions() { return totalSessions; }
+        public double getCaMarks() { return caMarks; }
+        public double getCaThreshold() { return caThreshold; }
+        public boolean isAttendanceEligible() { return attendanceEligible; }
+        public boolean isCaEligible() { return caEligible; }
     }
 
     public static class PerformanceRecord {
         private final String studentReg;
         private final String studentName;
         private final String courseCode;
+        private final String courseName;
         private final double caMarks;
-        private final double endMarks;
+        private final double finalMarks;
         private final double totalMarks;
         private final String publishedGrade;
-        private final Double gpa;
         private final Double sgpa;
+        private final Double cgpa;
 
-        public PerformanceRecord(String studentReg, String studentName, String courseCode, double caMarks, double endMarks,
-                                 double totalMarks, String publishedGrade, Double gpa, Double sgpa) {
+        public PerformanceRecord(String studentReg, String studentName, String courseCode, String courseName,
+                                 double caMarks, double finalMarks, double totalMarks, String publishedGrade,
+                                 Double sgpa, Double cgpa) {
             this.studentReg = studentReg;
             this.studentName = studentName;
             this.courseCode = courseCode;
+            this.courseName = courseName;
             this.caMarks = caMarks;
-            this.endMarks = endMarks;
+            this.finalMarks = finalMarks;
             this.totalMarks = totalMarks;
             this.publishedGrade = publishedGrade;
-            this.gpa = gpa;
             this.sgpa = sgpa;
+            this.cgpa = cgpa;
         }
 
         public String getStudentReg() { return studentReg; }
         public String getStudentName() { return studentName; }
         public String getCourseCode() { return courseCode; }
+        public String getCourseName() { return courseName; }
         public double getCaMarks() { return caMarks; }
-        public double getEndMarks() { return endMarks; }
+        public double getFinalMarks() { return finalMarks; }
         public double getTotalMarks() { return totalMarks; }
         public String getPublishedGrade() { return publishedGrade; }
-        public Double getGpa() { return gpa; }
         public Double getSgpa() { return sgpa; }
+        public Double getCgpa() { return cgpa; }
+    }
+
+    public static class UndergraduateSummaryRecord {
+        private final String studentReg;
+        private final String studentName;
+        private final double sgpa;
+        private final double cgpa;
+
+        public UndergraduateSummaryRecord(String studentReg, String studentName, double sgpa, double cgpa) {
+            this.studentReg = studentReg;
+            this.studentName = studentName;
+            this.sgpa = sgpa;
+            this.cgpa = cgpa;
+        }
+
+        public String getStudentReg() { return studentReg; }
+        public String getStudentName() { return studentName; }
+        public double getSgpa() { return sgpa; }
+        public double getCgpa() { return cgpa; }
     }
 
     private static class AcademicSummary {
@@ -796,6 +964,7 @@ public class LecturerRepository {
             this.sgpa = sgpa;
         }
 
+        public double getCgpa() { return gpa; }
         public double getGpa() { return gpa; }
         public double getSgpa() { return sgpa; }
     }

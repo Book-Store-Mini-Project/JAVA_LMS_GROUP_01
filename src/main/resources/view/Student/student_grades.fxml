@@ -8,15 +8,17 @@
 <VBox spacing="10" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.example.java_lms_group_01.Controller.Student.StudentGradePageController"
       style="-fx-padding: 18; -fx-background-color: white;">
-    <Label text="Grades and GPA" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
+    <Label text="Subject Grades and Final Marks" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
     <TableView fx:id="tblGrades" prefHeight="420">
         <columns>
             <TableColumn fx:id="colCourseCode" text="Course Code" prefWidth="180"/>
-            <TableColumn fx:id="colCourseName" text="Course Name" prefWidth="340"/>
+            <TableColumn fx:id="colCourseName" text="Course Name" prefWidth="260"/>
+            <TableColumn fx:id="colFinalMarks" text="Final Marks" prefWidth="120"/>
+            <TableColumn fx:id="colTotalMarks" text="Total Marks" prefWidth="120"/>
             <TableColumn fx:id="colGrade" text="Grade" prefWidth="140"/>
         </columns>
     </TableView>
-    <Label fx:id="lblGpa" text="GPA    : 0.00" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+    <Label fx:id="lblCgpa" text="CGPA  : 0.00" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
     <Label fx:id="lblSgpa" text="SGPA  : 0.00" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
     <Separator />
 </VBox>

@@ -21,7 +21,7 @@ public class UserProfileRepository {
     public UserManagementRow findStudentProfile(String registrationNo) throws SQLException {
         String sql = """
                 SELECT u.user_id, u.firstName, u.lastName, u.email, u.phoneNumber, u.address,
-                       s.department, s.GPA, s.status
+                       s.department, s.batch, s.GPA, s.status
                 FROM users u
                 INNER JOIN student s ON s.registrationNo = u.user_id
                 WHERE s.registrationNo = ?
@@ -46,6 +46,7 @@ public class UserProfileRepository {
                         rs.getString("user_id"),
                         null,
                         rs.getString("department"),
+                        rs.getString("batch"),
                         rs.getObject("GPA") == null ? null : ((Number) rs.getObject("GPA")).doubleValue(),
                         rs.getString("status"),
                         null,
@@ -84,6 +85,7 @@ public class UserProfileRepository {
                         rs.getString("department"),
                         null,
                         null,
+                        null,
                         rs.getString("position"),
                         userImageRepository.findImagePathByUserId(connection, registrationNo)
                 );
@@ -116,6 +118,7 @@ public class UserProfileRepository {
                         null,
                         "TechnicalOfficer",
                         rs.getString("user_id"),
+                        null,
                         null,
                         null,
                         null,

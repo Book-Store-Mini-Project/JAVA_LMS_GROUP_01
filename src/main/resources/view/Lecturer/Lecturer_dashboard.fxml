@@ -44,7 +44,7 @@
                 <Button onAction="#navMarks" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Upload Exam Marks" />
                 <Button onAction="#navStudents" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Undergraduate Details" />
                 <Button onAction="#navEligibility" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Undergraduate Eligibility" />
-                <Button onAction="#navGpa" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Marks, Grades and GPA" />
+                <Button onAction="#navGpa" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Academic Reports" />
                 <Button onAction="#navAttendance" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Attendance and Medical" />
                 <Button onAction="#navNotices" prefHeight="40.0" prefWidth="300.0" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: CENTER_LEFT;" text="  Notices" />
                 <Separator opacity="0.3" prefWidth="240.0">
