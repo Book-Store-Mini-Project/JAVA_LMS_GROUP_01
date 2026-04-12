@@ -1,9 +1,13 @@
 package com.example.java_lms_group_01.util;
 
 /**
- * Converts numeric marks into letter grades and grade points.
+ * Converts marks into published grades and grade points.
  */
 public final class GradeScaleUtil {
+
+    // Assumption: the prescribed minimum for both CA and ESA is 40% of that component's max weight.
+    private static final double COMPONENT_MINIMUM_RATIO = 0.40;
+    private static final double EPSILON = 1.0e-9;
 
     private GradeScaleUtil() {
     }
@@ -22,16 +26,6 @@ public final class GradeScaleUtil {
         return "E";
     }
 
-    public static String toPublishedGrade(double marks, boolean examPresent, boolean approvedExamMedical) {
-        if (approvedExamMedical) {
-            return "MC";
-        }
-        if (!examPresent) {
-            return "E";
-        }
-        return toLetterGrade(marks);
-    }
-
     public static double toGradePoint(double marks) {
         if (marks >= 80) return 4.0;
         if (marks >= 75) return 4.0;
@@ -42,21 +36,67 @@ public final class GradeScaleUtil {
         if (marks >= 50) return 2.3;
         if (marks >= 45) return 2.0;
         if (marks >= 40) return 1.7;
-        if (marks >= 35) return 1.0;
+        if (marks >= 35) return 1.3;
         return 0.0;
     }
 
-    public static Double toGradePoint(double marks, boolean examPresent, boolean approvedExamMedical) {
+    public static GradeResult evaluatePublishedGrade(AssessmentStructureUtil.MarkBreakdown breakdown,
+                                                     boolean attendanceEligible,
+                                                     boolean examPresent,
+                                                     boolean approvedExamMedical) {
+        if (!attendanceEligible) {
+            return new GradeResult("E", 0.0);
+        }
+
         if (approvedExamMedical) {
-            return null;
+            return new GradeResult("MC", null);
         }
-        if (!examPresent) {
-            return 0.0;
+
+        boolean hasCaComponent = breakdown.getCaMaximum() > EPSILON;
+        boolean hasEndComponent = breakdown.getEndMaximum() > EPSILON;
+        boolean caPassed = !hasCaComponent || meetsComponentMinimum(breakdown.getCaMarks(), breakdown.getCaMaximum());
+        boolean endPassed = !hasEndComponent || meetsComponentMinimum(breakdown.getEndMarks(), breakdown.getEndMaximum());
+
+        if (hasEndComponent && !examPresent) {
+            return caPassed ? new GradeResult("EE", null) : new GradeResult("E", 0.0);
         }
-        return toGradePoint(marks);
+
+        if (!caPassed && !endPassed) {
+            return new GradeResult("E", 0.0);
+        }
+        if (!caPassed) {
+            return new GradeResult("EC", null);
+        }
+        if (!endPassed) {
+            return new GradeResult("EE", null);
+        }
+
+        return new GradeResult(toLetterGrade(breakdown.getTotalMarks()), toGradePoint(breakdown.getTotalMarks()));
     }
 
     public static boolean isEnglishCourse(String courseCode) {
         return courseCode != null && courseCode.trim().toUpperCase().startsWith("ENG");
+    }
+
+    private static boolean meetsComponentMinimum(double marks, double maximum) {
+        return marks + EPSILON >= maximum * COMPONENT_MINIMUM_RATIO;
+    }
+
+    public static final class GradeResult {
+        private final String publishedGrade;
+        private final Double gradePoint;
+
+        public GradeResult(String publishedGrade, Double gradePoint) {
+            this.publishedGrade = publishedGrade;
+            this.gradePoint = gradePoint;
+        }
+
+        public String getPublishedGrade() {
+            return publishedGrade;
+        }
+
+        public Double getGradePoint() {
+            return gradePoint;
+        }
     }
 }

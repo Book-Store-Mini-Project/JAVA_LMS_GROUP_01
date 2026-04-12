@@ -95,7 +95,7 @@
                         </VBox>
                         <VBox prefHeight="130.0" prefWidth="230.0" style="-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 16;">
                             <children>
-                                <Label text="Unread Notices" textFill="#4b5563" />
+                                <Label text="Notices" textFill="#4b5563" />
                                 <Label fx:id="lblUnreadNoticeCount" text="7" textFill="#0f172a">
                                     <font>
                                         <Font name="System Bold" size="28.0" />
@@ -105,28 +105,6 @@
                         </VBox>
                     </children>
                 </HBox>
-                <VBox layoutX="26.0" layoutY="238.0" prefHeight="420.0" prefWidth="752.0" spacing="10.0" style="-fx-background-color: white; -fx-background-radius: 10; -fx-padding: 20;">
-                    <children>
-                        <Label text="Officer Details" textFill="#111827">
-                            <font>
-                                <Font name="System Bold" size="18.0" />
-                            </font>
-                        </Label>
-                        <Label fx:id="lblUserId" text="User ID: TO001" textFill="#374151" />
-                        <Label fx:id="lblDepartment" text="Department: Computing" textFill="#374151" />
-                        <Label fx:id="lblPhone" text="Phone: +94 77 123 4567" textFill="#374151" />
-                        <Label fx:id="lblAddress" text="Address: 24, Galle Road, Colombo" textFill="#374151" />
-                        <Label text="Role Permissions:" textFill="#111827">
-                            <font>
-                                <Font name="System Bold" size="14.0" />
-                            </font>
-                        </Label>
-                        <Label text="- Update own profile (except username and password)" textFill="#374151" />
-                        <Label text="- Add and maintain student attendance records" textFill="#374151" />
-                        <Label text="- Add and maintain undergraduate medical records" textFill="#374151" />
-                        <Label text="- View notices and department timetables" textFill="#374151" />
-                    </children>
-                </VBox>
             </children>
         </AnchorPane>
     </center>

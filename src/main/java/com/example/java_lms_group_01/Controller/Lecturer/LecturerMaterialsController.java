@@ -29,8 +29,6 @@ public class LecturerMaterialsController {
     @FXML
     private ComboBox<String> cmbMaterialType;
     @FXML
-    private TextField txtSearch;
-    @FXML
     private TableView<Material> tblMaterials;
     @FXML
     private TableColumn<Material, String> colMaterialId;
@@ -53,7 +51,7 @@ public class LecturerMaterialsController {
         colMaterialName.setCellValueFactory(d -> d.getValue().nameProperty());
         colPath.setCellValueFactory(d -> d.getValue().pathProperty());
         colType.setCellValueFactory(d -> d.getValue().typeProperty());
-        loadMaterials(null);
+        loadMaterials();
 
         tblMaterials.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, row) -> {
             if (row == null) {
@@ -77,7 +75,7 @@ public class LecturerMaterialsController {
                 showWarn("You can add materials only for courses assigned to you.");
                 return;
             }
-            loadMaterials(txtSearch.getText());
+            loadMaterials();
             clearForm();
         } catch (Exception e) {
             showError("Failed to add material.", e);
@@ -100,7 +98,7 @@ public class LecturerMaterialsController {
                 showWarn("You can update only materials for your own courses.");
                 return;
             }
-            loadMaterials(txtSearch.getText());
+            loadMaterials();
         } catch (Exception e) {
             showError("Failed to update material.", e);
         }
@@ -119,22 +117,11 @@ public class LecturerMaterialsController {
                 showWarn("You can delete only materials for your own courses.");
                 return;
             }
-            loadMaterials(txtSearch.getText());
+            loadMaterials();
             clearForm();
         } catch (Exception e) {
             showError("Failed to delete material.", e);
         }
-    }
-
-    @FXML
-    private void searchMaterials() {
-        loadMaterials(txtSearch.getText());
-    }
-
-    @FXML
-    private void refreshMaterials() {
-        txtSearch.clear();
-        loadMaterials(null);
     }
 
     @FXML
@@ -146,10 +133,10 @@ public class LecturerMaterialsController {
         tblMaterials.getSelectionModel().clearSelection();
     }
 
-    private void loadMaterials(String keyword) {
+    private void loadMaterials() {
         try {
             List<LecturerRepository.MaterialRecord> recordList =
-                    lecturerRepository.findMaterialsByLecturer(currentLecturer(), keyword);
+                    lecturerRepository.findMaterialsByLecturer(currentLecturer(), null);
             List<Material> rows = new ArrayList<>();
             for (LecturerRepository.MaterialRecord record : recordList) {
                 rows.add(new Material(

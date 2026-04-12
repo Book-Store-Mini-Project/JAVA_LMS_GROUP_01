@@ -29,17 +29,11 @@ import java.util.Locale;
 public class StudentMaterialsPageController {
 
     @FXML
-    private TextField txtSearch;
-    @FXML
     private TableView<Material> tblMaterials;
-    @FXML
-    private TableColumn<Material, String> colMaterialId;
     @FXML
     private TableColumn<Material, String> colCourseCode;
     @FXML
     private TableColumn<Material, String> colMaterialName;
-    @FXML
-    private TableColumn<Material, String> colPath;
     @FXML
     private TableColumn<Material, String> colType;
 
@@ -47,10 +41,8 @@ public class StudentMaterialsPageController {
 
     @FXML
     public void initialize() {
-        colMaterialId.setCellValueFactory(d -> d.getValue().materialIdProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
         colMaterialName.setCellValueFactory(d -> d.getValue().nameProperty());
-        colPath.setCellValueFactory(d -> d.getValue().pathProperty());
         colType.setCellValueFactory(d -> d.getValue().typeProperty());
         tblMaterials.setRowFactory(table -> {
             TableRow<Material> row = new TableRow<>();
@@ -64,14 +56,10 @@ public class StudentMaterialsPageController {
         loadMaterials(null);
     }
 
-    @FXML
-    private void searchMaterials() {
-        loadMaterials(txtSearch.getText());
-    }
+
 
     @FXML
     private void refreshMaterials() {
-        txtSearch.clear();
         loadMaterials(null);
     }
 

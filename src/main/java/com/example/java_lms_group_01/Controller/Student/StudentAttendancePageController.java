@@ -21,25 +21,7 @@ import java.util.List;
 public class StudentAttendancePageController {
 
     @FXML
-    private Label lblEligibilityRule;
-    @FXML
-    private TableView<AttendanceEligibilitySummary> tblEligibilitySummary;
-    @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colSummaryCourseCode;
-    @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colSummaryEligibleSessions;
-    @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colSummaryTotalSessions;
-    @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colSummaryAttendancePct;
-    @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colSummaryEligibility;
-    @FXML
     private TableView<Attendance> tblAttendance;
-    @FXML
-    private TableColumn<Attendance, String> colAttendanceId;
-    @FXML
-    private TableColumn<Attendance, String> colStudentReg;
     @FXML
     private TableColumn<Attendance, String> colCourseCode;
     @FXML
@@ -48,26 +30,15 @@ public class StudentAttendancePageController {
     private TableColumn<Attendance, String> colSessionType;
     @FXML
     private TableColumn<Attendance, String> colAttendanceStatus;
-    @FXML
-    private TableColumn<Attendance, String> colTechOfficerReg;
 
     private final StudentRepository studentRepository = new StudentRepository();
 
     @FXML
     public void initialize() {
-        lblEligibilityRule.setText("Eligibility rule: minimum 80% attendance in each course");
-        colSummaryCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
-        colSummaryEligibleSessions.setCellValueFactory(d -> d.getValue().eligibleSessionsProperty());
-        colSummaryTotalSessions.setCellValueFactory(d -> d.getValue().totalSessionsProperty());
-        colSummaryAttendancePct.setCellValueFactory(d -> d.getValue().attendancePctProperty());
-        colSummaryEligibility.setCellValueFactory(d -> d.getValue().eligibilityProperty());
-        colAttendanceId.setCellValueFactory(d -> d.getValue().attendanceIdProperty());
-        colStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
         colSubmissionDate.setCellValueFactory(d -> d.getValue().submissionDateProperty());
         colSessionType.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
         colAttendanceStatus.setCellValueFactory(d -> d.getValue().attendanceStatusProperty());
-        colTechOfficerReg.setCellValueFactory(d -> d.getValue().techOfficerRegProperty());
         loadAttendanceData();
     }
 
@@ -90,8 +61,7 @@ public class StudentAttendancePageController {
                         AttendanceEligibilityUtil.toEligibilityStatus(record.getEligibleSessions(), record.getTotalSessions())
                 ));
             }
-            tblEligibilitySummary.getItems().setAll(summaryRows);
-
+            
             List<StudentRepository.AttendanceRecord> attendanceRecordList =
                     studentRepository.findAttendanceByStudent(regNo);
             List<Attendance> rows = new ArrayList<>();

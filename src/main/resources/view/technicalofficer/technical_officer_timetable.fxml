@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
@@ -19,11 +17,7 @@
 
     <HBox spacing="10.0">
         <children>
-            <ComboBox fx:id="cmbDepartment" promptText="Department" prefWidth="180.0" />
-            <ComboBox fx:id="cmbDay" promptText="Day" prefWidth="160.0" />
-            <TextField fx:id="txtSearch" promptText="Search by timetable id / course / lecturer" />
-            <Button mnemonicParsing="false" onAction="#searchTimetables" text="Search" />
-            <Button mnemonicParsing="false" onAction="#refreshTimetables" text="Refresh" />
+            <ComboBox fx:id="cmbDepartment" onAction="#filterByDepartment" promptText="Department" prefWidth="180.0" />
         </children>
     </HBox>
 

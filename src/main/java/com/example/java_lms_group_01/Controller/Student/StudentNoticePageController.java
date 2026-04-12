@@ -18,25 +18,19 @@ public class StudentNoticePageController {
     @FXML
     private TableView<Notice> tblNotices;
     @FXML
-    private TableColumn<Notice, String> colNoticeId;
-    @FXML
     private TableColumn<Notice, String> colTitle;
     @FXML
     private TableColumn<Notice, String> colContent;
     @FXML
     private TableColumn<Notice, String> colDate;
-    @FXML
-    private TableColumn<Notice, String> colBy;
 
     private final NoticeRepository noticeRepository = new NoticeRepository();
 
     @FXML
     public void initialize() {
-        colNoticeId.setCellValueFactory(d -> d.getValue().noticeIdProperty());
         colTitle.setCellValueFactory(d -> d.getValue().titleProperty());
         colContent.setCellValueFactory(d -> d.getValue().contentProperty());
         colDate.setCellValueFactory(d -> d.getValue().dateProperty());
-        colBy.setCellValueFactory(d -> d.getValue().createdByProperty());
         loadNotices();
     }
 

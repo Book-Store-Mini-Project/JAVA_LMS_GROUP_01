@@ -32,9 +32,6 @@
             <Button text="Update" onAction="#updateMaterial" />
             <Button text="Delete" onAction="#deleteMaterial" />
             <Button text="Clear" onAction="#clearForm" />
-            <TextField fx:id="txtSearch" promptText="Search by course/material" />
-            <Button text="Search" onAction="#searchMaterials" />
-            <Button text="Refresh" onAction="#refreshMaterials" />
         </children>
     </HBox>
 

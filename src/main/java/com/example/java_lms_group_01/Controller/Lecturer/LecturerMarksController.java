@@ -148,12 +148,6 @@ public class LecturerMarksController {
     }
 
     @FXML
-    private void refreshMarks() {
-        txtSearch.clear();
-        loadMarks(null);
-    }
-
-    @FXML
     private void clearForm() {
         txtStudentReg.clear();
         txtCourseCode.clear();

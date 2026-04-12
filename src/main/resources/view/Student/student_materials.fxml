@@ -13,19 +13,14 @@
 
     <HBox spacing="10.0">
         <children>
-            <TextField fx:id="txtSearch" promptText="Search by course/material" />
-            <Button text="Search" onAction="#searchMaterials" />
-            <Button text="Refresh" onAction="#refreshMaterials" />
             <Button text="Download" onAction="#downloadSelectedMaterial" />
         </children>
     </HBox>
 
     <TableView fx:id="tblMaterials" VBox.vgrow="ALWAYS">
         <columns>
-            <TableColumn fx:id="colMaterialId" text="ID" prefWidth="70.0" />
             <TableColumn fx:id="colCourseCode" text="Course" prefWidth="130.0" />
             <TableColumn fx:id="colMaterialName" text="Material Name" prefWidth="220.0" />
-            <TableColumn fx:id="colPath" text="Path / URL" prefWidth="360.0" />
             <TableColumn fx:id="colType" text="Type" prefWidth="120.0" />
         </columns>
     </TableView>

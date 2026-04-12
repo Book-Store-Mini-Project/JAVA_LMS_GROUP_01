@@ -8,11 +8,7 @@
     <Label text="Timetable" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
     <TableView fx:id="tblTimetable" prefHeight="450">
         <columns>
-            <TableColumn fx:id="colTimetableId" text="time_table_id" prefWidth="110"/>
-            <TableColumn fx:id="colDepartment" text="department" prefWidth="110"/>
-            <TableColumn fx:id="colLecId" text="lec_id" prefWidth="120"/>
             <TableColumn fx:id="colCourseCode" text="courseCode" prefWidth="130"/>
-            <TableColumn fx:id="colAdminId" text="admin_id" prefWidth="120"/>
             <TableColumn fx:id="colDay" text="day" prefWidth="110"/>
             <TableColumn fx:id="colStartTime" text="start_time" prefWidth="110"/>
             <TableColumn fx:id="colEndTime" text="end_time" prefWidth="110"/>

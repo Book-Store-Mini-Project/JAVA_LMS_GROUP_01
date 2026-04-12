@@ -8,15 +8,11 @@
     <Label text="Medical Details" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
     <TableView fx:id="tblMedical" prefHeight="450">
         <columns>
-            <TableColumn fx:id="colMedicalId" text="medical_id" prefWidth="90"/>
-            <TableColumn fx:id="colStudentReg" text="StudentReg" prefWidth="110"/>
             <TableColumn fx:id="colCourseCode" text="courseCode" prefWidth="120"/>
             <TableColumn fx:id="colSubmissionDate" text="SubmissionDate" prefWidth="120"/>
             <TableColumn fx:id="colDescription" text="Description" prefWidth="260"/>
             <TableColumn fx:id="colSessionType" text="session_type" prefWidth="110"/>
-            <TableColumn fx:id="colAttendanceId" text="attendance_id" prefWidth="110"/>
             <TableColumn fx:id="colApprovalStatus" text="approval_status" prefWidth="120"/>
-            <TableColumn fx:id="colTechOfficerReg" text="tech_officer_reg" prefWidth="130"/>
         </columns>
     </TableView>
 </VBox>

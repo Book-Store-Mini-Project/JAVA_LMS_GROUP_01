@@ -20,15 +20,7 @@ public class StudentTimetablePageController {
     @FXML
     private TableView<Timetable> tblTimetable;
     @FXML
-    private TableColumn<Timetable, String> colTimetableId;
-    @FXML
-    private TableColumn<Timetable, String> colDepartment;
-    @FXML
-    private TableColumn<Timetable, String> colLecId;
-    @FXML
     private TableColumn<Timetable, String> colCourseCode;
-    @FXML
-    private TableColumn<Timetable, String> colAdminId;
     @FXML
     private TableColumn<Timetable, String> colDay;
     @FXML
@@ -42,11 +34,7 @@ public class StudentTimetablePageController {
 
     @FXML
     public void initialize() {
-        colTimetableId.setCellValueFactory(d -> d.getValue().timetableIdProperty());
-        colDepartment.setCellValueFactory(d -> d.getValue().departmentProperty());
-        colLecId.setCellValueFactory(d -> d.getValue().lecIdProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
-        colAdminId.setCellValueFactory(d -> d.getValue().adminIdProperty());
         colDay.setCellValueFactory(d -> d.getValue().dayProperty());
         colStartTime.setCellValueFactory(d -> d.getValue().startTimeProperty());
         colEndTime.setCellValueFactory(d -> d.getValue().endTimeProperty());

@@ -2,7 +2,6 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Performance;
-import com.example.java_lms_group_01.util.GradeScaleUtil;
 import com.example.java_lms_group_01.util.LecturerContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -63,12 +62,6 @@ public class LecturerGpaController {
         loadPerformance(txtSearch.getText());
     }
 
-    @FXML
-    private void refreshPerformance() {
-        txtSearch.clear();
-        loadPerformance(null);
-    }
-
     private void loadPerformance(String keyword) {
         try {
             List<LecturerRepository.PerformanceRecord> recordList =
@@ -82,7 +75,7 @@ public class LecturerGpaController {
                         String.format("%.2f", record.getCaMarks()),
                         String.format("%.2f", record.getEndMarks()),
                         String.format("%.2f", record.getTotalMarks()),
-                        GradeScaleUtil.toLetterGrade(record.getTotalMarks()),
+                        record.getPublishedGrade(),
                         record.getGpa() == null ? "" : String.format("%.2f", record.getGpa()),
                         record.getSgpa() == null ? "" : String.format("%.2f", record.getSgpa())
                 ));

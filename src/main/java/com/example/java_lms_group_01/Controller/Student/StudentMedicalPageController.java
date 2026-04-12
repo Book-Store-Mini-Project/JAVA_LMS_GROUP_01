@@ -20,10 +20,6 @@ public class StudentMedicalPageController {
     @FXML
     private TableView<Medical> tblMedical;
     @FXML
-    private TableColumn<Medical, String> colMedicalId;
-    @FXML
-    private TableColumn<Medical, String> colStudentReg;
-    @FXML
     private TableColumn<Medical, String> colCourseCode;
     @FXML
     private TableColumn<Medical, String> colSubmissionDate;
@@ -32,25 +28,17 @@ public class StudentMedicalPageController {
     @FXML
     private TableColumn<Medical, String> colSessionType;
     @FXML
-    private TableColumn<Medical, String> colAttendanceId;
-    @FXML
     private TableColumn<Medical, String> colApprovalStatus;
-    @FXML
-    private TableColumn<Medical, String> colTechOfficerReg;
 
     private final StudentRepository studentRepository = new StudentRepository();
 
     @FXML
     public void initialize() {
-        colMedicalId.setCellValueFactory(d -> d.getValue().medicalIdProperty());
-        colStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
         colSubmissionDate.setCellValueFactory(d -> d.getValue().submissionDateProperty());
         colDescription.setCellValueFactory(d -> d.getValue().descriptionProperty());
         colSessionType.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
-        colAttendanceId.setCellValueFactory(d -> d.getValue().attendanceIdProperty());
         colApprovalStatus.setCellValueFactory(d -> d.getValue().approvalStatusProperty());
-        colTechOfficerReg.setCellValueFactory(d -> d.getValue().techOfficerRegProperty());
         loadMedical();
     }
 

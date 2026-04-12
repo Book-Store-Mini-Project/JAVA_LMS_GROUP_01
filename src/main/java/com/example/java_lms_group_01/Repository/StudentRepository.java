@@ -1,6 +1,7 @@
 package com.example.java_lms_group_01.Repository;
 
 import com.example.java_lms_group_01.util.AssessmentStructureUtil;
+import com.example.java_lms_group_01.util.AttendanceEligibilityUtil;
 import com.example.java_lms_group_01.util.DBConnection;
 import com.example.java_lms_group_01.util.GradeScaleUtil;
 
@@ -96,7 +97,7 @@ public class StudentRepository {
     // Build published grades and GPA values for the student.
     public GradeSummary findGradeSummary(String registrationNo) throws SQLException {
         String marksSql = """
-                SELECT m.courseCode, c.name, c.credit, m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical,
+                SELECT m.StudentReg, m.courseCode, c.name, c.credit, m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical,
                        EXISTS (
                            SELECT 1
                            FROM exam_attendance ea
@@ -247,7 +248,8 @@ public class StudentRepository {
 
     private GradeCalculation calculateGrade(Connection connection, ResultSet rs) throws SQLException {
         String courseCode = safe(rs.getString("courseCode"));
-        double totalMarks = AssessmentStructureUtil.calculateMarkBreakdown(
+        boolean attendanceEligible = isAttendanceEligible(connection, rs.getString("StudentReg"), courseCode);
+        AssessmentStructureUtil.MarkBreakdown breakdown = AssessmentStructureUtil.calculateMarkBreakdown(
                 connection,
                 courseCode,
                 nullableDecimal(rs.getObject("quiz_1")),
@@ -258,20 +260,20 @@ public class StudentRepository {
                 nullableDecimal(rs.getObject("mid_term")),
                 nullableDecimal(rs.getObject("final_theory")),
                 nullableDecimal(rs.getObject("final_practical"))
-        ).getTotalMarks();
+        );
         boolean examPresent = rs.getInt("exam_present") == 1;
         boolean approvedExamMedical = rs.getInt("approved_exam_medical") == 1;
         int credit = rs.getInt("credit");
-        Double gradePoint = GradeScaleUtil.toGradePoint(totalMarks, examPresent, approvedExamMedical);
-        String publishedGrade = GradeScaleUtil.toPublishedGrade(totalMarks, examPresent, approvedExamMedical);
+        GradeScaleUtil.GradeResult gradeResult =
+                GradeScaleUtil.evaluatePublishedGrade(breakdown, attendanceEligible, examPresent, approvedExamMedical);
 
         GradeCalculation result = new GradeCalculation();
         result.courseCode = courseCode;
         result.courseName = safe(rs.getString("name"));
-        result.totalMarks = totalMarks;
+        result.totalMarks = breakdown.getTotalMarks();
         result.credit = credit;
-        result.gradePoint = gradePoint;
-        result.publishedGrade = publishedGrade;
+        result.gradePoint = gradeResult.getGradePoint();
+        result.publishedGrade = gradeResult.getPublishedGrade();
         return result;
     }
 
@@ -305,6 +307,38 @@ public class StudentRepository {
             statement.setString(1, regNo);
             try (ResultSet rs = statement.executeQuery()) {
                 return rs.next() ? safe(rs.getString("department")) : "";
+            }
+        }
+    }
+
+    private boolean isAttendanceEligible(Connection connection, String studentReg, String courseCode) throws SQLException {
+        String sql = """
+                SELECT COALESCE(SUM(CASE
+                           WHEN a.attendance_status = 'present' THEN 1
+                           WHEN a.attendance_status = 'medical' AND EXISTS (
+                               SELECT 1
+                               FROM medical m
+                               WHERE m.attendance_id = a.attendance_id
+                                 AND m.approval_status = 'approved'
+                           ) THEN 1
+                           ELSE 0
+                       END), 0) AS eligible_sessions,
+                       COUNT(*) AS total_sessions
+                FROM attendance a
+                WHERE a.StudentReg = ?
+                  AND a.courseCode = ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, studentReg);
+            statement.setString(2, courseCode);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (!rs.next()) {
+                    return false;
+                }
+                return AttendanceEligibilityUtil.calculatePercentage(
+                        rs.getInt("eligible_sessions"),
+                        rs.getInt("total_sessions")
+                ) >= AttendanceEligibilityUtil.MIN_ELIGIBILITY_PERCENTAGE;
             }
         }
     }

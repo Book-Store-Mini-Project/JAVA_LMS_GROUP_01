@@ -8,11 +8,9 @@
     <Label text="Notices" style="-fx-font-size: 20px; -fx-font-weight: bold;" />
     <TableView fx:id="tblNotices" prefHeight="450">
         <columns>
-            <TableColumn fx:id="colNoticeId" text="notice_id" prefWidth="90"/>
             <TableColumn fx:id="colTitle" text="notice_title" prefWidth="220"/>
             <TableColumn fx:id="colContent" text="notice_content" prefWidth="380"/>
             <TableColumn fx:id="colDate" text="publishDate" prefWidth="140"/>
-            <TableColumn fx:id="colBy" text="createdBy" prefWidth="140"/>
         </columns>
     </TableView>
 </VBox>

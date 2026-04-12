@@ -8,22 +8,17 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
 
 import java.sql.SQLException;
 import java.util.List;
 
 /**
- * Shows timetables to the technical officer with simple department/day filtering.
+ * Shows timetables to the technical officer with a simple department filter.
  */
 public class TechnicalOfficerTimetableController {
 
     @FXML
     private ComboBox<String> cmbDepartment;
-    @FXML
-    private ComboBox<String> cmbDay;
-    @FXML
-    private TextField txtSearch;
     @FXML
     private TableView<Timetable> tblTimetables;
     @FXML
@@ -59,35 +54,26 @@ public class TechnicalOfficerTimetableController {
         colEndTime.setCellValueFactory(d -> d.getValue().endTimeProperty());
         colSessionType.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
 
-        loadFilters();
-        loadTimetables(null, null, null);
+        loadDepartments();
+        loadTimetables(null);
     }
 
     @FXML
-    private void searchTimetables(ActionEvent event) {
-        loadTimetables(cmbDepartment.getValue(), cmbDay.getValue(), txtSearch.getText());
+    private void filterByDepartment(ActionEvent event) {
+        loadTimetables(cmbDepartment.getValue());
     }
 
-    @FXML
-    private void refreshTimetables(ActionEvent event) {
-        cmbDepartment.setValue(null);
-        cmbDay.setValue(null);
-        txtSearch.clear();
-        loadTimetables(null, null, null);
-    }
-
-    private void loadFilters() {
+    private void loadDepartments() {
         try {
             cmbDepartment.getItems().setAll(timetableRepository.findAllDepartments());
-            cmbDay.getItems().setAll(timetableRepository.findAllDays());
         } catch (SQLException e) {
-            showError("Failed to load timetable filters.", e);
+            showError("Failed to load departments.", e);
         }
     }
 
-    private void loadTimetables(String department, String day, String keyword) {
+    private void loadTimetables(String department) {
         try {
-            List<Timetable> timetables = timetableRepository.findByFilters(department, day, keyword);
+            List<Timetable> timetables = timetableRepository.findByFilters(department, null, null);
             tblTimetables.getItems().setAll(timetables);
         } catch (SQLException e) {
             showError("Failed to load timetables.", e);

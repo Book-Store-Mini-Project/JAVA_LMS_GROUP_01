@@ -57,12 +57,6 @@ public class LecturerEligibilityController {
         loadEligibility(txtSearch.getText());
     }
 
-    @FXML
-    private void refreshEligibility() {
-        txtSearch.clear();
-        loadEligibility(null);
-    }
-
     private void loadEligibility(String keyword) {
         try {
             List<LecturerRepository.EligibilityRecord> recordList =

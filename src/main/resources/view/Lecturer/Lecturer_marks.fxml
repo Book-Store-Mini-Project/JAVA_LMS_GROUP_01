@@ -54,7 +54,6 @@
             <Button text="Clear" onAction="#clearForm" />
             <TextField fx:id="txtSearch" promptText="Search by student/course" />
             <Button text="Search" onAction="#searchMarks" />
-            <Button text="Refresh" onAction="#refreshMarks" />
         </children>
     </HBox>
 

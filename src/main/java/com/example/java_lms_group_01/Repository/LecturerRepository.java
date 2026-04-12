@@ -1,6 +1,7 @@
 package com.example.java_lms_group_01.Repository;
 
 import com.example.java_lms_group_01.util.AssessmentStructureUtil;
+import com.example.java_lms_group_01.util.AttendanceEligibilityUtil;
 import com.example.java_lms_group_01.util.DBConnection;
 import com.example.java_lms_group_01.util.GradeScaleUtil;
 
@@ -140,7 +141,22 @@ public class LecturerRepository {
         String safeKeyword = keyword == null ? "" : keyword.trim();
         String sql = """
                 SELECT m.StudentReg, u.firstName, u.lastName, m.courseCode, s.GPA,
-                       m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical
+                       m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical,
+                       EXISTS (
+                           SELECT 1
+                           FROM exam_attendance ea
+                           WHERE ea.studentReg = m.StudentReg
+                             AND ea.courseCode = m.courseCode
+                             AND ea.status = 'present'
+                       ) AS exam_present,
+                       EXISTS (
+                           SELECT 1
+                           FROM medical md
+                           WHERE md.StudentReg = m.StudentReg
+                             AND md.courseCode = m.courseCode
+                             AND md.approval_status = 'approved'
+                             AND LOWER(COALESCE(md.session_type, '')) = 'exam'
+                       ) AS approved_exam_medical
                 FROM marks m
                 INNER JOIN course c ON c.courseCode = m.courseCode
                 INNER JOIN student s ON s.registrationNo = m.StudentReg
@@ -178,7 +194,22 @@ public class LecturerRepository {
 
     private AcademicSummary calculateAcademicSummary(Connection connection, String studentReg) throws SQLException {
         String sql = """
-                SELECT m.courseCode, c.credit, m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical
+                SELECT m.courseCode, c.credit, m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical,
+                       EXISTS (
+                           SELECT 1
+                           FROM exam_attendance ea
+                           WHERE ea.studentReg = m.StudentReg
+                             AND ea.courseCode = m.courseCode
+                             AND ea.status = 'present'
+                       ) AS exam_present,
+                       EXISTS (
+                           SELECT 1
+                           FROM medical md
+                           WHERE md.StudentReg = m.StudentReg
+                             AND md.courseCode = m.courseCode
+                             AND md.approval_status = 'approved'
+                             AND LOWER(COALESCE(md.session_type, '')) = 'exam'
+                       ) AS approved_exam_medical
                 FROM marks m
                 INNER JOIN course c ON c.courseCode = m.courseCode
                 WHERE m.StudentReg = ?
@@ -192,7 +223,7 @@ public class LecturerRepository {
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     String courseCode = safe(rs.getString("courseCode"));
-                    double totalMarks = AssessmentStructureUtil.calculateMarkBreakdown(
+                    AssessmentStructureUtil.MarkBreakdown breakdown = AssessmentStructureUtil.calculateMarkBreakdown(
                             connection,
                             courseCode,
                             nullableDecimal(rs.getObject("quiz_1")),
@@ -203,14 +234,21 @@ public class LecturerRepository {
                             nullableDecimal(rs.getObject("mid_term")),
                             nullableDecimal(rs.getObject("final_theory")),
                             nullableDecimal(rs.getObject("final_practical"))
-        ).getTotalMarks();
+                    );
                     int credit = rs.getInt("credit");
-                    double gradePoint = GradeScaleUtil.toGradePoint(totalMarks);
-                    sgpaWeightedPoints += gradePoint * credit;
-                    sgpaCredits += credit;
-                    if (!GradeScaleUtil.isEnglishCourse(courseCode)) {
-                        gpaWeightedPoints += gradePoint * credit;
-                        gpaCredits += credit;
+                    GradeScaleUtil.GradeResult gradeResult = GradeScaleUtil.evaluatePublishedGrade(
+                            breakdown,
+                            isAttendanceEligible(connection, studentReg, courseCode),
+                            rs.getInt("exam_present") == 1,
+                            rs.getInt("approved_exam_medical") == 1
+                    );
+                    if (gradeResult.getGradePoint() != null) {
+                        sgpaWeightedPoints += gradeResult.getGradePoint() * credit;
+                        sgpaCredits += credit;
+                        if (!GradeScaleUtil.isEnglishCourse(courseCode)) {
+                            gpaWeightedPoints += gradeResult.getGradePoint() * credit;
+                            gpaCredits += credit;
+                        }
                     }
                 }
             }
@@ -390,7 +428,7 @@ public class LecturerRepository {
     public List<StudentRecord> findStudentsByLecturer(String lecturerReg, String keyword) throws SQLException {
         String safeKeyword = keyword == null ? "" : keyword.trim();
         String sql = """
-                SELECT DISTINCT s.registrationNo, u.firstName, u.lastName, u.email, u.phoneNumber, s.department, s.status, s.GPA
+                SELECT DISTINCT s.registrationNo, u.firstName, u.lastName, u.email, u.phoneNumber, s.department, s.status
                 FROM student s
                 INNER JOIN users u ON u.user_id = s.registrationNo
                 INNER JOIN enrollment e ON e.studentReg = s.registrationNo
@@ -409,9 +447,23 @@ public class LecturerRepository {
             statement.setString(5, pattern);
             statement.setString(6, pattern);
             try (ResultSet rs = statement.executeQuery()) {
-                List<StudentRecord> rows = new ArrayList<>();
+                List<StudentListRow> baseRows = new ArrayList<>();
                 while (rs.next()) {
-                    rows.add(mapStudentRecord(rs));
+                    baseRows.add(mapStudentListRow(rs));
+                }
+
+                List<StudentRecord> rows = new ArrayList<>();
+                for (StudentListRow baseRow : baseRows) {
+                    AcademicSummary summary = calculateAcademicSummary(connection, baseRow.getRegNo());
+                    rows.add(new StudentRecord(
+                            baseRow.getRegNo(),
+                            baseRow.getName(),
+                            baseRow.getEmail(),
+                            baseRow.getPhone(),
+                            baseRow.getDepartment(),
+                            baseRow.getStatus(),
+                            String.format("%.2f", summary.getGpa())
+                    ));
                 }
                 return rows;
             }
@@ -473,6 +525,12 @@ public class LecturerRepository {
     private PerformanceRecord mapPerformanceRecord(Connection connection, ResultSet rs, String courseCode,
                                                    AcademicSummary summary) throws SQLException {
         AssessmentStructureUtil.MarkBreakdown breakdown = calculateMarkBreakdown(connection, courseCode, rs);
+        GradeScaleUtil.GradeResult gradeResult = GradeScaleUtil.evaluatePublishedGrade(
+                breakdown,
+                isAttendanceEligible(connection, rs.getString("StudentReg"), courseCode),
+                rs.getInt("exam_present") == 1,
+                rs.getInt("approved_exam_medical") == 1
+        );
         return new PerformanceRecord(
                 safe(rs.getString("StudentReg")),
                 fullName(rs),
@@ -480,6 +538,7 @@ public class LecturerRepository {
                 breakdown.getCaMarks(),
                 breakdown.getEndMarks(),
                 breakdown.getTotalMarks(),
+                gradeResult.getPublishedGrade(),
                 summary.getGpa(),
                 summary.getSgpa()
         );
@@ -499,6 +558,38 @@ public class LecturerRepository {
                 nullableDecimal(rs.getObject("final_theory")),
                 nullableDecimal(rs.getObject("final_practical"))
         );
+    }
+
+    private boolean isAttendanceEligible(Connection connection, String studentReg, String courseCode) throws SQLException {
+        String sql = """
+                SELECT COALESCE(SUM(CASE
+                           WHEN a.attendance_status = 'present' THEN 1
+                           WHEN a.attendance_status = 'medical' AND EXISTS (
+                               SELECT 1
+                               FROM medical m
+                               WHERE m.attendance_id = a.attendance_id
+                                 AND m.approval_status = 'approved'
+                           ) THEN 1
+                           ELSE 0
+                       END), 0) AS eligible_sessions,
+                       COUNT(*) AS total_sessions
+                FROM attendance a
+                WHERE a.StudentReg = ?
+                  AND a.courseCode = ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, studentReg);
+            statement.setString(2, courseCode);
+            try (ResultSet rs = statement.executeQuery()) {
+                if (!rs.next()) {
+                    return false;
+                }
+                return AttendanceEligibilityUtil.calculatePercentage(
+                        rs.getInt("eligible_sessions"),
+                        rs.getInt("total_sessions")
+                ) >= AttendanceEligibilityUtil.MIN_ELIGIBILITY_PERCENTAGE;
+            }
+        }
     }
 
     private MarksRecord mapMarksRecord(ResultSet rs) throws SQLException {
@@ -527,19 +618,14 @@ public class LecturerRepository {
         );
     }
 
-    private StudentRecord mapStudentRecord(ResultSet rs) throws SQLException {
-        String gpa = "";
-        if (rs.getObject("GPA") != null) {
-            gpa = String.format("%.2f", ((Number) rs.getObject("GPA")).doubleValue());
-        }
-        return new StudentRecord(
+    private StudentListRow mapStudentListRow(ResultSet rs) throws SQLException {
+        return new StudentListRow(
                 safe(rs.getString("registrationNo")),
                 fullName(rs),
                 safe(rs.getString("email")),
                 safe(rs.getString("phoneNumber")),
                 safe(rs.getString("department")),
-                safe(rs.getString("status")),
-                gpa
+                safe(rs.getString("status"))
         );
     }
 
@@ -673,16 +759,19 @@ public class LecturerRepository {
         private final double caMarks;
         private final double endMarks;
         private final double totalMarks;
+        private final String publishedGrade;
         private final Double gpa;
         private final Double sgpa;
 
-        public PerformanceRecord(String studentReg, String studentName, String courseCode, double caMarks, double endMarks, double totalMarks, Double gpa, Double sgpa) {
+        public PerformanceRecord(String studentReg, String studentName, String courseCode, double caMarks, double endMarks,
+                                 double totalMarks, String publishedGrade, Double gpa, Double sgpa) {
             this.studentReg = studentReg;
             this.studentName = studentName;
             this.courseCode = courseCode;
             this.caMarks = caMarks;
             this.endMarks = endMarks;
             this.totalMarks = totalMarks;
+            this.publishedGrade = publishedGrade;
             this.gpa = gpa;
             this.sgpa = sgpa;
         }
@@ -693,6 +782,7 @@ public class LecturerRepository {
         public double getCaMarks() { return caMarks; }
         public double getEndMarks() { return endMarks; }
         public double getTotalMarks() { return totalMarks; }
+        public String getPublishedGrade() { return publishedGrade; }
         public Double getGpa() { return gpa; }
         public Double getSgpa() { return sgpa; }
     }
@@ -858,6 +948,31 @@ public class LecturerRepository {
         public String getDepartment() { return department; }
         public String getStatus() { return status; }
         public String getGpa() { return gpa; }
+    }
+
+    private static class StudentListRow {
+        private final String regNo;
+        private final String name;
+        private final String email;
+        private final String phone;
+        private final String department;
+        private final String status;
+
+        public StudentListRow(String regNo, String name, String email, String phone, String department, String status) {
+            this.regNo = regNo;
+            this.name = name;
+            this.email = email;
+            this.phone = phone;
+            this.department = department;
+            this.status = status;
+        }
+
+        public String getRegNo() { return regNo; }
+        public String getName() { return name; }
+        public String getEmail() { return email; }
+        public String getPhone() { return phone; }
+        public String getDepartment() { return department; }
+        public String getStatus() { return status; }
     }
 
     public static class TimetableRecord {

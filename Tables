@@ -1,0 +1,263 @@
+CREATE DATABASE IF NOT EXISTS lms02;
+USE lms02;
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id VARCHAR(50) PRIMARY KEY,
+    firstName VARCHAR(100) NOT NULL,
+    lastName VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    address VARCHAR(255),
+    phoneNumber VARCHAR(20),
+    dateOfBirth DATE,
+    gender VARCHAR(20)
+);
+
+CREATE TABLE IF NOT EXISTS admin (
+    registrationNo VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    CONSTRAINT fk_admin_user
+        FOREIGN KEY (registrationNo) REFERENCES users(user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS lecturer (
+    registrationNo VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    department VARCHAR(100),
+    position VARCHAR(100),
+    CONSTRAINT fk_lecturer_user
+        FOREIGN KEY (registrationNo) REFERENCES users(user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS tech_officer (
+    registrationNo VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    department VARCHAR(100),
+    CONSTRAINT fk_tech_officer_user
+        FOREIGN KEY (registrationNo) REFERENCES users(user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS student (
+    registrationNo VARCHAR(50) PRIMARY KEY,
+    password VARCHAR(255) NOT NULL,
+    department VARCHAR(100),
+    GPA DECIMAL(4,2),
+    status VARCHAR(30),
+    CONSTRAINT fk_student_user
+        FOREIGN KEY (registrationNo) REFERENCES users(user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS user_profile_images (
+    user_id VARCHAR(50) PRIMARY KEY,
+    image_path VARCHAR(500) NOT NULL,
+    CONSTRAINT fk_user_profile_image_user
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS course (
+    courseCode VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    lecturerRegistrationNo VARCHAR(50),
+    department VARCHAR(100),
+    semester VARCHAR(50),
+    credit INT NOT NULL DEFAULT 0,
+    course_type VARCHAR(30) NOT NULL,
+    CONSTRAINT fk_course_lecturer
+        FOREIGN KEY (lecturerRegistrationNo) REFERENCES lecturer(registrationNo)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS assessment_structure (
+    assessment_id INT AUTO_INCREMENT PRIMARY KEY,
+    courseCode VARCHAR(50) NOT NULL,
+    component VARCHAR(50) NOT NULL,
+    weight DECIMAL(5,2) NOT NULL,
+    CONSTRAINT fk_assessment_structure_course
+        FOREIGN KEY (courseCode) REFERENCES course(courseCode)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT uq_assessment_structure UNIQUE (courseCode, component)
+);
+
+CREATE TABLE IF NOT EXISTS enrollment (
+    enrollment_id INT AUTO_INCREMENT PRIMARY KEY,
+    studentReg VARCHAR(50) NOT NULL,
+    courseCode VARCHAR(50) NOT NULL,
+    status VARCHAR(30),
+    CONSTRAINT fk_enrollment_student
+        FOREIGN KEY (studentReg) REFERENCES student(registrationNo)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_enrollment_course
+        FOREIGN KEY (courseCode) REFERENCES course(courseCode)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT uq_enrollment UNIQUE (studentReg, courseCode),
+    INDEX idx_enrollment_student (studentReg),
+    INDEX idx_enrollment_course (courseCode)
+);
+
+CREATE TABLE IF NOT EXISTS attendance (
+    attendance_id INT AUTO_INCREMENT PRIMARY KEY,
+    StudentReg VARCHAR(50) NOT NULL,
+    courseCode VARCHAR(50) NOT NULL,
+    tech_officer_reg VARCHAR(50),
+    SubmissionDate DATE NOT NULL,
+    session_type VARCHAR(30) NOT NULL,
+    attendance_status VARCHAR(30) NOT NULL,
+    CONSTRAINT fk_attendance_student
+        FOREIGN KEY (StudentReg) REFERENCES student(registrationNo)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_attendance_course
+        FOREIGN KEY (courseCode) REFERENCES course(courseCode)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_attendance_tech_officer
+        FOREIGN KEY (tech_officer_reg) REFERENCES tech_officer(registrationNo)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    INDEX idx_attendance_student_course (StudentReg, courseCode),
+    INDEX idx_attendance_tech_officer (tech_officer_reg)
+);
+
+CREATE TABLE IF NOT EXISTS exam_attendance (
+    exam_attendance_id INT AUTO_INCREMENT PRIMARY KEY,
+    studentReg VARCHAR(50) NOT NULL,
+    courseCode VARCHAR(50) NOT NULL,
+    status VARCHAR(30) NOT NULL,
+    attendanceDate DATE,
+    CONSTRAINT fk_exam_attendance_student
+        FOREIGN KEY (studentReg) REFERENCES student(registrationNo)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_exam_attendance_course
+        FOREIGN KEY (courseCode) REFERENCES course(courseCode)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT uq_exam_attendance UNIQUE (studentReg, courseCode)
+);
+
+CREATE TABLE IF NOT EXISTS medical (
+    medical_id INT AUTO_INCREMENT PRIMARY KEY,
+    StudentReg VARCHAR(50) NOT NULL,
+    courseCode VARCHAR(50) NOT NULL,
+    tech_officer_reg VARCHAR(50),
+    SubmissionDate DATE NOT NULL,
+    Description TEXT,
+    session_type VARCHAR(30) NOT NULL,
+    attendance_id INT NOT NULL,
+    approval_status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    approved_by_lecturer VARCHAR(50),
+    approved_at DATE,
+    CONSTRAINT fk_medical_student
+        FOREIGN KEY (StudentReg) REFERENCES student(registrationNo)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_medical_course
+        FOREIGN KEY (courseCode) REFERENCES course(courseCode)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_medical_tech_officer
+        FOREIGN KEY (tech_officer_reg) REFERENCES tech_officer(registrationNo)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_medical_attendance
+        FOREIGN KEY (attendance_id) REFERENCES attendance(attendance_id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_medical_approved_lecturer
+        FOREIGN KEY (approved_by_lecturer) REFERENCES lecturer(registrationNo)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    INDEX idx_medical_student_course (StudentReg, courseCode)
+);
+
+CREATE TABLE IF NOT EXISTS marks (
+    mark_id INT AUTO_INCREMENT PRIMARY KEY,
+    LectureReg VARCHAR(50) NOT NULL,
+    StudentReg VARCHAR(50) NOT NULL,
+    courseCode VARCHAR(50) NOT NULL,
+    quiz_1 DECIMAL(5,2),
+    quiz_2 DECIMAL(5,2),
+    quiz_3 DECIMAL(5,2),
+    assessment DECIMAL(5,2),
+    Project DECIMAL(5,2),
+    mid_term DECIMAL(5,2),
+    final_theory DECIMAL(5,2),
+    final_practical DECIMAL(5,2),
+    CONSTRAINT fk_marks_lecturer
+        FOREIGN KEY (LectureReg) REFERENCES lecturer(registrationNo)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_marks_student
+        FOREIGN KEY (StudentReg) REFERENCES student(registrationNo)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_marks_course
+        FOREIGN KEY (courseCode) REFERENCES course(courseCode)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT uq_marks UNIQUE (StudentReg, courseCode),
+    INDEX idx_marks_student_course (StudentReg, courseCode)
+);
+
+CREATE TABLE IF NOT EXISTS lecture_materials (
+    material_id INT AUTO_INCREMENT PRIMARY KEY,
+    courseCode VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    path VARCHAR(500) NOT NULL,
+    material_type VARCHAR(50) NOT NULL,
+    CONSTRAINT fk_lecture_materials_course
+        FOREIGN KEY (courseCode) REFERENCES course(courseCode)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    INDEX idx_materials_course (courseCode)
+);
+
+CREATE TABLE IF NOT EXISTS timetable (
+    time_table_id VARCHAR(50) PRIMARY KEY,
+    department VARCHAR(100) NOT NULL,
+    lec_id VARCHAR(50),
+    courseCode VARCHAR(50),
+    admin_id VARCHAR(50),
+    day VARCHAR(20) NOT NULL,
+    start_time TIME,
+    end_time TIME,
+    session_type VARCHAR(30) NOT NULL,
+    CONSTRAINT fk_timetable_lecturer
+        FOREIGN KEY (lec_id) REFERENCES lecturer(registrationNo)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_timetable_course
+        FOREIGN KEY (courseCode) REFERENCES course(courseCode)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_timetable_admin
+        FOREIGN KEY (admin_id) REFERENCES admin(registrationNo)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    INDEX idx_timetable_department_day (department, day)
+);
+
+CREATE TABLE IF NOT EXISTS notice (
+    notice_id INT AUTO_INCREMENT PRIMARY KEY,
+    notice_title VARCHAR(255) NOT NULL,
+    notice_content TEXT NOT NULL,
+    publishDate DATE,
+    createdBy VARCHAR(50),
+    CONSTRAINT fk_notice_creator
+        FOREIGN KEY (createdBy) REFERENCES users(user_id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
+);

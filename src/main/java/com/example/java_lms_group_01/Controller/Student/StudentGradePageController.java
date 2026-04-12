@@ -2,6 +2,7 @@ package com.example.java_lms_group_01.Controller.Student;
 
 import com.example.java_lms_group_01.Repository.StudentRepository;
 import com.example.java_lms_group_01.model.Grade;
+import com.example.java_lms_group_01.util.GradeScaleUtil;
 import com.example.java_lms_group_01.util.StudentContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -59,8 +60,8 @@ public class StudentGradePageController {
                 ));
             }
             tblGrades.getItems().setAll(rows);
-            lblGpa.setText("GPA (without English) : " + String.format("%.2f", summary.getGpa()));
-            lblSgpa.setText("SGPA (with English) : " + String.format("%.2f", summary.getSgpa()));
+            lblGpa.setText("GPA   : " + String.format("%.2f", summary.getGpa()));
+            lblSgpa.setText("SGPA : " + String.format("%.2f", summary.getSgpa()));
         } catch (SQLException e) {
             showError("Failed to load grades and GPA.", e);
         }
