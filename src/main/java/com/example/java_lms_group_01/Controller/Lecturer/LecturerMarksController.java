@@ -2,6 +2,7 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Mark;
+import com.example.java_lms_group_01.model.request.MarkRequest;
 import com.example.java_lms_group_01.util.LecturerContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -164,25 +165,9 @@ public class LecturerMarksController {
 
     private void loadMarks(String keyword) {
         try {
-            java.util.List<LecturerRepository.MarksRecord> recordList =
-                    lecturerRepository.findMarksByLecturer(currentLecturer(), keyword);
-            java.util.List<Mark> rows = new java.util.ArrayList<>();
-            for (LecturerRepository.MarksRecord record : recordList) {
-                rows.add(new Mark(
-                        record.getMarkId(),
-                        record.getStudentReg(),
-                        record.getCourseCode(),
-                        record.getQuiz1(),
-                        record.getQuiz2(),
-                        record.getQuiz3(),
-                        record.getAssessment(),
-                        record.getProject(),
-                        record.getMidTerm(),
-                        record.getFinalTheory(),
-                        record.getFinalPractical()
-                ));
-            }
-            tblMarks.getItems().setAll(rows);
+            tblMarks.getItems().setAll(
+                    lecturerRepository.findMarksByLecturer(currentLecturer(), keyword)
+            );
         } catch (SQLException e) {
             showError("Failed to load marks.", e);
         }
@@ -233,8 +218,8 @@ public class LecturerMarksController {
         return textField.getText() == null ? "" : textField.getText().trim();
     }
 
-    private LecturerRepository.MarksMutation buildMutation() {
-        return new LecturerRepository.MarksMutation(
+    private MarkRequest buildMutation() {
+        return new MarkRequest(
                 value(txtStudentReg),
                 value(txtCourseCode),
                 parseDecimal(txtQuiz1),

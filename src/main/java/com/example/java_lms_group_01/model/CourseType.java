@@ -19,16 +19,24 @@ public enum CourseType {
     }
 
     public static CourseType fromValue(String value) {
-        if (value == null || value.isBlank()) {
+        if (value == null) {
+            throw new IllegalArgumentException("Course type is required.");
+        }
+        String normalized = value.trim();
+        if (normalized.isEmpty()) {
             throw new IllegalArgumentException("Course type is required.");
         }
 
-        String normalized = value.trim();
-        for (CourseType type : values()) {
-            if (type.dbValue.equalsIgnoreCase(normalized) || type.name().equalsIgnoreCase(normalized)) {
-                return type;
-            }
+        if (normalized.equalsIgnoreCase("theory")) {
+            return THEORY;
         }
+        if (normalized.equalsIgnoreCase("practical")) {
+            return PRACTICAL;
+        }
+        if (normalized.equalsIgnoreCase("both")) {
+            return BOTH;
+        }
+
         throw new IllegalArgumentException("Unsupported course type: " + value);
     }
 

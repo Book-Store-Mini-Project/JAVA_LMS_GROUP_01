@@ -19,8 +19,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -56,8 +54,6 @@ public class StudentMaterialsPageController {
         loadMaterials(null);
     }
 
-
-
     @FXML
     private void refreshMaterials() {
         loadMaterials(null);
@@ -80,19 +76,9 @@ public class StudentMaterialsPageController {
         }
 
         try {
-            List<StudentRepository.MaterialRecord> recordList =
-                    studentRepository.findMaterialsByStudent(studentReg, keyword);
-            List<Material> rows = new ArrayList<>();
-            for (StudentRepository.MaterialRecord record : recordList) {
-                rows.add(new Material(
-                        record.getMaterialId(),
-                        record.getCourseCode(),
-                        record.getName(),
-                        record.getPath(),
-                        record.getType()
-                ));
-            }
-            tblMaterials.getItems().setAll(rows);
+            tblMaterials.getItems().setAll(
+                    studentRepository.findMaterialsByStudent(studentReg, keyword)
+            );
         } catch (SQLException e) {
             showError("Failed to load course materials.", e);
         }
@@ -133,9 +119,9 @@ public class StudentMaterialsPageController {
         String fileName = buildFileName(material);
         Path targetFile = uniquePath(downloadsDir.resolve(fileName));
 
-        try (InputStream inputStream = new URL(material.getPath()).openStream()) {
-            Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
-        }
+        InputStream inputStream = new URL(material.getPath()).openStream();
+        Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
+        inputStream.close();
         return targetFile;
     }
 

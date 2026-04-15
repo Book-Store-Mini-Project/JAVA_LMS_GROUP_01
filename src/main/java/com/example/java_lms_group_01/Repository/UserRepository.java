@@ -23,50 +23,42 @@ public class UserRepository {
 
     // Read all admin users.
     public List<UserManagementRow> findAdmins() throws SQLException {
-        String sql = """
-                SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender,
-                       'Admin' AS role, a.registrationNo, NULL AS password, NULL AS department, NULL AS GPA, NULL AS status, NULL AS position, img.image_path AS profile_image_path
-                FROM users u
-                INNER JOIN admin a ON a.registrationNo = u.user_id
-                LEFT JOIN user_profile_images img ON img.user_id = u.user_id
-                ORDER BY u.user_id DESC
-                """;
+        String sql = "SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender, "
+                + "'Admin' AS role, a.registrationNo, NULL AS password, NULL AS department, NULL AS batch, NULL AS GPA, NULL AS status, NULL AS position, img.image_path AS profile_image_path "
+                + "FROM users u "
+                + "INNER JOIN admin a ON a.registrationNo = u.user_id "
+                + "LEFT JOIN user_profile_images img ON img.user_id = u.user_id "
+                + "ORDER BY u.user_id DESC";
         return executeQuery(sql);
     }
 
     public List<UserManagementRow> findLecturers() throws SQLException {
-        String sql = """
-                SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender,
-                       'Lecturer' AS role, l.registrationNo, NULL AS password, l.department, NULL AS GPA, NULL AS status, l.position, img.image_path AS profile_image_path
-                FROM users u
-                INNER JOIN lecturer l ON l.registrationNo = u.user_id
-                LEFT JOIN user_profile_images img ON img.user_id = u.user_id
-                ORDER BY u.user_id DESC
-                """;
+        String sql = "SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender, "
+                + "'Lecturer' AS role, l.registrationNo, NULL AS password, l.department, NULL AS batch, NULL AS GPA, NULL AS status, l.position, img.image_path AS profile_image_path "
+                + "FROM users u "
+                + "INNER JOIN lecturer l ON l.registrationNo = u.user_id "
+                + "LEFT JOIN user_profile_images img ON img.user_id = u.user_id "
+                + "ORDER BY u.user_id DESC";
         return executeQuery(sql);
     }
 
     public List<UserManagementRow> findStudents() throws SQLException {
-        String sql = """
-                SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender,
-                       'Student' AS role, s.registrationNo, NULL AS password, s.department, s.batch, s.GPA, s.status, NULL AS position, img.image_path AS profile_image_path
-                FROM users u
-                INNER JOIN student s ON s.registrationNo = u.user_id
-                LEFT JOIN user_profile_images img ON img.user_id = u.user_id
-                ORDER BY u.user_id DESC
-                """;
+        String sql = "SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender, "
+                + "'Student' AS role, s.registrationNo, NULL AS password, s.department, s.batch, s.GPA, s.status, NULL AS position, img.image_path AS profile_image_path "
+                + "FROM users u "
+                + "INNER JOIN student s ON s.registrationNo = u.user_id "
+                + "LEFT JOIN user_profile_images img ON img.user_id = u.user_id "
+                + "ORDER BY u.user_id DESC";
         return executeQuery(sql);
     }
 
     public List<UserManagementRow> findTechnicalOfficers() throws SQLException {
-        String sql = """
-                SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender,
-                       'TechnicalOfficer' AS role, t.registrationNo, NULL AS password, NULL AS department, NULL AS GPA, NULL AS status, NULL AS position, img.image_path AS profile_image_path
-                FROM users u
-                INNER JOIN tech_officer t ON t.registrationNo = u.user_id
-                LEFT JOIN user_profile_images img ON img.user_id = u.user_id
-                ORDER BY u.user_id DESC
-                """;
+        String sql = "SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, u.dateOfBirth, u.gender, "
+                + "'TechnicalOfficer' AS role, t.registrationNo, NULL AS password, NULL AS department, NULL AS batch, NULL AS GPA, NULL AS status, NULL AS position, img.image_path AS profile_image_path "
+                + "FROM users u "
+                + "INNER JOIN tech_officer t ON t.registrationNo = u.user_id "
+                + "LEFT JOIN user_profile_images img ON img.user_id = u.user_id "
+                + "ORDER BY u.user_id DESC";
         return executeQuery(sql);
     }
 

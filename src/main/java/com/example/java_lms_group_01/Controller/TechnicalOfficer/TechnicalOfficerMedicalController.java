@@ -2,6 +2,7 @@ package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
 import com.example.java_lms_group_01.Repository.TechnicalOfficerRepository;
 import com.example.java_lms_group_01.model.Medical;
+import com.example.java_lms_group_01.model.request.MedicalRequest;
 import com.example.java_lms_group_01.util.TechnicalOfficerContext;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -16,8 +17,6 @@ import javafx.scene.control.TextField;
 
 import java.time.LocalDate;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Lets a technical officer manage student medical submissions.
@@ -96,7 +95,7 @@ public class TechnicalOfficerMedicalController {
             return;
         }
         try {
-            technicalOfficerRepository.addMedical(buildMedicalMutation());
+            technicalOfficerRepository.addMedical(buildMedicalRequest());
             loadMedical(txtSearch.getText());
             clearForm(event);
         } catch (Exception e) {
@@ -115,7 +114,7 @@ public class TechnicalOfficerMedicalController {
             return;
         }
         try {
-            technicalOfficerRepository.updateMedical(Integer.parseInt(selected.getMedicalId()), buildMedicalMutation());
+            technicalOfficerRepository.updateMedical(Integer.parseInt(selected.getMedicalId()), buildMedicalRequest());
             loadMedical(txtSearch.getText());
         } catch (Exception e) {
             showError("Failed to update medical record.", e);
@@ -201,23 +200,7 @@ public class TechnicalOfficerMedicalController {
 
     private void loadMedical(String keyword) {
         try {
-            List<TechnicalOfficerRepository.MedicalRecord> recordList =
-                    technicalOfficerRepository.findMedical(keyword);
-            List<Medical> rows = new ArrayList<>();
-            for (TechnicalOfficerRepository.MedicalRecord record : recordList) {
-                rows.add(new Medical(
-                        record.getMedicalId(),
-                        record.getStudentRegNo(),
-                        record.getCourseCode(),
-                        record.getDate(),
-                        record.getDescription(),
-                        record.getSessionType(),
-                        record.getAttendanceId(),
-                        record.getApprovalStatus(),
-                        record.getTechOfficerReg()
-                ));
-            }
-            tblMedical.getItems().setAll(rows);
+            tblMedical.getItems().setAll(technicalOfficerRepository.findMedical(keyword));
         } catch (SQLException e) {
             showError("Failed to load medical records.", e);
         }
@@ -228,8 +211,8 @@ public class TechnicalOfficerMedicalController {
         return reg == null ? "" : reg.trim();
     }
 
-    private TechnicalOfficerRepository.MedicalMutation buildMedicalMutation() {
-        return new TechnicalOfficerRepository.MedicalMutation(
+    private MedicalRequest buildMedicalRequest() {
+        return new MedicalRequest(
                 value(txtStudentRegNo),
                 value(txtCourseCode),
                 Integer.parseInt(value(txtAttendanceId)),

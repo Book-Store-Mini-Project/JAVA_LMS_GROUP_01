@@ -5,7 +5,7 @@ import java.time.LocalDate;
 /**
  * Student object used when the program needs student-specific fields.
  */
-public class Student extends User {
+public class Student extends User implements StudentRole {
     private String registrationNo;
     private String password;
     private String batch;
@@ -15,7 +15,8 @@ public class Student extends User {
     public Student() {
     }
 
-    public Student(String userId, String firstName, String lastName, String email, String address, String phoneNumber, LocalDate dateOfBirth, String gender) {
+    public Student(String userId, String firstName, String lastName, String email, String address,
+                   String phoneNumber, LocalDate dateOfBirth, String gender) {
         super(userId, firstName, lastName, email, address, phoneNumber, dateOfBirth, gender);
     }
 
@@ -31,8 +32,8 @@ public class Student extends User {
         return gpa;
     }
 
-    public void setGPA(float GPA) {
-        this.gpa = GPA;
+    public void setGPA(float gpa) {
+        this.gpa = gpa;
     }
 
     public String getBatch() {

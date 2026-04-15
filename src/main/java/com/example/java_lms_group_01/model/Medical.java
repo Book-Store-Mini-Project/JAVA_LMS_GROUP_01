@@ -3,59 +3,173 @@ package com.example.java_lms_group_01.model;
 import javafx.beans.property.SimpleStringProperty;
 
 /**
- * JavaFX table row used to display one medical submission.
+ * Simple medical model used in tables.
  */
 public class Medical {
-    private final SimpleStringProperty medicalId;
-    private final SimpleStringProperty studentReg;
-    private final SimpleStringProperty courseCode;
-    private final SimpleStringProperty submissionDate;
-    private final SimpleStringProperty description;
-    private final SimpleStringProperty sessionType;
-    private final SimpleStringProperty attendanceId;
-    private final SimpleStringProperty approvalStatus;
-    private final SimpleStringProperty techOfficerReg;
+    private String medicalId;
+    private String studentReg;
+    private String courseCode;
+    private String submissionDate;
+    private String description;
+    private String sessionType;
+    private String attendanceId;
+    private String approvalStatus;
+    private String techOfficerReg;
+
+    public Medical() {
+    }
 
     public Medical(String medicalId, String studentReg, String courseCode, String submissionDate,
                    String description, String sessionType, String attendanceId,
                    String approvalStatus, String techOfficerReg) {
-        this.medicalId = new SimpleStringProperty(medicalId);
-        this.studentReg = new SimpleStringProperty(studentReg);
-        this.courseCode = new SimpleStringProperty(courseCode);
-        this.submissionDate = new SimpleStringProperty(submissionDate);
-        this.description = new SimpleStringProperty(description);
-        this.sessionType = new SimpleStringProperty(sessionType);
-        this.attendanceId = new SimpleStringProperty(attendanceId);
-        this.approvalStatus = new SimpleStringProperty(approvalStatus);
-        this.techOfficerReg = new SimpleStringProperty(techOfficerReg);
+        setMedicalId(medicalId);
+        setStudentReg(studentReg);
+        setCourseCode(courseCode);
+        setSubmissionDate(submissionDate);
+        setDescription(description);
+        setSessionType(sessionType);
+        setAttendanceId(attendanceId);
+        setApprovalStatus(approvalStatus);
+        setTechOfficerReg(techOfficerReg);
     }
 
-    public SimpleStringProperty medicalIdProperty() { return medicalId; }
-    public SimpleStringProperty studentRegProperty() { return studentReg; }
-    public SimpleStringProperty studentRegNoProperty() { return studentReg; }
-    public SimpleStringProperty courseCodeProperty() { return courseCode; }
-    public SimpleStringProperty submissionDateProperty() { return submissionDate; }
-    public SimpleStringProperty dateProperty() { return submissionDate; }
-    public SimpleStringProperty descriptionProperty() { return description; }
-    public SimpleStringProperty sessionTypeProperty() { return sessionType; }
-    public SimpleStringProperty attendanceIdProperty() { return attendanceId; }
-    public SimpleStringProperty approvalStatusProperty() { return approvalStatus; }
-    public SimpleStringProperty techOfficerRegProperty() { return techOfficerReg; }
+    public String getMedicalId() {
+        return medicalId;
+    }
 
-    public String getMedicalId() { return medicalId.get(); }
-    public String getStudentReg() { return studentReg.get(); }
-    public String getStudentRegNo() { return studentReg.get(); }
-    public String getCourseCode() { return courseCode.get(); }
-    public String getSubmissionDate() { return submissionDate.get(); }
-    public String getDate() { return submissionDate.get(); }
-    public String getDescription() { return description.get(); }
-    public String getSessionType() { return sessionType.get(); }
-    public String getAttendanceId() { return attendanceId.get(); }
+    public void setMedicalId(String medicalId) {
+        this.medicalId = text(medicalId);
+    }
 
-    public void setStudentRegNo(String value) { studentReg.set(value); }
-    public void setCourseCode(String value) { courseCode.set(value); }
-    public void setDate(String value) { submissionDate.set(value); }
-    public void setDescription(String value) { description.set(value); }
-    public void setSessionType(String value) { sessionType.set(value); }
-    public void setAttendanceId(String value) { attendanceId.set(value); }
+    public String getStudentReg() {
+        return studentReg;
+    }
+
+    public void setStudentReg(String studentReg) {
+        this.studentReg = text(studentReg);
+    }
+
+    public String getStudentRegNo() {
+        return studentReg;
+    }
+
+    public void setStudentRegNo(String studentRegNo) {
+        this.studentReg = text(studentRegNo);
+    }
+
+    public String getCourseCode() {
+        return courseCode;
+    }
+
+    public void setCourseCode(String courseCode) {
+        this.courseCode = text(courseCode);
+    }
+
+    public String getSubmissionDate() {
+        return submissionDate;
+    }
+
+    public void setSubmissionDate(String submissionDate) {
+        this.submissionDate = text(submissionDate);
+    }
+
+    public String getDate() {
+        return submissionDate;
+    }
+
+    public void setDate(String date) {
+        this.submissionDate = text(date);
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = text(description);
+    }
+
+    public String getSessionType() {
+        return sessionType;
+    }
+
+    public void setSessionType(String sessionType) {
+        this.sessionType = text(sessionType);
+    }
+
+    public String getAttendanceId() {
+        return attendanceId;
+    }
+
+    public void setAttendanceId(String attendanceId) {
+        this.attendanceId = text(attendanceId);
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = text(approvalStatus);
+    }
+
+    public String getTechOfficerReg() {
+        return techOfficerReg;
+    }
+
+    public void setTechOfficerReg(String techOfficerReg) {
+        this.techOfficerReg = text(techOfficerReg);
+    }
+
+    public SimpleStringProperty medicalIdProperty() {
+        return property(medicalId);
+    }
+
+    public SimpleStringProperty studentRegProperty() {
+        return property(studentReg);
+    }
+
+    public SimpleStringProperty studentRegNoProperty() {
+        return property(studentReg);
+    }
+
+    public SimpleStringProperty courseCodeProperty() {
+        return property(courseCode);
+    }
+
+    public SimpleStringProperty submissionDateProperty() {
+        return property(submissionDate);
+    }
+
+    public SimpleStringProperty dateProperty() {
+        return property(submissionDate);
+    }
+
+    public SimpleStringProperty descriptionProperty() {
+        return property(description);
+    }
+
+    public SimpleStringProperty sessionTypeProperty() {
+        return property(sessionType);
+    }
+
+    public SimpleStringProperty attendanceIdProperty() {
+        return property(attendanceId);
+    }
+
+    public SimpleStringProperty approvalStatusProperty() {
+        return property(approvalStatus);
+    }
+
+    public SimpleStringProperty techOfficerRegProperty() {
+        return property(techOfficerReg);
+    }
+
+    private static SimpleStringProperty property(String value) {
+        return new SimpleStringProperty(text(value));
+    }
+
+    private static String text(String value) {
+        return value == null ? "" : value;
+    }
 }

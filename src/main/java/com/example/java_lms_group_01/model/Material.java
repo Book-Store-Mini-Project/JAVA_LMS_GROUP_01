@@ -3,32 +3,91 @@ package com.example.java_lms_group_01.model;
 import javafx.beans.property.SimpleStringProperty;
 
 /**
- * JavaFX table row that shows one uploaded lecture material.
+ * Simple material model used in tables.
  */
 public class Material {
-    private final SimpleStringProperty materialId;
-    private final SimpleStringProperty courseCode;
-    private final SimpleStringProperty name;
-    private final SimpleStringProperty path;
-    private final SimpleStringProperty type;
+    private String materialId;
+    private String courseCode;
+    private String name;
+    private String path;
+    private String type;
 
-    public Material(String materialId, String courseCode, String name, String path, String type) {
-        this.materialId = new SimpleStringProperty(materialId);
-        this.courseCode = new SimpleStringProperty(courseCode);
-        this.name = new SimpleStringProperty(name);
-        this.path = new SimpleStringProperty(path);
-        this.type = new SimpleStringProperty(type);
+    public Material() {
     }
 
-    public SimpleStringProperty materialIdProperty() { return materialId; }
-    public SimpleStringProperty courseCodeProperty() { return courseCode; }
-    public SimpleStringProperty nameProperty() { return name; }
-    public SimpleStringProperty pathProperty() { return path; }
-    public SimpleStringProperty typeProperty() { return type; }
+    public Material(String materialId, String courseCode, String name, String path, String type) {
+        setMaterialId(materialId);
+        setCourseCode(courseCode);
+        setName(name);
+        setPath(path);
+        setType(type);
+    }
 
-    public String getMaterialId() { return materialId.get(); }
-    public String getCourseCode() { return courseCode.get(); }
-    public String getName() { return name.get(); }
-    public String getPath() { return path.get(); }
-    public String getType() { return type.get(); }
+    public String getMaterialId() {
+        return materialId;
+    }
+
+    public void setMaterialId(String materialId) {
+        this.materialId = text(materialId);
+    }
+
+    public String getCourseCode() {
+        return courseCode;
+    }
+
+    public void setCourseCode(String courseCode) {
+        this.courseCode = text(courseCode);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = text(name);
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public void setPath(String path) {
+        this.path = text(path);
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = text(type);
+    }
+
+    public SimpleStringProperty materialIdProperty() {
+        return property(materialId);
+    }
+
+    public SimpleStringProperty courseCodeProperty() {
+        return property(courseCode);
+    }
+
+    public SimpleStringProperty nameProperty() {
+        return property(name);
+    }
+
+    public SimpleStringProperty pathProperty() {
+        return property(path);
+    }
+
+    public SimpleStringProperty typeProperty() {
+        return property(type);
+    }
+
+    private static SimpleStringProperty property(String value) {
+        return new SimpleStringProperty(text(value));
+    }
+
+    private static String text(String value) {
+        return value == null ? "" : value;
+    }
 }

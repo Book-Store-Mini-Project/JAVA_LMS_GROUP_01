@@ -9,8 +9,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Shows medical submissions that belong to the logged-in student.
@@ -49,22 +47,7 @@ public class StudentMedicalPageController {
         }
 
         try {
-            List<StudentRepository.MedicalRecord> recordList = studentRepository.findMedicalByStudent(regNo);
-            List<Medical> rows = new ArrayList<>();
-            for (StudentRepository.MedicalRecord record : recordList) {
-                rows.add(new Medical(
-                        record.getMedicalId(),
-                        record.getStudentReg(),
-                        record.getCourseCode(),
-                        record.getSubmissionDate(),
-                        record.getDescription(),
-                        record.getSessionType(),
-                        record.getAttendanceId(),
-                        record.getApprovalStatus(),
-                        record.getTechOfficerReg()
-                ));
-            }
-            tblMedical.getItems().setAll(rows);
+            tblMedical.getItems().setAll(studentRepository.findMedicalByStudent(regNo));
         } catch (SQLException e) {
             showError("Failed to load medical details.", e);
         }

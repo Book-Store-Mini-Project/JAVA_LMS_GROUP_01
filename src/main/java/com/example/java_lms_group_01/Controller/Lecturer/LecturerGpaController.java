@@ -2,7 +2,7 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Performance;
-import com.example.java_lms_group_01.model.UndergraduateSummary;
+import com.example.java_lms_group_01.model.summary.UndergraduateSummary;
 import com.example.java_lms_group_01.util.LecturerContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -96,12 +96,12 @@ public class LecturerGpaController {
         colSummaryCgpa.setCellValueFactory(d -> d.getValue().cgpaProperty());
 
         loadBatchOptions();
-        loadReports("", "", "");
+        loadReports("", "");
     }
 
     @FXML
     private void submitFilters() {
-        loadReports(value(txtStudentSearch), "", selectedBatch());
+        loadReports(value(txtStudentSearch), selectedBatch());
     }
 
     private void loadBatchOptions() {
@@ -122,37 +122,12 @@ public class LecturerGpaController {
         return batch == null || "All Batches".equals(batch) ? "" : batch.trim();
     }
 
-    private void loadReports(String studentReg, String courseCode, String batch) {
+    private void loadReports(String studentReg, String batch) {
         try {
-            List<LecturerRepository.PerformanceRecord> recordList =
-                    lecturerRepository.findPerformanceByLecturer(currentLecturer(), studentReg, courseCode, batch);
-            List<Performance> performanceRows = new ArrayList<>();
-            for (LecturerRepository.PerformanceRecord record : recordList) {
-                performanceRows.add(new Performance(
-                        record.getStudentReg(),
-                        record.getStudentName(),
-                        record.getCourseCode(),
-                        record.getCourseName(),
-                        String.format("%.2f", record.getCaMarks()),
-                        String.format("%.2f", record.getFinalMarks()),
-                        String.format("%.2f", record.getTotalMarks()),
-                        record.getPublishedGrade(),
-                        record.getSgpa() == null ? "" : String.format("%.2f", record.getSgpa()),
-                        record.getCgpa() == null ? "" : String.format("%.2f", record.getCgpa())
-                ));
-            }
-
-            List<LecturerRepository.UndergraduateSummaryRecord> summaryRecordList =
-                    lecturerRepository.findUndergraduateSummariesByLecturer(currentLecturer(), studentReg, courseCode, batch);
-            List<UndergraduateSummary> summaryRows = new ArrayList<>();
-            for (LecturerRepository.UndergraduateSummaryRecord record : summaryRecordList) {
-                summaryRows.add(new UndergraduateSummary(
-                        record.getStudentReg(),
-                        record.getStudentName(),
-                        String.format("%.2f", record.getSgpa()),
-                        String.format("%.2f", record.getCgpa())
-                ));
-            }
+            List<Performance> performanceRows =
+                    lecturerRepository.findPerformanceByLecturer(currentLecturer(), studentReg, "", batch);
+            List<UndergraduateSummary> summaryRows =
+                    lecturerRepository.findUndergraduateSummariesByLecturer(currentLecturer(), studentReg, "", batch);
 
             tblFinalMarks.getItems().setAll(performanceRows);
             tblPerformance.getItems().setAll(performanceRows);

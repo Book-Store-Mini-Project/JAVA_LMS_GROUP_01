@@ -1,6 +1,6 @@
 package com.example.java_lms_group_01.Controller.Admin;
 
-import com.example.java_lms_group_01.model.users.Admin;
+import com.example.java_lms_group_01.Service.AdminService;
 import com.example.java_lms_group_01.model.Notice;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -49,7 +49,7 @@ public class ManageNoticesController implements Initializable {
     @FXML
     private TextField txtSearchNotice;
 
-    private final Admin admin = new Admin();
+    private final AdminService adminService = new AdminService();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -72,7 +72,7 @@ public class ManageNoticesController implements Initializable {
 
     private void loadNotices(String keyword) {
         try {
-            List<Notice> notices = admin.getNotices(keyword);
+            List<Notice> notices = adminService.getNotices(keyword);
             tblNotices.getItems().setAll(notices);
         } catch (SQLException e) {
             showError("Failed to load notices.", e);
@@ -87,7 +87,7 @@ public class ManageNoticesController implements Initializable {
         }
 
         try {
-            boolean saved = admin.createNotice(newNotice);
+            boolean saved = adminService.createNotice(newNotice);
             if (saved) {
                 loadNotices(txtSearchNotice.getText());
                 showInfo("Notice added successfully.");
@@ -116,7 +116,7 @@ public class ManageNoticesController implements Initializable {
         }
 
         try {
-            boolean deleted = admin.deleteNotice(selectedNotice.getNoticeId());
+            boolean deleted = adminService.deleteNotice(selectedNotice.getNoticeId());
             if (deleted) {
                 loadNotices(txtSearchNotice.getText());
                 showInfo("Notice deleted successfully.");
@@ -142,7 +142,7 @@ public class ManageNoticesController implements Initializable {
         }
 
         try {
-            boolean updated = admin.updateNotice(updatedNotice);
+            boolean updated = adminService.updateNotice(updatedNotice);
             if (updated) {
                 loadNotices(txtSearchNotice.getText());
                 showInfo("Notice updated successfully.");

@@ -2,7 +2,7 @@ package com.example.java_lms_group_01.Controller.Student;
 
 import com.example.java_lms_group_01.Repository.StudentRepository;
 import com.example.java_lms_group_01.model.Grade;
-import com.example.java_lms_group_01.util.GradeScaleUtil;
+import com.example.java_lms_group_01.model.summary.StudentGradeSummary;
 import com.example.java_lms_group_01.util.StudentContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -11,9 +11,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Shows published grades plus GPA and SGPA for the logged-in student.
  */
@@ -55,18 +52,8 @@ public class StudentGradePageController {
         }
 
         try {
-            StudentRepository.GradeSummary summary = studentRepository.findGradeSummary(regNo);
-            List<Grade> rows = new ArrayList<>();
-            for (StudentRepository.GradeRecord record : summary.getGrades()) {
-                rows.add(new Grade(
-                        record.getCourseCode(),
-                        record.getCourseName(),
-                        String.format("%.2f", record.getFinalMarks()),
-                        String.format("%.2f", record.getTotalMarks()),
-                        record.getGrade()
-                ));
-            }
-            tblGrades.getItems().setAll(rows);
+            StudentGradeSummary summary = studentRepository.findGradeSummary(regNo);
+            tblGrades.getItems().setAll(summary.getGrades());
             lblCgpa.setText("CGPA : " + String.format("%.2f", summary.getCgpa()));
             lblSgpa.setText("SGPA : " + String.format("%.2f", summary.getSgpa()));
         } catch (SQLException e) {

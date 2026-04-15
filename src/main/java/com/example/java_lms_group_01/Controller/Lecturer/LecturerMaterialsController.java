@@ -2,6 +2,7 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Material;
+import com.example.java_lms_group_01.model.request.MaterialRequest;
 import com.example.java_lms_group_01.util.LecturerContext;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -12,9 +13,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Lets a lecturer manage course materials for the courses assigned to that lecturer.
  */
@@ -135,19 +133,9 @@ public class LecturerMaterialsController {
 
     private void loadMaterials() {
         try {
-            List<LecturerRepository.MaterialRecord> recordList =
-                    lecturerRepository.findMaterialsByLecturer(currentLecturer(), null);
-            List<Material> rows = new ArrayList<>();
-            for (LecturerRepository.MaterialRecord record : recordList) {
-                rows.add(new Material(
-                        record.getMaterialId(),
-                        record.getCourseCode(),
-                        record.getName(),
-                        record.getPath(),
-                        record.getType()
-                ));
-            }
-            tblMaterials.getItems().setAll(rows);
+            tblMaterials.getItems().setAll(
+                    lecturerRepository.findMaterialsByLecturer(currentLecturer(), null)
+            );
         } catch (SQLException e) {
             showError("Failed to load materials.", e);
         }
@@ -178,8 +166,8 @@ public class LecturerMaterialsController {
         alert.showAndWait();
     }
 
-    private LecturerRepository.MaterialMutation buildMutation() {
-        return new LecturerRepository.MaterialMutation(
+    private MaterialRequest buildMutation() {
+        return new MaterialRequest(
                 value(txtCourseCode),
                 value(txtMaterialName),
                 value(txtPath),

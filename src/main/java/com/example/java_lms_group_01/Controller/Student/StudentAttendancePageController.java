@@ -2,7 +2,7 @@ package com.example.java_lms_group_01.Controller.Student;
 
 import com.example.java_lms_group_01.Repository.StudentRepository;
 import com.example.java_lms_group_01.model.Attendance;
-import com.example.java_lms_group_01.model.AttendanceEligibilitySummary;
+import com.example.java_lms_group_01.model.Eligibility;
 import com.example.java_lms_group_01.util.StudentContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -10,8 +10,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Shows a student's attendance details and attendance eligibility summary.
@@ -19,21 +17,21 @@ import java.util.List;
 public class StudentAttendancePageController {
 
     @FXML
-    private TableView<AttendanceEligibilitySummary> tblEligibilitySummary;
+    private TableView<Eligibility> tblEligibilitySummary;
     @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colSummaryCourseCode;
+    private TableColumn<Eligibility, String> colSummaryCourseCode;
     @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colEligibleSessions;
+    private TableColumn<Eligibility, String> colEligibleSessions;
     @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colTotalSessions;
+    private TableColumn<Eligibility, String> colTotalSessions;
     @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colAttendancePct;
+    private TableColumn<Eligibility, String> colAttendancePct;
     @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colCaMarks;
+    private TableColumn<Eligibility, String> colCaMarks;
     @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colCaThreshold;
+    private TableColumn<Eligibility, String> colCaThreshold;
     @FXML
-    private TableColumn<AttendanceEligibilitySummary, String> colEligibility;
+    private TableColumn<Eligibility, String> colEligibility;
     @FXML
     private TableView<Attendance> tblAttendance;
     @FXML
@@ -71,38 +69,12 @@ public class StudentAttendancePageController {
         }
 
         try {
-            List<StudentRepository.AttendanceEligibilityRecord> summaryRecordList =
-                    studentRepository.findAttendanceEligibilityByStudent(regNo);
-            List<AttendanceEligibilitySummary> summaryRows = new ArrayList<>();
-            for (StudentRepository.AttendanceEligibilityRecord record : summaryRecordList) {
-                summaryRows.add(new AttendanceEligibilitySummary(
-                        record.getCourseCode(),
-                        String.valueOf(record.getEligibleSessions()),
-                        String.valueOf(record.getTotalSessions()),
-                        String.format("%.2f%%", record.getTotalSessions() == 0 ? 0.0 :
-                                record.getEligibleSessions() * 100.0 / record.getTotalSessions()),
-                        String.format("%.2f", record.getCaMarks()),
-                        String.format("%.2f", record.getCaThreshold()),
-                        buildEligibilityStatus(record.isAttendanceEligible(), record.isCaEligible())
-                ));
-            }
-            tblEligibilitySummary.getItems().setAll(summaryRows);
-            
-            List<StudentRepository.AttendanceRecord> attendanceRecordList =
-                    studentRepository.findAttendanceByStudent(regNo);
-            List<Attendance> rows = new ArrayList<>();
-            for (StudentRepository.AttendanceRecord record : attendanceRecordList) {
-                rows.add(new Attendance(
-                        record.getAttendanceId(),
-                        record.getStudentReg(),
-                        record.getCourseCode(),
-                        record.getSubmissionDate(),
-                        record.getSessionType(),
-                        record.getAttendanceStatus(),
-                        record.getTechOfficerReg()
-                ));
-            }
-            tblAttendance.getItems().setAll(rows);
+            tblEligibilitySummary.getItems().setAll(
+                    studentRepository.findAttendanceEligibilityByStudent(regNo)
+            );
+            tblAttendance.getItems().setAll(
+                    studentRepository.findAttendanceByStudent(regNo)
+            );
         } catch (SQLException e) {
             showError("Failed to load attendance details.", e);
         }
@@ -116,16 +88,4 @@ public class StudentAttendancePageController {
         alert.showAndWait();
     }
 
-    private String buildEligibilityStatus(boolean attendanceEligible, boolean caEligible) {
-        if (attendanceEligible && caEligible) {
-            return "Eligible";
-        }
-        if (!attendanceEligible && !caEligible) {
-            return "Attendance + CA Shortage";
-        }
-        if (!attendanceEligible) {
-            return "Attendance Shortage";
-        }
-        return "CA Shortage";
-    }
 }

@@ -8,9 +8,9 @@ import java.time.LocalTime;
  * Simple timetable model used by admin, lecturer, student, and technical officer screens.
  */
 public class Timetable {
-    private String timeTableId;
+    private String timetableId;
     private String department;
-    private String lecId;
+    private String lecturerId;
     private String courseCode;
     private String adminId;
     private String day;
@@ -21,11 +21,11 @@ public class Timetable {
     public Timetable() {
     }
 
-    public Timetable(String timeTableId, String department, String lecId, String courseCode, String adminId,
+    public Timetable(String timetableId, String department, String lecturerId, String courseCode, String adminId,
                      String day, LocalTime startTime, LocalTime endTime, String sessionType) {
-        this.timeTableId = timeTableId;
+        this.timetableId = timetableId;
         this.department = department;
-        this.lecId = lecId;
+        this.lecturerId = lecturerId;
         this.courseCode = courseCode;
         this.adminId = adminId;
         this.day = day;
@@ -35,11 +35,11 @@ public class Timetable {
     }
 
     public String getTimeTableId() {
-        return timeTableId;
+        return timetableId;
     }
 
     public void setTimeTableId(String timeTableId) {
-        this.timeTableId = timeTableId;
+        this.timetableId = timeTableId;
     }
 
     public String getDepartment() {
@@ -51,11 +51,11 @@ public class Timetable {
     }
 
     public String getLecId() {
-        return lecId;
+        return lecturerId;
     }
 
     public void setLecId(String lecId) {
-        this.lecId = lecId;
+        this.lecturerId = lecId;
     }
 
     public String getCourseCode() {
@@ -107,46 +107,42 @@ public class Timetable {
     }
 
     public SimpleStringProperty timetableIdProperty() {
-        return new SimpleStringProperty(value(timeTableId));
+        return property(timetableId);
     }
 
     public SimpleStringProperty departmentProperty() {
-        return new SimpleStringProperty(value(department));
-    }
-
-    public SimpleStringProperty lecIdProperty() {
-        return new SimpleStringProperty(value(lecId));
+        return property(department);
     }
 
     public SimpleStringProperty lecturerIdProperty() {
-        return lecIdProperty();
+        return property(lecturerId);
     }
 
     public SimpleStringProperty courseCodeProperty() {
-        return new SimpleStringProperty(value(courseCode));
+        return property(courseCode);
     }
 
     public SimpleStringProperty adminIdProperty() {
-        return new SimpleStringProperty(value(adminId));
+        return property(adminId);
     }
 
     public SimpleStringProperty dayProperty() {
-        return new SimpleStringProperty(value(day));
+        return property(day);
     }
 
     public SimpleStringProperty startTimeProperty() {
-        return new SimpleStringProperty(startTime == null ? "" : startTime.toString());
+        return property(startTime == null ? "" : startTime.toString());
     }
 
     public SimpleStringProperty endTimeProperty() {
-        return new SimpleStringProperty(endTime == null ? "" : endTime.toString());
+        return property(endTime == null ? "" : endTime.toString());
     }
 
     public SimpleStringProperty sessionTypeProperty() {
-        return new SimpleStringProperty(value(sessionType));
+        return property(sessionType);
     }
 
-    private String value(String text) {
-        return text == null ? "" : text;
+    private static SimpleStringProperty property(String value) {
+        return new SimpleStringProperty(value == null ? "" : value);
     }
 }

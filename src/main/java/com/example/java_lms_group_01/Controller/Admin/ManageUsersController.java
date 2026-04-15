@@ -1,6 +1,6 @@
 package com.example.java_lms_group_01.Controller.Admin;
 
-import com.example.java_lms_group_01.model.users.Admin;
+import com.example.java_lms_group_01.Service.AdminService;
 import com.example.java_lms_group_01.model.UserManagementRow;
 import com.example.java_lms_group_01.model.users.UserRole;
 import javafx.beans.property.SimpleStringProperty;
@@ -135,7 +135,7 @@ public class ManageUsersController implements Initializable {
     @FXML
     private TableView<UserManagementRow> tblTechnicalOfficers;
 
-    private final Admin admin = new Admin();
+    private final AdminService adminService = new AdminService();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -165,7 +165,7 @@ public class ManageUsersController implements Initializable {
                 return;
             }
 
-            boolean created = admin.addUser(role, row);
+            boolean created = adminService.addUser(role, row);
 
             if (created) {
                 loadAllTables();
@@ -198,7 +198,7 @@ public class ManageUsersController implements Initializable {
                 return;
             }
 
-            boolean updated = admin.updateUser(role, row);
+            boolean updated = adminService.updateUser(role, row);
 
             if (updated) {
                 loadAllTables();
@@ -234,7 +234,7 @@ public class ManageUsersController implements Initializable {
         }
 
         try {
-            boolean deleted = admin.deleteUser(role, selected.getUserId());
+            boolean deleted = adminService.deleteUser(role, selected.getUserId());
 
             if (deleted) {
                 loadAllTables();
@@ -298,7 +298,7 @@ public class ManageUsersController implements Initializable {
         boolean edit = existing != null;
         Dialog<UserManagementRow> dialog = baseDialog(edit ? "Edit Admin" : "Add Admin", edit);
 
-        CommonUserFields formFields = createCommonFields(existing);
+        UserFormFields formFields = createCommonFields(existing);
         DatePicker dob = dateOfBirthPicker(existing);
         ComboBox<String> gender = genderBox(existing);
 
@@ -330,7 +330,7 @@ public class ManageUsersController implements Initializable {
         boolean edit = existing != null;
         Dialog<UserManagementRow> dialog = baseDialog(edit ? "Edit Lecturer" : "Add Lecturer", edit);
 
-        CommonUserFields formFields = createCommonFields(existing);
+        UserFormFields formFields = createCommonFields(existing);
         DatePicker dob = dateOfBirthPicker(existing);
         ComboBox<String> gender = genderBox(existing);
 
@@ -368,7 +368,7 @@ public class ManageUsersController implements Initializable {
         boolean edit = existing != null;
         Dialog<UserManagementRow> dialog = baseDialog(edit ? "Edit Student" : "Add Student", edit);
 
-        CommonUserFields formFields = createCommonFields(existing);
+        UserFormFields formFields = createCommonFields(existing);
         DatePicker dob = dateOfBirthPicker(existing);
         ComboBox<String> gender = genderBox(existing);
 
@@ -414,7 +414,7 @@ public class ManageUsersController implements Initializable {
         boolean edit = existing != null;
         Dialog<UserManagementRow> dialog = baseDialog(edit ? "Edit Technical Officer" : "Add Technical Officer", edit);
 
-        CommonUserFields formFields = createCommonFields(existing);
+        UserFormFields formFields = createCommonFields(existing);
         DatePicker dob = dateOfBirthPicker(existing);
         ComboBox<String> gender = genderBox(existing);
 
@@ -451,15 +451,15 @@ public class ManageUsersController implements Initializable {
         return dialog;
     }
 
-    private CommonUserFields createCommonFields(UserManagementRow existing) {
-        CommonUserFields fields = new CommonUserFields();
-        fields.firstNameField = new TextField(existing == null ? "" : value(existing.getFirstName()));
-        fields.lastNameField = new TextField(existing == null ? "" : value(existing.getLastName()));
-        fields.emailField = new TextField(existing == null ? "" : value(existing.getEmail()));
-        fields.addressField = new TextField(existing == null ? "" : value(existing.getAddress()));
-        fields.phoneField = new TextField(existing == null ? "" : value(existing.getPhoneNumber()));
-        fields.imagePathField = new TextField(existing == null ? "" : value(existing.getProfileImagePath()));
-        return fields;
+    private UserFormFields createCommonFields(UserManagementRow existing) {
+        return new UserFormFields(
+                new TextField(existing == null ? "" : value(existing.getFirstName())),
+                new TextField(existing == null ? "" : value(existing.getLastName())),
+                new TextField(existing == null ? "" : value(existing.getEmail())),
+                new TextField(existing == null ? "" : value(existing.getAddress())),
+                new TextField(existing == null ? "" : value(existing.getPhoneNumber())),
+                new TextField(existing == null ? "" : value(existing.getProfileImagePath()))
+        );
     }
 
     private DatePicker dateOfBirthPicker(UserManagementRow existing) {
@@ -473,23 +473,23 @@ public class ManageUsersController implements Initializable {
         return cmbGender;
     }
 
-    private int addCommonGrid(GridPane grid, CommonUserFields fields, DatePicker dob, ComboBox<String> gender) {
+    private int addCommonGrid(GridPane grid, UserFormFields fields, DatePicker dob, ComboBox<String> gender) {
         int rowIndex = 0;
         grid.add(new Label("First Name:"), 0, rowIndex);
-        grid.add(fields.firstNameField, 1, rowIndex++);
+        grid.add(fields.getFirstNameField(), 1, rowIndex++);
         grid.add(new Label("Last Name:"), 0, rowIndex);
-        grid.add(fields.lastNameField, 1, rowIndex++);
+        grid.add(fields.getLastNameField(), 1, rowIndex++);
         grid.add(new Label("Email:"), 0, rowIndex);
-        grid.add(fields.emailField, 1, rowIndex++);
+        grid.add(fields.getEmailField(), 1, rowIndex++);
         grid.add(new Label("Address:"), 0, rowIndex);
-        grid.add(fields.addressField, 1, rowIndex++);
+        grid.add(fields.getAddressField(), 1, rowIndex++);
         grid.add(new Label("Phone:"), 0, rowIndex);
-        grid.add(fields.phoneField, 1, rowIndex++);
+        grid.add(fields.getPhoneField(), 1, rowIndex++);
         grid.add(new Label("Profile Image:"), 0, rowIndex);
         HBox imageBox = new HBox(8.0);
         Button btnBrowseImage = new Button("Browse");
-        btnBrowseImage.setOnAction(event -> chooseImageFile(fields.imagePathField));
-        imageBox.getChildren().addAll(fields.imagePathField, btnBrowseImage);
+        btnBrowseImage.setOnAction(event -> chooseImageFile(fields.getImagePathField()));
+        imageBox.getChildren().addAll(fields.getImagePathField(), btnBrowseImage);
         grid.add(imageBox, 1, rowIndex++);
         grid.add(new Label("Date of Birth:"), 0, rowIndex);
         grid.add(dob, 1, rowIndex++);
@@ -498,16 +498,16 @@ public class ManageUsersController implements Initializable {
         return rowIndex;
     }
 
-    private UserManagementRow buildAdminRow(UserManagementRow existing, boolean edit, CommonUserFields fields,
+    private UserManagementRow buildAdminRow(UserManagementRow existing, boolean edit, UserFormFields fields,
                                             DatePicker dob, ComboBox<String> gender, TextField txtReg, TextField txtPassword) {
         String password = requirePasswordForCreate(edit, txtPassword);
         return new UserManagementRow(
                 edit ? existing.getUserId() : required(txtReg, "Registration No"),
-                required(fields.firstNameField, "First name"),
-                required(fields.lastNameField, "Last name"),
-                required(fields.emailField, "Email"),
-                value(fields.addressField),
-                value(fields.phoneField),
+                required(fields.getFirstNameField(), "First name"),
+                required(fields.getLastNameField(), "Last name"),
+                required(fields.getEmailField(), "Email"),
+                value(fields.getAddressField()),
+                value(fields.getPhoneField()),
                 dob.getValue(),
                 gender.getValue(),
                 UserRole.ADMIN.getValue(),
@@ -518,21 +518,21 @@ public class ManageUsersController implements Initializable {
                 null,
                 null,
                 null,
-                value(fields.imagePathField)
+                value(fields.getImagePathField())
         );
     }
 
-    private UserManagementRow buildLecturerRow(UserManagementRow existing, boolean edit, CommonUserFields fields,
+    private UserManagementRow buildLecturerRow(UserManagementRow existing, boolean edit, UserFormFields fields,
                                                DatePicker dob, ComboBox<String> gender, TextField txtReg, TextField txtPassword,
                                                TextField txtDepartment, TextField txtPosition) {
         String password = requirePasswordForCreate(edit, txtPassword);
         return new UserManagementRow(
                 edit ? existing.getUserId() : required(txtReg, "Registration No"),
-                required(fields.firstNameField, "First name"),
-                required(fields.lastNameField, "Last name"),
-                required(fields.emailField, "Email"),
-                value(fields.addressField),
-                value(fields.phoneField),
+                required(fields.getFirstNameField(), "First name"),
+                required(fields.getLastNameField(), "Last name"),
+                required(fields.getEmailField(), "Email"),
+                value(fields.getAddressField()),
+                value(fields.getPhoneField()),
                 dob.getValue(),
                 gender.getValue(),
                 UserRole.LECTURER.getValue(),
@@ -543,22 +543,22 @@ public class ManageUsersController implements Initializable {
                 null,
                 null,
                 required(txtPosition, "Position"),
-                value(fields.imagePathField)
+                value(fields.getImagePathField())
         );
     }
 
-    private UserManagementRow buildStudentRow(UserManagementRow existing, boolean edit, CommonUserFields fields,
+    private UserManagementRow buildStudentRow(UserManagementRow existing, boolean edit, UserFormFields fields,
                                               DatePicker dob, ComboBox<String> gender, TextField txtReg, TextField txtPassword,
                                               TextField txtDepartment, TextField txtBatch, TextField txtGpa,
                                               ComboBox<String> cmbStatus) {
         String password = requirePasswordForCreate(edit, txtPassword);
         return new UserManagementRow(
                 edit ? existing.getUserId() : required(txtReg, "Registration No"),
-                required(fields.firstNameField, "First name"),
-                required(fields.lastNameField, "Last name"),
-                required(fields.emailField, "Email"),
-                value(fields.addressField),
-                value(fields.phoneField),
+                required(fields.getFirstNameField(), "First name"),
+                required(fields.getLastNameField(), "Last name"),
+                required(fields.getEmailField(), "Email"),
+                value(fields.getAddressField()),
+                value(fields.getPhoneField()),
                 dob.getValue(),
                 gender.getValue(),
                 UserRole.STUDENT.getValue(),
@@ -569,20 +569,20 @@ public class ManageUsersController implements Initializable {
                 parseOptionalDouble(txtGpa),
                 requiredCombo(cmbStatus, "Status"),
                 null,
-                value(fields.imagePathField)
+                value(fields.getImagePathField())
         );
     }
 
-    private UserManagementRow buildTechnicalOfficerRow(UserManagementRow existing, boolean edit, CommonUserFields fields,
+    private UserManagementRow buildTechnicalOfficerRow(UserManagementRow existing, boolean edit, UserFormFields fields,
                                                        DatePicker dob, ComboBox<String> gender, TextField txtReg, TextField txtPassword) {
         String password = requirePasswordForCreate(edit, txtPassword);
         return new UserManagementRow(
                 edit ? existing.getUserId() : required(txtReg, "Registration No"),
-                required(fields.firstNameField, "First name"),
-                required(fields.lastNameField, "Last name"),
-                required(fields.emailField, "Email"),
-                value(fields.addressField),
-                value(fields.phoneField),
+                required(fields.getFirstNameField(), "First name"),
+                required(fields.getLastNameField(), "Last name"),
+                required(fields.getEmailField(), "Email"),
+                value(fields.getAddressField()),
+                value(fields.getPhoneField()),
                 dob.getValue(),
                 gender.getValue(),
                 UserRole.TECHNICAL_OFFICER.getValue(),
@@ -593,7 +593,7 @@ public class ManageUsersController implements Initializable {
                 null,
                 null,
                 null,
-                value(fields.imagePathField)
+                value(fields.getImagePathField())
         );
     }
 
@@ -619,10 +619,10 @@ public class ManageUsersController implements Initializable {
 
     private void loadAllTables() {
         try {
-            tblAdmins.getItems().setAll(admin.getAdmins());
-            tblLecturers.getItems().setAll(admin.getLecturers());
-            tblStudents.getItems().setAll(admin.getStudents());
-            tblTechnicalOfficers.getItems().setAll(admin.getTechnicalOfficers());
+            tblAdmins.getItems().setAll(adminService.getAdmins());
+            tblLecturers.getItems().setAll(adminService.getLecturers());
+            tblStudents.getItems().setAll(adminService.getStudents());
+            tblTechnicalOfficers.getItems().setAll(adminService.getTechnicalOfficers());
         } catch (SQLException e) {
             showError("Failed to load user tables.", e);
         }
@@ -739,12 +739,4 @@ public class ManageUsersController implements Initializable {
         alert.showAndWait();
     }
 
-    private static class CommonUserFields {
-        private TextField firstNameField;
-        private TextField lastNameField;
-        private TextField emailField;
-        private TextField addressField;
-        private TextField phoneField;
-        private TextField imagePathField;
-    }
 }

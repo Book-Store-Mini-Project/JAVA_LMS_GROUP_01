@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS student (
     registrationNo VARCHAR(50) PRIMARY KEY,
     password VARCHAR(255) NOT NULL,
     department VARCHAR(100),
-    batch VARCHAR(50),
+    batch INT,
     GPA DECIMAL(4,2),
     status VARCHAR(30),
     CONSTRAINT fk_student_user

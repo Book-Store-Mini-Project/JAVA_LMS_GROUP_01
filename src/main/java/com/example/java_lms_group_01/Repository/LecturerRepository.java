@@ -1,9 +1,22 @@
 package com.example.java_lms_group_01.Repository;
 
+import com.example.java_lms_group_01.model.Attendance;
+import com.example.java_lms_group_01.model.Eligibility;
+import com.example.java_lms_group_01.model.Mark;
+import com.example.java_lms_group_01.model.Material;
+import com.example.java_lms_group_01.model.Performance;
+import com.example.java_lms_group_01.model.Student;
+import com.example.java_lms_group_01.model.Timetable;
+import com.example.java_lms_group_01.model.request.MarkRequest;
+import com.example.java_lms_group_01.model.request.MaterialRequest;
+import com.example.java_lms_group_01.model.summary.AcademicSummary;
+import com.example.java_lms_group_01.model.summary.UndergraduateSummary;
 import com.example.java_lms_group_01.util.AssessmentStructureUtil;
 import com.example.java_lms_group_01.util.AttendanceEligibilityUtil;
 import com.example.java_lms_group_01.util.DBConnection;
+import com.example.java_lms_group_01.util.GradeResult;
 import com.example.java_lms_group_01.util.GradeScaleUtil;
+import com.example.java_lms_group_01.util.MarkBreakdown;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -23,18 +36,16 @@ import java.util.Map;
 public class LecturerRepository {
 
     // Load attendance rows together with any linked medical request for the lecturer's courses.
-    public List<AttendanceMedicalRecord> findAttendanceMedicalByLecturer(String lecturerReg, String keyword) throws SQLException {
+    public List<Attendance> findAttendanceMedicalByLecturer(String lecturerReg, String keyword) throws SQLException {
         String safeKeyword = keyword == null ? "" : keyword.trim();
-        String sql = """
-                SELECT a.attendance_id, a.StudentReg, a.courseCode, a.SubmissionDate, a.session_type, a.attendance_status, a.tech_officer_reg,
-                       m.medical_id, m.Description, m.approval_status
-                FROM attendance a
-                INNER JOIN course c ON c.courseCode = a.courseCode
-                LEFT JOIN medical m ON m.attendance_id = a.attendance_id
-                WHERE c.lecturerRegistrationNo = ?
-                  AND (? = '' OR a.StudentReg LIKE ? OR a.courseCode LIKE ?)
-                ORDER BY a.attendance_id DESC
-                """;
+        String sql = "SELECT a.attendance_id, a.StudentReg, a.courseCode, a.SubmissionDate, a.session_type, a.attendance_status, a.tech_officer_reg, "
+                + "m.medical_id, m.Description, m.approval_status "
+                + "FROM attendance a "
+                + "INNER JOIN course c ON c.courseCode = a.courseCode "
+                + "LEFT JOIN medical m ON m.attendance_id = a.attendance_id "
+                + "WHERE c.lecturerRegistrationNo = ? "
+                + "AND (? = '' OR a.StudentReg LIKE ? OR a.courseCode LIKE ?) "
+                + "ORDER BY a.attendance_id DESC";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             String pattern = "%" + safeKeyword + "%";
@@ -43,7 +54,7 @@ public class LecturerRepository {
             statement.setString(3, pattern);
             statement.setString(4, pattern);
             try (ResultSet rs = statement.executeQuery()) {
-                List<AttendanceMedicalRecord> rows = new ArrayList<>();
+                List<Attendance> rows = new ArrayList<>();
                 while (rs.next()) {
                     rows.add(mapAttendanceMedicalRecord(rs));
                 }
@@ -53,17 +64,15 @@ public class LecturerRepository {
     }
 
     public void updateMedicalDecision(String lecturerReg, int medicalId, int attendanceId, String approvalStatus, String attendanceStatus) throws SQLException {
-        String medicalSql = """
-                UPDATE medical
-                SET approval_status = ?, approved_by_lecturer = ?, approved_at = CURRENT_DATE
-                WHERE medical_id = ?
-                  AND attendance_id IN (
-                      SELECT a.attendance_id
-                      FROM attendance a
-                      INNER JOIN course c ON c.courseCode = a.courseCode
-                      WHERE c.lecturerRegistrationNo = ?
-                  )
-                """;
+        String medicalSql = "UPDATE medical "
+                + "SET approval_status = ?, approved_by_lecturer = ?, approved_at = CURRENT_DATE "
+                + "WHERE medical_id = ? "
+                + "AND attendance_id IN ( "
+                + "SELECT a.attendance_id "
+                + "FROM attendance a "
+                + "INNER JOIN course c ON c.courseCode = a.courseCode "
+                + "WHERE c.lecturerRegistrationNo = ?"
+                + ")";
         String attendanceSql = "UPDATE attendance SET attendance_status = ? WHERE attendance_id = ?";
         Connection connection = DBConnection.getInstance().getConnection();
         boolean previousAutoCommit = connection.getAutoCommit();
@@ -83,54 +92,52 @@ public class LecturerRepository {
             attendanceStatement.setInt(2, attendanceId);
             attendanceStatement.executeUpdate();
             connection.commit();
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
         } catch (Exception e) {
             connection.rollback();
-            if (e instanceof SQLException) {
-                throw (SQLException) e;
-            }
             throw new SQLException(e.getMessage(), e);
         } finally {
             connection.setAutoCommit(previousAutoCommit);
         }
     }
 
-    public List<EligibilityRecord> findEligibilityByLecturer(String lecturerReg, String studentKeyword,
-                                                             String courseCode, String batch) throws SQLException {
+    public List<Eligibility> findEligibilityByLecturer(String lecturerReg, String studentKeyword,
+                                                       String courseCode, String batch) throws SQLException {
         String safeStudentKeyword = studentKeyword == null ? "" : studentKeyword.trim();
         String safeCourseCode = courseCode == null ? "" : courseCode.trim();
         String safeBatch = batch == null ? "" : batch.trim();
-        String sql = """
-                SELECT e.studentReg AS StudentReg, u.firstName, u.lastName, e.courseCode,
-                       SUM(CASE
-                               WHEN a.attendance_id IS NOT NULL
-                                    AND (a.attendance_status = 'present'
-                                         OR (a.attendance_status = 'medical' AND m.approval_status = 'approved'))
-                               THEN 1
-                               ELSE 0
-                           END) AS eligible_sessions,
-                       COUNT(a.attendance_id) AS total_sessions,
-                       MAX(mk.quiz_1) AS quiz_1,
-                       MAX(mk.quiz_2) AS quiz_2,
-                       MAX(mk.quiz_3) AS quiz_3,
-                       MAX(mk.assessment) AS assessment,
-                       MAX(mk.Project) AS Project,
-                       MAX(mk.mid_term) AS mid_term,
-                       MAX(mk.final_theory) AS final_theory,
-                       MAX(mk.final_practical) AS final_practical
-                FROM enrollment e
-                INNER JOIN course c ON c.courseCode = e.courseCode
-                INNER JOIN student s ON s.registrationNo = e.studentReg
-                INNER JOIN users u ON u.user_id = s.registrationNo
-                LEFT JOIN attendance a ON a.StudentReg = e.studentReg AND a.courseCode = e.courseCode
-                LEFT JOIN medical m ON m.attendance_id = a.attendance_id
-                LEFT JOIN marks mk ON mk.StudentReg = e.studentReg AND mk.courseCode = e.courseCode
-                WHERE c.lecturerRegistrationNo = ?
-                  AND (? = '' OR COALESCE(s.batch, '') = ?)
-                  AND (? = '' OR e.studentReg LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
-                  AND (? = '' OR e.courseCode = ?)
-                GROUP BY e.studentReg, u.firstName, u.lastName, e.courseCode
-                ORDER BY e.studentReg, e.courseCode
-                """;
+        String sql = "SELECT e.studentReg AS StudentReg, u.firstName, u.lastName, e.courseCode, "
+                + "SUM(CASE "
+                + "WHEN a.attendance_id IS NOT NULL "
+                + "AND (a.attendance_status = 'present' "
+                + "OR (a.attendance_status = 'medical' AND m.approval_status = 'approved')) "
+                + "THEN 1 "
+                + "ELSE 0 "
+                + "END) AS eligible_sessions, "
+                + "COUNT(a.attendance_id) AS total_sessions, "
+                + "MAX(mk.quiz_1) AS quiz_1, "
+                + "MAX(mk.quiz_2) AS quiz_2, "
+                + "MAX(mk.quiz_3) AS quiz_3, "
+                + "MAX(mk.assessment) AS assessment, "
+                + "MAX(mk.Project) AS Project, "
+                + "MAX(mk.mid_term) AS mid_term, "
+                + "MAX(mk.final_theory) AS final_theory, "
+                + "MAX(mk.final_practical) AS final_practical "
+                + "FROM enrollment e "
+                + "INNER JOIN course c ON c.courseCode = e.courseCode "
+                + "INNER JOIN student s ON s.registrationNo = e.studentReg "
+                + "INNER JOIN users u ON u.user_id = s.registrationNo "
+                + "LEFT JOIN attendance a ON a.StudentReg = e.studentReg AND a.courseCode = e.courseCode "
+                + "LEFT JOIN medical m ON m.attendance_id = a.attendance_id "
+                + "LEFT JOIN marks mk ON mk.StudentReg = e.studentReg AND mk.courseCode = e.courseCode "
+                + "WHERE c.lecturerRegistrationNo = ? "
+                + "AND (? = '' OR COALESCE(s.batch, '') = ?) "
+                + "AND (? = '' OR e.studentReg LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?) "
+                + "AND (? = '' OR e.courseCode = ?) "
+                + "GROUP BY e.studentReg, u.firstName, u.lastName, e.courseCode "
+                + "ORDER BY e.studentReg, e.courseCode";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             String studentPattern = "%" + safeStudentKeyword + "%";
@@ -144,7 +151,7 @@ public class LecturerRepository {
             statement.setString(8, safeCourseCode);
             statement.setString(9, safeCourseCode);
             try (ResultSet rs = statement.executeQuery()) {
-                List<EligibilityRecord> rows = new ArrayList<>();
+                List<Eligibility> rows = new ArrayList<>();
                 while (rs.next()) {
                     rows.add(mapEligibilityRecord(connection, rs));
                 }
@@ -154,39 +161,37 @@ public class LecturerRepository {
     }
 
     // Load marks and calculated performance for students taught by this lecturer.
-    public List<PerformanceRecord> findPerformanceByLecturer(String lecturerReg, String studentKeyword,
-                                                             String courseCode, String batch) throws SQLException {
+    public List<Performance> findPerformanceByLecturer(String lecturerReg, String studentKeyword,
+                                                       String courseCode, String batch) throws SQLException {
         String safeStudentKeyword = studentKeyword == null ? "" : studentKeyword.trim();
         String safeCourseCode = courseCode == null ? "" : courseCode.trim();
         String safeBatch = batch == null ? "" : batch.trim();
-        String sql = """
-                SELECT m.StudentReg, u.firstName, u.lastName, m.courseCode, c.name,
-                       m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical,
-                       EXISTS (
-                           SELECT 1
-                           FROM exam_attendance ea
-                           WHERE ea.studentReg = m.StudentReg
-                             AND ea.courseCode = m.courseCode
-                             AND ea.status = 'present'
-                       ) AS exam_present,
-                       EXISTS (
-                           SELECT 1
-                           FROM medical md
-                           WHERE md.StudentReg = m.StudentReg
-                             AND md.courseCode = m.courseCode
-                             AND md.approval_status = 'approved'
-                             AND LOWER(COALESCE(md.session_type, '')) = 'exam'
-                       ) AS approved_exam_medical
-                FROM marks m
-                INNER JOIN course c ON c.courseCode = m.courseCode
-                INNER JOIN student s ON s.registrationNo = m.StudentReg
-                INNER JOIN users u ON u.user_id = s.registrationNo
-                WHERE c.lecturerRegistrationNo = ?
-                  AND (? = '' OR COALESCE(s.batch, '') = ?)
-                  AND (? = '' OR m.StudentReg LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
-                  AND (? = '' OR m.courseCode = ?)
-                ORDER BY m.StudentReg, m.courseCode
-                """;
+        String sql = "SELECT m.StudentReg, u.firstName, u.lastName, m.courseCode, c.name, "
+                + "m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical, "
+                + "EXISTS ( "
+                + "SELECT 1 "
+                + "FROM exam_attendance ea "
+                + "WHERE ea.studentReg = m.StudentReg "
+                + "AND ea.courseCode = m.courseCode "
+                + "AND ea.status = 'present'"
+                + ") AS exam_present, "
+                + "EXISTS ( "
+                + "SELECT 1 "
+                + "FROM medical md "
+                + "WHERE md.StudentReg = m.StudentReg "
+                + "AND md.courseCode = m.courseCode "
+                + "AND md.approval_status = 'approved' "
+                + "AND LOWER(COALESCE(md.session_type, '')) = 'exam'"
+                + ") AS approved_exam_medical "
+                + "FROM marks m "
+                + "INNER JOIN course c ON c.courseCode = m.courseCode "
+                + "INNER JOIN student s ON s.registrationNo = m.StudentReg "
+                + "INNER JOIN users u ON u.user_id = s.registrationNo "
+                + "WHERE c.lecturerRegistrationNo = ? "
+                + "AND (? = '' OR COALESCE(s.batch, '') = ?) "
+                + "AND (? = '' OR m.StudentReg LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?) "
+                + "AND (? = '' OR m.courseCode = ?) "
+                + "ORDER BY m.StudentReg, m.courseCode";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             String studentPattern = "%" + safeStudentKeyword + "%";
@@ -200,7 +205,7 @@ public class LecturerRepository {
             statement.setString(8, safeCourseCode);
             statement.setString(9, safeCourseCode);
             try (ResultSet rs = statement.executeQuery()) {
-                List<PerformanceRecord> rows = new ArrayList<>();
+                List<Performance> rows = new ArrayList<>();
                 Map<String, AcademicSummary> academicSummaryByStudent = new HashMap<>();
                 while (rs.next()) {
                     String currentStudentReg = safe(rs.getString("StudentReg"));
@@ -217,23 +222,21 @@ public class LecturerRepository {
         }
     }
 
-    public List<UndergraduateSummaryRecord> findUndergraduateSummariesByLecturer(String lecturerReg, String studentKeyword,
-                                                                                 String courseCode, String batch) throws SQLException {
+    public List<UndergraduateSummary> findUndergraduateSummariesByLecturer(String lecturerReg, String studentKeyword,
+                                                                           String courseCode, String batch) throws SQLException {
         String safeStudentKeyword = studentKeyword == null ? "" : studentKeyword.trim();
         String safeCourseCode = courseCode == null ? "" : courseCode.trim();
         String safeBatch = batch == null ? "" : batch.trim();
-        String sql = """
-                SELECT DISTINCT s.registrationNo, u.firstName, u.lastName
-                FROM student s
-                INNER JOIN users u ON u.user_id = s.registrationNo
-                INNER JOIN enrollment e ON e.studentReg = s.registrationNo
-                INNER JOIN course c ON c.courseCode = e.courseCode
-                WHERE c.lecturerRegistrationNo = ?
-                  AND (? = '' OR COALESCE(s.batch, '') = ?)
-                  AND (? = '' OR s.registrationNo LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?)
-                  AND (? = '' OR e.courseCode = ?)
-                ORDER BY s.registrationNo
-                """;
+        String sql = "SELECT DISTINCT s.registrationNo, u.firstName, u.lastName "
+                + "FROM student s "
+                + "INNER JOIN users u ON u.user_id = s.registrationNo "
+                + "INNER JOIN enrollment e ON e.studentReg = s.registrationNo "
+                + "INNER JOIN course c ON c.courseCode = e.courseCode "
+                + "WHERE c.lecturerRegistrationNo = ? "
+                + "AND (? = '' OR COALESCE(s.batch, '') = ?) "
+                + "AND (? = '' OR s.registrationNo LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ?) "
+                + "AND (? = '' OR e.courseCode = ?) "
+                + "ORDER BY s.registrationNo";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             String studentPattern = "%" + safeStudentKeyword + "%";
@@ -247,14 +250,14 @@ public class LecturerRepository {
             statement.setString(8, safeCourseCode);
             statement.setString(9, safeCourseCode);
             try (ResultSet rs = statement.executeQuery()) {
-                List<UndergraduateSummaryRecord> rows = new ArrayList<>();
+                List<UndergraduateSummary> rows = new ArrayList<>();
                 while (rs.next()) {
                     AcademicSummary summary = calculateAcademicSummary(connection, safe(rs.getString("registrationNo")));
-                    rows.add(new UndergraduateSummaryRecord(
+                    rows.add(new UndergraduateSummary(
                             safe(rs.getString("registrationNo")),
                             fullName(rs),
-                            summary.getSgpa(),
-                            summary.getCgpa()
+                            String.format("%.2f", summary.getSgpa()),
+                            String.format("%.2f", summary.getCgpa())
                     ));
                 }
                 return rows;
@@ -263,27 +266,25 @@ public class LecturerRepository {
     }
 
     private AcademicSummary calculateAcademicSummary(Connection connection, String studentReg) throws SQLException {
-        String sql = """
-                SELECT m.courseCode, c.credit, m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical,
-                       EXISTS (
-                           SELECT 1
-                           FROM exam_attendance ea
-                           WHERE ea.studentReg = m.StudentReg
-                             AND ea.courseCode = m.courseCode
-                             AND ea.status = 'present'
-                       ) AS exam_present,
-                       EXISTS (
-                           SELECT 1
-                           FROM medical md
-                           WHERE md.StudentReg = m.StudentReg
-                             AND md.courseCode = m.courseCode
-                             AND md.approval_status = 'approved'
-                             AND LOWER(COALESCE(md.session_type, '')) = 'exam'
-                       ) AS approved_exam_medical
-                FROM marks m
-                INNER JOIN course c ON c.courseCode = m.courseCode
-                WHERE m.StudentReg = ?
-                """;
+        String sql = "SELECT m.courseCode, c.credit, m.quiz_1, m.quiz_2, m.quiz_3, m.assessment, m.Project, m.mid_term, m.final_theory, m.final_practical, "
+                + "EXISTS ( "
+                + "SELECT 1 "
+                + "FROM exam_attendance ea "
+                + "WHERE ea.studentReg = m.StudentReg "
+                + "AND ea.courseCode = m.courseCode "
+                + "AND ea.status = 'present'"
+                + ") AS exam_present, "
+                + "EXISTS ( "
+                + "SELECT 1 "
+                + "FROM medical md "
+                + "WHERE md.StudentReg = m.StudentReg "
+                + "AND md.courseCode = m.courseCode "
+                + "AND md.approval_status = 'approved' "
+                + "AND LOWER(COALESCE(md.session_type, '')) = 'exam'"
+                + ") AS approved_exam_medical "
+                + "FROM marks m "
+                + "INNER JOIN course c ON c.courseCode = m.courseCode "
+                + "WHERE m.StudentReg = ?";
         double gpaWeightedPoints = 0.0;
         int gpaCredits = 0;
         double sgpaWeightedPoints = 0.0;
@@ -293,7 +294,7 @@ public class LecturerRepository {
             try (ResultSet rs = statement.executeQuery()) {
                 while (rs.next()) {
                     String courseCode = safe(rs.getString("courseCode"));
-                    AssessmentStructureUtil.MarkBreakdown breakdown = AssessmentStructureUtil.calculateMarkBreakdown(
+                    MarkBreakdown breakdown = AssessmentStructureUtil.calculateMarkBreakdown(
                             connection,
                             courseCode,
                             nullableDecimal(rs.getObject("quiz_1")),
@@ -306,7 +307,7 @@ public class LecturerRepository {
                             nullableDecimal(rs.getObject("final_practical"))
                     );
                     int credit = rs.getInt("credit");
-                    GradeScaleUtil.GradeResult gradeResult = GradeScaleUtil.evaluatePublishedGrade(
+                    GradeResult gradeResult = GradeScaleUtil.evaluatePublishedGrade(
                             breakdown,
                             isAttendanceEligible(connection, studentReg, courseCode),
                             rs.getInt("exam_present") == 1,
@@ -329,31 +330,27 @@ public class LecturerRepository {
         );
     }
 
-    public void addMarks(String lecturerReg, MarksMutation mutation) throws SQLException {
-        String sql = """
-                INSERT INTO marks (
-                  LectureReg, StudentReg, courseCode, quiz_1, quiz_2, quiz_3,
-                  assessment, Project, mid_term, final_theory, final_practical
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
+    public void addMarks(String lecturerReg, MarkRequest request) throws SQLException {
+        String sql = "INSERT INTO marks ("
+                + "LectureReg, StudentReg, courseCode, quiz_1, quiz_2, quiz_3, "
+                + "assessment, Project, mid_term, final_theory, final_practical"
+                + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, lecturerReg);
-            bindMarksMutation(statement, mutation);
+            bindMarkRequest(statement, request);
             statement.executeUpdate();
         }
     }
 
-    public void updateMarks(String lecturerReg, int markId, MarksMutation mutation) throws SQLException {
-        String sql = """
-                UPDATE marks SET
-                  StudentReg = ?, courseCode = ?, quiz_1 = ?, quiz_2 = ?, quiz_3 = ?,
-                  assessment = ?, Project = ?, mid_term = ?, final_theory = ?, final_practical = ?
-                WHERE mark_id = ? AND LectureReg = ?
-                """;
+    public void updateMarks(String lecturerReg, int markId, MarkRequest request) throws SQLException {
+        String sql = "UPDATE marks SET "
+                + "StudentReg = ?, courseCode = ?, quiz_1 = ?, quiz_2 = ?, quiz_3 = ?, "
+                + "assessment = ?, Project = ?, mid_term = ?, final_theory = ?, final_practical = ? "
+                + "WHERE mark_id = ? AND LectureReg = ?";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            bindMarksMutation(statement, mutation);
+            bindMarkRequest(statement, request);
             statement.setInt(11, markId);
             statement.setString(12, lecturerReg);
             statement.executeUpdate();
@@ -370,14 +367,12 @@ public class LecturerRepository {
         }
     }
 
-    public List<MarksRecord> findMarksByLecturer(String lecturerReg, String keyword) throws SQLException {
+    public List<Mark> findMarksByLecturer(String lecturerReg, String keyword) throws SQLException {
         String safeKeyword = keyword == null ? "" : keyword.trim();
-        String sql = """
-                SELECT mark_id, StudentReg, courseCode, quiz_1, quiz_2, quiz_3, assessment, Project, mid_term, final_theory, final_practical
-                FROM marks
-                WHERE LectureReg = ? AND (? = '' OR StudentReg LIKE ? OR courseCode LIKE ?)
-                ORDER BY mark_id DESC
-                """;
+        String sql = "SELECT mark_id, StudentReg, courseCode, quiz_1, quiz_2, quiz_3, assessment, Project, mid_term, final_theory, final_practical "
+                + "FROM marks "
+                + "WHERE LectureReg = ? AND (? = '' OR StudentReg LIKE ? OR courseCode LIKE ?) "
+                + "ORDER BY mark_id DESC";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             String pattern = "%" + safeKeyword + "%";
@@ -386,7 +381,7 @@ public class LecturerRepository {
             statement.setString(3, pattern);
             statement.setString(4, pattern);
             try (ResultSet rs = statement.executeQuery()) {
-                List<MarksRecord> rows = new ArrayList<>();
+                List<Mark> rows = new ArrayList<>();
                 while (rs.next()) {
                     rows.add(mapMarksRecord(rs));
                 }
@@ -396,16 +391,14 @@ public class LecturerRepository {
     }
 
     public List<String> findBatchesByLecturer(String lecturerReg) throws SQLException {
-        String sql = """
-                SELECT DISTINCT s.batch
-                FROM student s
-                INNER JOIN enrollment e ON e.studentReg = s.registrationNo
-                INNER JOIN course c ON c.courseCode = e.courseCode
-                WHERE c.lecturerRegistrationNo = ?
-                  AND s.batch IS NOT NULL
-                  AND TRIM(s.batch) <> ''
-                ORDER BY s.batch
-                """;
+        String sql = "SELECT DISTINCT s.batch "
+                + "FROM student s "
+                + "INNER JOIN enrollment e ON e.studentReg = s.registrationNo "
+                + "INNER JOIN course c ON c.courseCode = e.courseCode "
+                + "WHERE c.lecturerRegistrationNo = ? "
+                + "AND s.batch IS NOT NULL "
+                + "AND TRIM(s.batch) <> '' "
+                + "ORDER BY s.batch";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, lecturerReg);
@@ -421,15 +414,13 @@ public class LecturerRepository {
 
     public List<String> findStudentRegistrationsByLecturer(String lecturerReg, String batch) throws SQLException {
         String safeBatch = batch == null ? "" : batch.trim();
-        String sql = """
-                SELECT DISTINCT s.registrationNo
-                FROM student s
-                INNER JOIN enrollment e ON e.studentReg = s.registrationNo
-                INNER JOIN course c ON c.courseCode = e.courseCode
-                WHERE c.lecturerRegistrationNo = ?
-                  AND (? = '' OR COALESCE(s.batch, '') = ?)
-                ORDER BY s.registrationNo
-                """;
+        String sql = "SELECT DISTINCT s.registrationNo "
+                + "FROM student s "
+                + "INNER JOIN enrollment e ON e.studentReg = s.registrationNo "
+                + "INNER JOIN course c ON c.courseCode = e.courseCode "
+                + "WHERE c.lecturerRegistrationNo = ? "
+                + "AND (? = '' OR COALESCE(s.batch, '') = ?) "
+                + "ORDER BY s.registrationNo";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, lecturerReg);
@@ -445,68 +436,62 @@ public class LecturerRepository {
         }
     }
 
-    public int addMaterial(String lecturerReg, MaterialMutation mutation) throws SQLException {
-        String sql = """
-                INSERT INTO lecture_materials (courseCode, name, path, material_type)
-                SELECT ?, ?, ?, ?
-                WHERE EXISTS (
-                    SELECT 1
-                    FROM course
-                    WHERE courseCode = ? AND lecturerRegistrationNo = ?
-                )
-                """;
+    public int addMaterial(String lecturerReg, MaterialRequest request) throws SQLException {
+        String sql = "INSERT INTO lecture_materials (courseCode, name, path, material_type) "
+                + "SELECT ?, ?, ?, ? "
+                + "WHERE EXISTS ( "
+                + "SELECT 1 "
+                + "FROM course "
+                + "WHERE courseCode = ? AND lecturerRegistrationNo = ?"
+                + ")";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, mutation.getCourseCode());
-            statement.setString(2, mutation.getName());
-            statement.setString(3, mutation.getPath());
-            statement.setString(4, mutation.getMaterialType());
-            statement.setString(5, mutation.getCourseCode());
+            statement.setString(1, request.getCourseCode());
+            statement.setString(2, request.getName());
+            statement.setString(3, request.getPath());
+            statement.setString(4, request.getMaterialType());
+            statement.setString(5, request.getCourseCode());
             statement.setString(6, lecturerReg);
             return statement.executeUpdate();
         }
     }
 
-    public int updateMaterial(String lecturerReg, int materialId, MaterialMutation mutation) throws SQLException {
-        String sql = """
-                UPDATE lecture_materials
-                SET courseCode = ?, name = ?, path = ?, material_type = ?
-                WHERE material_id = ?
-                  AND courseCode IN (
-                      SELECT courseCode
-                      FROM course
-                      WHERE lecturerRegistrationNo = ?
-                  )
-                  AND ? IN (
-                      SELECT courseCode
-                      FROM course
-                      WHERE lecturerRegistrationNo = ?
-                  )
-                """;
+    public int updateMaterial(String lecturerReg, int materialId, MaterialRequest request) throws SQLException {
+        String sql = "UPDATE lecture_materials "
+                + "SET courseCode = ?, name = ?, path = ?, material_type = ? "
+                + "WHERE material_id = ? "
+                + "AND courseCode IN ( "
+                + "SELECT courseCode "
+                + "FROM course "
+                + "WHERE lecturerRegistrationNo = ?"
+                + ") "
+                + "AND ? IN ( "
+                + "SELECT courseCode "
+                + "FROM course "
+                + "WHERE lecturerRegistrationNo = ?"
+                + ")";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, mutation.getCourseCode());
-            statement.setString(2, mutation.getName());
-            statement.setString(3, mutation.getPath());
-            statement.setString(4, mutation.getMaterialType());
+            statement.setString(1, request.getCourseCode());
+            statement.setString(2, request.getName());
+            statement.setString(3, request.getPath());
+            statement.setString(4, request.getMaterialType());
             statement.setInt(5, materialId);
             statement.setString(6, lecturerReg);
-            statement.setString(7, mutation.getCourseCode());
+            statement.setString(7, request.getCourseCode());
             statement.setString(8, lecturerReg);
             return statement.executeUpdate();
         }
     }
 
     public int deleteMaterial(String lecturerReg, int materialId) throws SQLException {
-        String sql = """
-                DELETE FROM lecture_materials
-                WHERE material_id = ?
-                  AND courseCode IN (
-                      SELECT courseCode
-                      FROM course
-                      WHERE lecturerRegistrationNo = ?
-                  )
-                """;
+        String sql = "DELETE FROM lecture_materials "
+                + "WHERE material_id = ? "
+                + "AND courseCode IN ( "
+                + "SELECT courseCode "
+                + "FROM course "
+                + "WHERE lecturerRegistrationNo = ?"
+                + ")";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, materialId);
@@ -515,19 +500,17 @@ public class LecturerRepository {
         }
     }
 
-    public List<MaterialRecord> findMaterialsByLecturer(String lecturerReg, String keyword) throws SQLException {
+    public List<Material> findMaterialsByLecturer(String lecturerReg, String keyword) throws SQLException {
         String safeKeyword = keyword == null ? "" : keyword.trim();
-        String sql = """
-                SELECT material_id, courseCode, name, path, material_type
-                FROM lecture_materials
-                WHERE courseCode IN (
-                    SELECT courseCode
-                    FROM course
-                    WHERE lecturerRegistrationNo = ?
-                )
-                AND (? = '' OR courseCode LIKE ? OR name LIKE ?)
-                ORDER BY material_id DESC
-                """;
+        String sql = "SELECT material_id, courseCode, name, path, material_type "
+                + "FROM lecture_materials "
+                + "WHERE courseCode IN ( "
+                + "SELECT courseCode "
+                + "FROM course "
+                + "WHERE lecturerRegistrationNo = ?"
+                + ") "
+                + "AND (? = '' OR courseCode LIKE ? OR name LIKE ?) "
+                + "ORDER BY material_id DESC";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             String pattern = "%" + safeKeyword + "%";
@@ -536,7 +519,7 @@ public class LecturerRepository {
             statement.setString(3, pattern);
             statement.setString(4, pattern);
             try (ResultSet rs = statement.executeQuery()) {
-                List<MaterialRecord> rows = new ArrayList<>();
+                List<Material> rows = new ArrayList<>();
                 while (rs.next()) {
                     rows.add(mapMaterialRecord(rs));
                 }
@@ -545,18 +528,16 @@ public class LecturerRepository {
         }
     }
 
-    public List<StudentRecord> findStudentsByLecturer(String lecturerReg, String keyword) throws SQLException {
+    public List<Student> findStudentsByLecturer(String lecturerReg, String keyword) throws SQLException {
         String safeKeyword = keyword == null ? "" : keyword.trim();
-        String sql = """
-                SELECT DISTINCT s.registrationNo, u.firstName, u.lastName, u.email, u.phoneNumber, s.department, s.status
-                FROM student s
-                INNER JOIN users u ON u.user_id = s.registrationNo
-                INNER JOIN enrollment e ON e.studentReg = s.registrationNo
-                INNER JOIN course c ON c.courseCode = e.courseCode
-                WHERE c.lecturerRegistrationNo = ?
-                  AND (? = '' OR s.registrationNo LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ? OR s.department LIKE ?)
-                ORDER BY s.registrationNo
-                """;
+        String sql = "SELECT DISTINCT s.registrationNo, u.firstName, u.lastName, u.email, u.phoneNumber, s.department, s.status "
+                + "FROM student s "
+                + "INNER JOIN users u ON u.user_id = s.registrationNo "
+                + "INNER JOIN enrollment e ON e.studentReg = s.registrationNo "
+                + "INNER JOIN course c ON c.courseCode = e.courseCode "
+                + "WHERE c.lecturerRegistrationNo = ? "
+                + "AND (? = '' OR s.registrationNo LIKE ? OR u.firstName LIKE ? OR u.lastName LIKE ? OR s.department LIKE ?) "
+                + "ORDER BY s.registrationNo";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             String pattern = "%" + safeKeyword + "%";
@@ -567,15 +548,15 @@ public class LecturerRepository {
             statement.setString(5, pattern);
             statement.setString(6, pattern);
             try (ResultSet rs = statement.executeQuery()) {
-                List<StudentListRow> baseRows = new ArrayList<>();
+                List<Student> baseRows = new ArrayList<>();
                 while (rs.next()) {
                     baseRows.add(mapStudentListRow(rs));
                 }
 
-                List<StudentRecord> rows = new ArrayList<>();
-                for (StudentListRow baseRow : baseRows) {
+                List<Student> rows = new ArrayList<>();
+                for (Student baseRow : baseRows) {
                     AcademicSummary summary = calculateAcademicSummary(connection, baseRow.getRegNo());
-                    rows.add(new StudentRecord(
+                    rows.add(new Student(
                             baseRow.getRegNo(),
                             baseRow.getName(),
                             baseRow.getEmail(),
@@ -590,15 +571,13 @@ public class LecturerRepository {
         }
     }
 
-    public List<TimetableRecord> findTimetableByLecturer(String lecturerReg, String keyword) throws SQLException {
+    public List<Timetable> findTimetableByLecturer(String lecturerReg, String keyword) throws SQLException {
         String safeKeyword = keyword == null ? "" : keyword.trim();
-        String sql = """
-                SELECT time_table_id, department, lec_id, courseCode, admin_id, day, start_time, end_time, session_type
-                FROM timetable
-                WHERE lec_id = ?
-                  AND (? = '' OR courseCode LIKE ? OR day LIKE ? OR time_table_id LIKE ?)
-                ORDER BY day, start_time
-                """;
+        String sql = "SELECT time_table_id, department, lec_id, courseCode, admin_id, day, start_time, end_time, session_type "
+                + "FROM timetable "
+                + "WHERE lec_id = ? "
+                + "AND (? = '' OR courseCode LIKE ? OR day LIKE ? OR time_table_id LIKE ?) "
+                + "ORDER BY day, start_time";
         Connection connection = DBConnection.getInstance().getConnection();
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             String pattern = "%" + safeKeyword + "%";
@@ -608,7 +587,7 @@ public class LecturerRepository {
             statement.setString(4, pattern);
             statement.setString(5, pattern);
             try (ResultSet rs = statement.executeQuery()) {
-                List<TimetableRecord> rows = new ArrayList<>();
+                List<Timetable> rows = new ArrayList<>();
                 while (rs.next()) {
                     rows.add(mapTimetableRecord(rs));
                 }
@@ -617,66 +596,68 @@ public class LecturerRepository {
         }
     }
 
-    private AttendanceMedicalRecord mapAttendanceMedicalRecord(ResultSet rs) throws SQLException {
-        return new AttendanceMedicalRecord(
+    private Attendance mapAttendanceMedicalRecord(ResultSet rs) throws SQLException {
+        return new Attendance(
                 String.valueOf(rs.getInt("attendance_id")),
                 safe(rs.getString("StudentReg")),
                 safe(rs.getString("courseCode")),
                 dateToString(rs.getDate("SubmissionDate")),
                 safe(rs.getString("session_type")),
                 safe(rs.getString("attendance_status")),
+                safe(rs.getString("tech_officer_reg")),
                 rs.getObject("medical_id") == null ? "" : String.valueOf(rs.getInt("medical_id")),
                 safe(rs.getString("Description")),
-                safe(rs.getString("approval_status")),
-                safe(rs.getString("tech_officer_reg"))
+                safe(rs.getString("approval_status"))
         );
     }
 
-    private EligibilityRecord mapEligibilityRecord(Connection connection, ResultSet rs) throws SQLException {
+    private Eligibility mapEligibilityRecord(Connection connection, ResultSet rs) throws SQLException {
         String courseCode = safe(rs.getString("courseCode"));
-        AssessmentStructureUtil.MarkBreakdown breakdown = calculateMarkBreakdown(connection, courseCode, rs);
+        MarkBreakdown breakdown = calculateMarkBreakdown(connection, courseCode, rs);
         double attendancePercentage = AttendanceEligibilityUtil.calculatePercentage(
                 rs.getInt("eligible_sessions"),
                 rs.getInt("total_sessions")
         );
-        return new EligibilityRecord(
+        boolean attendanceEligible = attendancePercentage >= AttendanceEligibilityUtil.MIN_ELIGIBILITY_PERCENTAGE;
+        boolean caEligible = GradeScaleUtil.meetsCaRequirement(breakdown);
+        return new Eligibility(
                 safe(rs.getString("StudentReg")),
                 fullName(rs),
                 courseCode,
-                rs.getInt("eligible_sessions"),
-                rs.getInt("total_sessions"),
-                breakdown.getCaMarks(),
-                GradeScaleUtil.minimumRequiredMark(breakdown.getCaMaximum()),
-                attendancePercentage >= AttendanceEligibilityUtil.MIN_ELIGIBILITY_PERCENTAGE,
-                GradeScaleUtil.meetsCaRequirement(breakdown)
+                String.valueOf(rs.getInt("eligible_sessions")),
+                String.valueOf(rs.getInt("total_sessions")),
+                String.format("%.2f%%", attendancePercentage),
+                String.format("%.2f", breakdown.getCaMarks()),
+                String.format("%.2f", GradeScaleUtil.minimumRequiredMark(breakdown.getCaMaximum())),
+                buildEligibilityStatus(attendanceEligible, caEligible)
         );
     }
 
-    private PerformanceRecord mapPerformanceRecord(Connection connection, ResultSet rs, String courseCode,
-                                                   AcademicSummary summary) throws SQLException {
-        AssessmentStructureUtil.MarkBreakdown breakdown = calculateMarkBreakdown(connection, courseCode, rs);
-        GradeScaleUtil.GradeResult gradeResult = GradeScaleUtil.evaluatePublishedGrade(
+    private Performance mapPerformanceRecord(Connection connection, ResultSet rs, String courseCode,
+                                             AcademicSummary summary) throws SQLException {
+        MarkBreakdown breakdown = calculateMarkBreakdown(connection, courseCode, rs);
+        GradeResult gradeResult = GradeScaleUtil.evaluatePublishedGrade(
                 breakdown,
                 isAttendanceEligible(connection, rs.getString("StudentReg"), courseCode),
                 rs.getInt("exam_present") == 1,
                 rs.getInt("approved_exam_medical") == 1
         );
-        return new PerformanceRecord(
+        return new Performance(
                 safe(rs.getString("StudentReg")),
                 fullName(rs),
                 courseCode,
                 safe(rs.getString("name")),
-                breakdown.getCaMarks(),
-                breakdown.getEndMarks(),
-                breakdown.getTotalMarks(),
+                String.format("%.2f", breakdown.getCaMarks()),
+                String.format("%.2f", breakdown.getEndMarks()),
+                String.format("%.2f", breakdown.getTotalMarks()),
                 gradeResult.getPublishedGrade(),
-                summary.getSgpa(),
-                summary.getCgpa()
+                String.format("%.2f", summary.getSgpa()),
+                String.format("%.2f", summary.getCgpa())
         );
     }
 
-    private AssessmentStructureUtil.MarkBreakdown calculateMarkBreakdown(Connection connection, String courseCode,
-                                                                         ResultSet rs) throws SQLException {
+    private MarkBreakdown calculateMarkBreakdown(Connection connection, String courseCode,
+                                                 ResultSet rs) throws SQLException {
         return AssessmentStructureUtil.calculateMarkBreakdown(
                 connection,
                 courseCode,
@@ -692,22 +673,20 @@ public class LecturerRepository {
     }
 
     private boolean isAttendanceEligible(Connection connection, String studentReg, String courseCode) throws SQLException {
-        String sql = """
-                SELECT COALESCE(SUM(CASE
-                           WHEN a.attendance_status = 'present' THEN 1
-                           WHEN a.attendance_status = 'medical' AND EXISTS (
-                               SELECT 1
-                               FROM medical m
-                               WHERE m.attendance_id = a.attendance_id
-                                 AND m.approval_status = 'approved'
-                           ) THEN 1
-                           ELSE 0
-                       END), 0) AS eligible_sessions,
-                       COUNT(*) AS total_sessions
-                FROM attendance a
-                WHERE a.StudentReg = ?
-                  AND a.courseCode = ?
-                """;
+        String sql = "SELECT COALESCE(SUM(CASE "
+                + "WHEN a.attendance_status = 'present' THEN 1 "
+                + "WHEN a.attendance_status = 'medical' AND EXISTS ( "
+                + "SELECT 1 "
+                + "FROM medical m "
+                + "WHERE m.attendance_id = a.attendance_id "
+                + "AND m.approval_status = 'approved'"
+                + ") THEN 1 "
+                + "ELSE 0 "
+                + "END), 0) AS eligible_sessions, "
+                + "COUNT(*) AS total_sessions "
+                + "FROM attendance a "
+                + "WHERE a.StudentReg = ? "
+                + "AND a.courseCode = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, studentReg);
             statement.setString(2, courseCode);
@@ -723,8 +702,8 @@ public class LecturerRepository {
         }
     }
 
-    private MarksRecord mapMarksRecord(ResultSet rs) throws SQLException {
-        return new MarksRecord(
+    private Mark mapMarksRecord(ResultSet rs) throws SQLException {
+        return new Mark(
                 String.valueOf(rs.getInt("mark_id")),
                 safe(rs.getString("StudentReg")),
                 safe(rs.getString("courseCode")),
@@ -739,8 +718,8 @@ public class LecturerRepository {
         );
     }
 
-    private MaterialRecord mapMaterialRecord(ResultSet rs) throws SQLException {
-        return new MaterialRecord(
+    private Material mapMaterialRecord(ResultSet rs) throws SQLException {
+        return new Material(
                 String.valueOf(rs.getInt("material_id")),
                 safe(rs.getString("courseCode")),
                 safe(rs.getString("name")),
@@ -749,27 +728,28 @@ public class LecturerRepository {
         );
     }
 
-    private StudentListRow mapStudentListRow(ResultSet rs) throws SQLException {
-        return new StudentListRow(
+    private Student mapStudentListRow(ResultSet rs) throws SQLException {
+        return new Student(
                 safe(rs.getString("registrationNo")),
                 fullName(rs),
                 safe(rs.getString("email")),
                 safe(rs.getString("phoneNumber")),
                 safe(rs.getString("department")),
-                safe(rs.getString("status"))
+                safe(rs.getString("status")),
+                ""
         );
     }
 
-    private TimetableRecord mapTimetableRecord(ResultSet rs) throws SQLException {
-        return new TimetableRecord(
+    private Timetable mapTimetableRecord(ResultSet rs) throws SQLException {
+        return new Timetable(
                 safe(rs.getString("time_table_id")),
                 safe(rs.getString("department")),
                 safe(rs.getString("lec_id")),
                 safe(rs.getString("courseCode")),
                 safe(rs.getString("admin_id")),
                 safe(rs.getString("day")),
-                timeToString(rs.getTime("start_time")),
-                timeToString(rs.getTime("end_time")),
+                rs.getTime("start_time") == null ? null : rs.getTime("start_time").toLocalTime(),
+                rs.getTime("end_time") == null ? null : rs.getTime("end_time").toLocalTime(),
                 safe(rs.getString("session_type"))
         );
     }
@@ -778,17 +758,17 @@ public class LecturerRepository {
         return (safe(rs.getString("firstName")) + " " + safe(rs.getString("lastName"))).trim();
     }
 
-    private void bindMarksMutation(PreparedStatement statement, MarksMutation mutation) throws SQLException {
-        statement.setString(1, mutation.getStudentReg());
-        statement.setString(2, mutation.getCourseCode());
-        setNullableDecimal(statement, 3, mutation.getQuiz1());
-        setNullableDecimal(statement, 4, mutation.getQuiz2());
-        setNullableDecimal(statement, 5, mutation.getQuiz3());
-        setNullableDecimal(statement, 6, mutation.getAssessment());
-        setNullableDecimal(statement, 7, mutation.getProject());
-        setNullableDecimal(statement, 8, mutation.getMidTerm());
-        setNullableDecimal(statement, 9, mutation.getFinalTheory());
-        setNullableDecimal(statement, 10, mutation.getFinalPractical());
+    private void bindMarkRequest(PreparedStatement statement, MarkRequest request) throws SQLException {
+        statement.setString(1, request.getStudentReg());
+        statement.setString(2, request.getCourseCode());
+        setNullableDecimal(statement, 3, request.getQuiz1());
+        setNullableDecimal(statement, 4, request.getQuiz2());
+        setNullableDecimal(statement, 5, request.getQuiz3());
+        setNullableDecimal(statement, 6, request.getAssessment());
+        setNullableDecimal(statement, 7, request.getProject());
+        setNullableDecimal(statement, 8, request.getMidTerm());
+        setNullableDecimal(statement, 9, request.getFinalTheory());
+        setNullableDecimal(statement, 10, request.getFinalPractical());
     }
 
     private static void setNullableDecimal(PreparedStatement statement, int index, Double value) throws SQLException {
@@ -807,10 +787,6 @@ public class LecturerRepository {
         return date == null ? "" : date.toString();
     }
 
-    private static String timeToString(java.sql.Time time) {
-        return time == null ? "" : time.toString();
-    }
-
     private static String decimal(Object value) {
         if (value == null) {
             return "";
@@ -822,361 +798,16 @@ public class LecturerRepository {
         return value == null ? null : ((Number) value).doubleValue();
     }
 
-    public static class AttendanceMedicalRecord {
-        private final String attendanceId;
-        private final String studentReg;
-        private final String courseCode;
-        private final String date;
-        private final String sessionType;
-        private final String attendanceStatus;
-        private final String medicalId;
-        private final String medicalDescription;
-        private final String medicalApprovalStatus;
-        private final String techOfficerReg;
-
-        public AttendanceMedicalRecord(String attendanceId, String studentReg, String courseCode, String date,
-                                       String sessionType, String attendanceStatus, String medicalId,
-                                       String medicalDescription, String medicalApprovalStatus, String techOfficerReg) {
-            this.attendanceId = attendanceId;
-            this.studentReg = studentReg;
-            this.courseCode = courseCode;
-            this.date = date;
-            this.sessionType = sessionType;
-            this.attendanceStatus = attendanceStatus;
-            this.medicalId = medicalId;
-            this.medicalDescription = medicalDescription;
-            this.medicalApprovalStatus = medicalApprovalStatus;
-            this.techOfficerReg = techOfficerReg;
+    private String buildEligibilityStatus(boolean attendanceEligible, boolean caEligible) {
+        if (attendanceEligible && caEligible) {
+            return "Eligible";
         }
-
-        public String getAttendanceId() { return attendanceId; }
-        public String getStudentReg() { return studentReg; }
-        public String getCourseCode() { return courseCode; }
-        public String getDate() { return date; }
-        public String getSessionType() { return sessionType; }
-        public String getAttendanceStatus() { return attendanceStatus; }
-        public String getMedicalId() { return medicalId; }
-        public String getMedicalDescription() { return medicalDescription; }
-        public String getMedicalApprovalStatus() { return medicalApprovalStatus; }
-        public String getTechOfficerReg() { return techOfficerReg; }
-    }
-
-    public static class EligibilityRecord {
-        private final String studentReg;
-        private final String studentName;
-        private final String courseCode;
-        private final int eligibleSessions;
-        private final int totalSessions;
-        private final double caMarks;
-        private final double caThreshold;
-        private final boolean attendanceEligible;
-        private final boolean caEligible;
-
-        public EligibilityRecord(String studentReg, String studentName, String courseCode, int eligibleSessions,
-                                 int totalSessions, double caMarks, double caThreshold,
-                                 boolean attendanceEligible, boolean caEligible) {
-            this.studentReg = studentReg;
-            this.studentName = studentName;
-            this.courseCode = courseCode;
-            this.eligibleSessions = eligibleSessions;
-            this.totalSessions = totalSessions;
-            this.caMarks = caMarks;
-            this.caThreshold = caThreshold;
-            this.attendanceEligible = attendanceEligible;
-            this.caEligible = caEligible;
+        if (!attendanceEligible && !caEligible) {
+            return "Attendance + CA Shortage";
         }
-
-        public String getStudentReg() { return studentReg; }
-        public String getStudentName() { return studentName; }
-        public String getCourseCode() { return courseCode; }
-        public int getEligibleSessions() { return eligibleSessions; }
-        public int getTotalSessions() { return totalSessions; }
-        public double getCaMarks() { return caMarks; }
-        public double getCaThreshold() { return caThreshold; }
-        public boolean isAttendanceEligible() { return attendanceEligible; }
-        public boolean isCaEligible() { return caEligible; }
-    }
-
-    public static class PerformanceRecord {
-        private final String studentReg;
-        private final String studentName;
-        private final String courseCode;
-        private final String courseName;
-        private final double caMarks;
-        private final double finalMarks;
-        private final double totalMarks;
-        private final String publishedGrade;
-        private final Double sgpa;
-        private final Double cgpa;
-
-        public PerformanceRecord(String studentReg, String studentName, String courseCode, String courseName,
-                                 double caMarks, double finalMarks, double totalMarks, String publishedGrade,
-                                 Double sgpa, Double cgpa) {
-            this.studentReg = studentReg;
-            this.studentName = studentName;
-            this.courseCode = courseCode;
-            this.courseName = courseName;
-            this.caMarks = caMarks;
-            this.finalMarks = finalMarks;
-            this.totalMarks = totalMarks;
-            this.publishedGrade = publishedGrade;
-            this.sgpa = sgpa;
-            this.cgpa = cgpa;
+        if (!attendanceEligible) {
+            return "Attendance Shortage";
         }
-
-        public String getStudentReg() { return studentReg; }
-        public String getStudentName() { return studentName; }
-        public String getCourseCode() { return courseCode; }
-        public String getCourseName() { return courseName; }
-        public double getCaMarks() { return caMarks; }
-        public double getFinalMarks() { return finalMarks; }
-        public double getTotalMarks() { return totalMarks; }
-        public String getPublishedGrade() { return publishedGrade; }
-        public Double getSgpa() { return sgpa; }
-        public Double getCgpa() { return cgpa; }
-    }
-
-    public static class UndergraduateSummaryRecord {
-        private final String studentReg;
-        private final String studentName;
-        private final double sgpa;
-        private final double cgpa;
-
-        public UndergraduateSummaryRecord(String studentReg, String studentName, double sgpa, double cgpa) {
-            this.studentReg = studentReg;
-            this.studentName = studentName;
-            this.sgpa = sgpa;
-            this.cgpa = cgpa;
-        }
-
-        public String getStudentReg() { return studentReg; }
-        public String getStudentName() { return studentName; }
-        public double getSgpa() { return sgpa; }
-        public double getCgpa() { return cgpa; }
-    }
-
-    private static class AcademicSummary {
-        private final double gpa;
-        private final double sgpa;
-
-        public AcademicSummary(double gpa, double sgpa) {
-            this.gpa = gpa;
-            this.sgpa = sgpa;
-        }
-
-        public double getCgpa() { return gpa; }
-        public double getGpa() { return gpa; }
-        public double getSgpa() { return sgpa; }
-    }
-
-    public static class MarksMutation {
-        private final String studentReg;
-        private final String courseCode;
-        private final Double quiz1;
-        private final Double quiz2;
-        private final Double quiz3;
-        private final Double assessment;
-        private final Double project;
-        private final Double midTerm;
-        private final Double finalTheory;
-        private final Double finalPractical;
-
-        public MarksMutation(String studentReg, String courseCode, Double quiz1, Double quiz2, Double quiz3,
-                             Double assessment, Double project, Double midTerm, Double finalTheory,
-                             Double finalPractical) {
-            this.studentReg = studentReg;
-            this.courseCode = courseCode;
-            this.quiz1 = quiz1;
-            this.quiz2 = quiz2;
-            this.quiz3 = quiz3;
-            this.assessment = assessment;
-            this.project = project;
-            this.midTerm = midTerm;
-            this.finalTheory = finalTheory;
-            this.finalPractical = finalPractical;
-        }
-
-        public String getStudentReg() { return studentReg; }
-        public String getCourseCode() { return courseCode; }
-        public Double getQuiz1() { return quiz1; }
-        public Double getQuiz2() { return quiz2; }
-        public Double getQuiz3() { return quiz3; }
-        public Double getAssessment() { return assessment; }
-        public Double getProject() { return project; }
-        public Double getMidTerm() { return midTerm; }
-        public Double getFinalTheory() { return finalTheory; }
-        public Double getFinalPractical() { return finalPractical; }
-    }
-
-    public static class MarksRecord {
-        private final String markId;
-        private final String studentReg;
-        private final String courseCode;
-        private final String quiz1;
-        private final String quiz2;
-        private final String quiz3;
-        private final String assessment;
-        private final String project;
-        private final String midTerm;
-        private final String finalTheory;
-        private final String finalPractical;
-
-        public MarksRecord(String markId, String studentReg, String courseCode, String quiz1, String quiz2,
-                           String quiz3, String assessment, String project, String midTerm,
-                           String finalTheory, String finalPractical) {
-            this.markId = markId;
-            this.studentReg = studentReg;
-            this.courseCode = courseCode;
-            this.quiz1 = quiz1;
-            this.quiz2 = quiz2;
-            this.quiz3 = quiz3;
-            this.assessment = assessment;
-            this.project = project;
-            this.midTerm = midTerm;
-            this.finalTheory = finalTheory;
-            this.finalPractical = finalPractical;
-        }
-
-        public String getMarkId() { return markId; }
-        public String getStudentReg() { return studentReg; }
-        public String getCourseCode() { return courseCode; }
-        public String getQuiz1() { return quiz1; }
-        public String getQuiz2() { return quiz2; }
-        public String getQuiz3() { return quiz3; }
-        public String getAssessment() { return assessment; }
-        public String getProject() { return project; }
-        public String getMidTerm() { return midTerm; }
-        public String getFinalTheory() { return finalTheory; }
-        public String getFinalPractical() { return finalPractical; }
-    }
-
-    public static class MaterialMutation {
-        private final String courseCode;
-        private final String name;
-        private final String path;
-        private final String materialType;
-
-        public MaterialMutation(String courseCode, String name, String path, String materialType) {
-            this.courseCode = courseCode;
-            this.name = name;
-            this.path = path;
-            this.materialType = materialType;
-        }
-
-        public String getCourseCode() { return courseCode; }
-        public String getName() { return name; }
-        public String getPath() { return path; }
-        public String getMaterialType() { return materialType; }
-    }
-
-    public static class MaterialRecord {
-        private final String materialId;
-        private final String courseCode;
-        private final String name;
-        private final String path;
-        private final String type;
-
-        public MaterialRecord(String materialId, String courseCode, String name, String path, String type) {
-            this.materialId = materialId;
-            this.courseCode = courseCode;
-            this.name = name;
-            this.path = path;
-            this.type = type;
-        }
-
-        public String getMaterialId() { return materialId; }
-        public String getCourseCode() { return courseCode; }
-        public String getName() { return name; }
-        public String getPath() { return path; }
-        public String getType() { return type; }
-    }
-
-    public static class StudentRecord {
-        private final String regNo;
-        private final String name;
-        private final String email;
-        private final String phone;
-        private final String department;
-        private final String status;
-        private final String gpa;
-
-        public StudentRecord(String regNo, String name, String email, String phone, String department, String status, String gpa) {
-            this.regNo = regNo;
-            this.name = name;
-            this.email = email;
-            this.phone = phone;
-            this.department = department;
-            this.status = status;
-            this.gpa = gpa;
-        }
-
-        public String getRegNo() { return regNo; }
-        public String getName() { return name; }
-        public String getEmail() { return email; }
-        public String getPhone() { return phone; }
-        public String getDepartment() { return department; }
-        public String getStatus() { return status; }
-        public String getGpa() { return gpa; }
-    }
-
-    private static class StudentListRow {
-        private final String regNo;
-        private final String name;
-        private final String email;
-        private final String phone;
-        private final String department;
-        private final String status;
-
-        public StudentListRow(String regNo, String name, String email, String phone, String department, String status) {
-            this.regNo = regNo;
-            this.name = name;
-            this.email = email;
-            this.phone = phone;
-            this.department = department;
-            this.status = status;
-        }
-
-        public String getRegNo() { return regNo; }
-        public String getName() { return name; }
-        public String getEmail() { return email; }
-        public String getPhone() { return phone; }
-        public String getDepartment() { return department; }
-        public String getStatus() { return status; }
-    }
-
-    public static class TimetableRecord {
-        private final String timetableId;
-        private final String department;
-        private final String lecId;
-        private final String courseCode;
-        private final String adminId;
-        private final String day;
-        private final String startTime;
-        private final String endTime;
-        private final String sessionType;
-
-        public TimetableRecord(String timetableId, String department, String lecId, String courseCode,
-                               String adminId, String day, String startTime, String endTime,
-                               String sessionType) {
-            this.timetableId = timetableId;
-            this.department = department;
-            this.lecId = lecId;
-            this.courseCode = courseCode;
-            this.adminId = adminId;
-            this.day = day;
-            this.startTime = startTime;
-            this.endTime = endTime;
-            this.sessionType = sessionType;
-        }
-
-        public String getTimetableId() { return timetableId; }
-        public String getDepartment() { return department; }
-        public String getLecId() { return lecId; }
-        public String getCourseCode() { return courseCode; }
-        public String getAdminId() { return adminId; }
-        public String getDay() { return day; }
-        public String getStartTime() { return startTime; }
-        public String getEndTime() { return endTime; }
-        public String getSessionType() { return sessionType; }
+        return "CA Shortage";
     }
 }

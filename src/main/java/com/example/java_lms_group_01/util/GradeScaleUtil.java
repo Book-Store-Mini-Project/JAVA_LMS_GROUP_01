@@ -51,15 +51,15 @@ public final class GradeScaleUtil {
         return maximum <= EPSILON || meetsComponentMinimum(marks, maximum);
     }
 
-    public static boolean meetsCaRequirement(AssessmentStructureUtil.MarkBreakdown breakdown) {
+    public static boolean meetsCaRequirement(MarkBreakdown breakdown) {
         return meetsComponentRequirement(breakdown.getCaMarks(), breakdown.getCaMaximum());
     }
 
-    public static boolean meetsEndRequirement(AssessmentStructureUtil.MarkBreakdown breakdown) {
+    public static boolean meetsEndRequirement(MarkBreakdown breakdown) {
         return meetsComponentRequirement(breakdown.getEndMarks(), breakdown.getEndMaximum());
     }
 
-    public static GradeResult evaluatePublishedGrade(AssessmentStructureUtil.MarkBreakdown breakdown,
+    public static GradeResult evaluatePublishedGrade(MarkBreakdown breakdown,
                                                      boolean attendanceEligible,
                                                      boolean examPresent,
                                                      boolean approvedExamMedical) {
@@ -99,23 +99,5 @@ public final class GradeScaleUtil {
 
     private static boolean meetsComponentMinimum(double marks, double maximum) {
         return marks + EPSILON >= maximum * COMPONENT_MINIMUM_RATIO;
-    }
-
-    public static final class GradeResult {
-        private final String publishedGrade;
-        private final Double gradePoint;
-
-        public GradeResult(String publishedGrade, Double gradePoint) {
-            this.publishedGrade = publishedGrade;
-            this.gradePoint = gradePoint;
-        }
-
-        public String getPublishedGrade() {
-            return publishedGrade;
-        }
-
-        public Double getGradePoint() {
-            return gradePoint;
-        }
     }
 }

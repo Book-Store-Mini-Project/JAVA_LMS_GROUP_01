@@ -10,256 +10,289 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 /**
- * Reads and updates the small profile section used by students, lecturers,
- * and technical officers.
+ * Handle user profile (student, lecturer, technical officer)
  */
 public class UserProfileRepository {
 
-    private final UserImageRepository userImageRepository = new UserImageRepository();
+    private final UserImageRepository imageRepo = new UserImageRepository();
 
-    // Load the profile shown on the student profile page.
-    public UserManagementRow findStudentProfile(String registrationNo) throws SQLException {
-        String sql = """
-                SELECT u.user_id, u.firstName, u.lastName, u.email, u.phoneNumber, u.address,
-                       s.department, s.batch, s.GPA, s.status
-                FROM users u
-                INNER JOIN student s ON s.registrationNo = u.user_id
-                WHERE s.registrationNo = ?
-                """;
+    // =========================
+    // LOAD PROFILES
+    // =========================
+
+    public UserManagementRow findStudentProfile(String regNo) throws SQLException {
+
+        String sql = "SELECT * FROM users u INNER JOIN student s ON s.registrationNo = u.user_id WHERE s.registrationNo=?";
+
         Connection connection = DBConnection.getInstance().getConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, registrationNo);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (!rs.next()) {
-                    return null;
-                }
-                return new UserManagementRow(
-                        rs.getString("user_id"),
-                        rs.getString("firstName"),
-                        rs.getString("lastName"),
-                        rs.getString("email"),
-                        rs.getString("address"),
-                        rs.getString("phoneNumber"),
-                        null,
-                        null,
-                        "Student",
-                        rs.getString("user_id"),
-                        null,
-                        rs.getString("department"),
-                        rs.getString("batch"),
-                        rs.getObject("GPA") == null ? null : ((Number) rs.getObject("GPA")).doubleValue(),
-                        rs.getString("status"),
-                        null,
-                        userImageRepository.findImagePathByUserId(connection, registrationNo)
-                );
-            }
+        PreparedStatement statement = connection.prepareStatement(sql);
+
+        statement.setString(1, regNo);
+
+        ResultSet rs = statement.executeQuery();
+
+        if (!rs.next()) {
+            return null;
         }
+
+        return new UserManagementRow(
+                rs.getString("user_id"),
+                rs.getString("firstName"),
+                rs.getString("lastName"),
+                rs.getString("email"),
+                rs.getString("address"),
+                rs.getString("phoneNumber"),
+                null, null,
+                "Student",
+                rs.getString("user_id"),
+                null,
+                rs.getString("department"),
+                rs.getString("batch"),
+                rs.getObject("GPA") == null ? null : ((Number) rs.getObject("GPA")).doubleValue(),
+                rs.getString("status"),
+                null,
+                imageRepo.findImagePathByUserId(connection, regNo)
+        );
     }
 
-    public UserManagementRow findLecturerProfile(String registrationNo) throws SQLException {
-        String sql = """
-                SELECT u.user_id, u.firstName, u.lastName, u.email, u.address, u.phoneNumber, l.department, l.position
-                FROM users u
-                INNER JOIN lecturer l ON l.registrationNo = u.user_id
-                WHERE l.registrationNo = ?
-                """;
+    public UserManagementRow findLecturerProfile(String regNo) throws SQLException {
+
+        String sql = "SELECT * FROM users u INNER JOIN lecturer l ON l.registrationNo=u.user_id WHERE l.registrationNo=?";
+
         Connection connection = DBConnection.getInstance().getConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, registrationNo);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (!rs.next()) {
-                    return null;
-                }
-                return new UserManagementRow(
-                        rs.getString("user_id"),
-                        rs.getString("firstName"),
-                        rs.getString("lastName"),
-                        rs.getString("email"),
-                        rs.getString("address"),
-                        rs.getString("phoneNumber"),
-                        null,
-                        null,
-                        "Lecturer",
-                        rs.getString("user_id"),
-                        null,
-                        rs.getString("department"),
-                        null,
-                        null,
-                        null,
-                        rs.getString("position"),
-                        userImageRepository.findImagePathByUserId(connection, registrationNo)
-                );
-            }
+        PreparedStatement statement = connection.prepareStatement(sql);
+
+        statement.setString(1, regNo);
+
+        ResultSet rs = statement.executeQuery();
+
+        if (!rs.next()) {
+            return null;
         }
+
+        return new UserManagementRow(
+                rs.getString("user_id"),
+                rs.getString("firstName"),
+                rs.getString("lastName"),
+                rs.getString("email"),
+                rs.getString("address"),
+                rs.getString("phoneNumber"),
+                null, null,
+                "Lecturer",
+                rs.getString("user_id"),
+                null,
+                rs.getString("department"),
+                null,
+                null,
+                null,
+                rs.getString("position"),
+                imageRepo.findImagePathByUserId(connection, regNo)
+        );
     }
 
-    public UserManagementRow findTechnicalOfficerProfile(String registrationNo) throws SQLException {
-        String sql = """
-                SELECT u.user_id, u.firstName, u.lastName, u.email, u.phoneNumber, u.address
-                FROM users u
-                INNER JOIN tech_officer t ON t.registrationNo = u.user_id
-                WHERE t.registrationNo = ?
-                """;
+    public UserManagementRow findTechnicalOfficerProfile(String regNo) throws SQLException {
+
+        String sql = "SELECT * FROM users u INNER JOIN tech_officer t ON t.registrationNo=u.user_id WHERE t.registrationNo=?";
+
         Connection connection = DBConnection.getInstance().getConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, registrationNo);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (!rs.next()) {
-                    return null;
-                }
-                return new UserManagementRow(
-                        rs.getString("user_id"),
-                        rs.getString("firstName"),
-                        rs.getString("lastName"),
-                        rs.getString("email"),
-                        rs.getString("address"),
-                        rs.getString("phoneNumber"),
-                        null,
-                        null,
-                        "TechnicalOfficer",
-                        rs.getString("user_id"),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        userImageRepository.findImagePathByUserId(connection, registrationNo)
-                );
-            }
+        PreparedStatement statement = connection.prepareStatement(sql);
+
+        statement.setString(1, regNo);
+
+        ResultSet rs = statement.executeQuery();
+
+        if (!rs.next()) {
+            return null;
         }
+
+        return new UserManagementRow(
+                rs.getString("user_id"),
+                rs.getString("firstName"),
+                rs.getString("lastName"),
+                rs.getString("email"),
+                rs.getString("address"),
+                rs.getString("phoneNumber"),
+                null, null,
+                "TechnicalOfficer",
+                rs.getString("user_id"),
+                null,
+                null, null, null, null, null,
+                imageRepo.findImagePathByUserId(connection, regNo)
+        );
     }
 
-    public void updateStudentProfile(String registrationNo, String email, String phone, String address,
-                                     String imagePath, String currentPassword, String newPassword) throws SQLException {
-        String sql = "UPDATE users SET email = ?, phoneNumber = ?, address = ? WHERE user_id = ?";
+    // =========================
+    // UPDATE PROFILES
+    // =========================
+
+    public void updateStudentProfile(String regNo, String email, String phone, String address,
+                                     String image, String currentPw, String newPw) throws SQLException {
+
+        String sql = "UPDATE users SET email=?, phoneNumber=?, address=? WHERE user_id=?";
+
         Connection connection = DBConnection.getInstance().getConnection();
-        boolean autoCommit = connection.getAutoCommit();
+        boolean oldAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, emptyToNull(email));
-            statement.setString(2, emptyToNull(phone));
-            statement.setString(3, emptyToNull(address));
-            statement.setString(4, registrationNo);
+
+        try {
+
+            PreparedStatement statement = connection.prepareStatement(sql);
+
+            statement.setString(1, clean(email));
+            statement.setString(2, clean(phone));
+            statement.setString(3, clean(address));
+            statement.setString(4, regNo);
+
             statement.executeUpdate();
-            if (hasText(newPassword)) {
-                updateStudentPassword(connection, registrationNo, currentPassword, newPassword);
+
+            // update password if entered
+            if (hasText(newPw)) {
+                updatePassword(connection, regNo, currentPw, newPw);
             }
-            userImageRepository.upsertImagePath(connection, registrationNo, imagePath);
+
+            imageRepo.upsertImagePath(connection, regNo, image);
+
             connection.commit();
-        } catch (IllegalArgumentException e) {
+
+        } catch (SQLException e) {
             connection.rollback();
             throw e;
         } catch (Exception e) {
             connection.rollback();
-            if (e instanceof SQLException) {
-                throw (SQLException) e;
-            }
             throw new SQLException(e.getMessage(), e);
         } finally {
-            connection.setAutoCommit(autoCommit);
+            connection.setAutoCommit(oldAutoCommit);
         }
     }
 
-    public void updateLecturerProfile(String registrationNo, String firstName, String lastName, String email, String address,
-                                      String phone, String department, String position, String imagePath) throws SQLException {
-        String userSql = "UPDATE users SET firstName = ?, lastName = ?, email = ?, address = ?, phoneNumber = ? WHERE user_id = ?";
-        String lecturerSql = "UPDATE lecturer SET department = ?, position = ? WHERE registrationNo = ?";
+    public void updateLecturerProfile(String regNo, String first, String last, String email,
+                                      String address, String phone, String dep, String pos, String image) throws SQLException {
+
         Connection connection = DBConnection.getInstance().getConnection();
-        boolean autoCommit = connection.getAutoCommit();
+        boolean oldAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
-        try (PreparedStatement userStmt = connection.prepareStatement(userSql);
-             PreparedStatement lecturerStmt = connection.prepareStatement(lecturerSql)) {
-            userStmt.setString(1, emptyToNull(firstName));
-            userStmt.setString(2, emptyToNull(lastName));
-            userStmt.setString(3, emptyToNull(email));
-            userStmt.setString(4, emptyToNull(address));
-            userStmt.setString(5, emptyToNull(phone));
-            userStmt.setString(6, registrationNo);
-            userStmt.executeUpdate();
 
-            lecturerStmt.setString(1, emptyToNull(department));
-            lecturerStmt.setString(2, emptyToNull(position));
-            lecturerStmt.setString(3, registrationNo);
-            lecturerStmt.executeUpdate();
+        try {
 
-            userImageRepository.upsertImagePath(connection, registrationNo, imagePath);
+            PreparedStatement user = connection.prepareStatement(
+                    "UPDATE users SET firstName=?, lastName=?, email=?, address=?, phoneNumber=? WHERE user_id=?"
+            );
+
+            user.setString(1, clean(first));
+            user.setString(2, clean(last));
+            user.setString(3, clean(email));
+            user.setString(4, clean(address));
+            user.setString(5, clean(phone));
+            user.setString(6, regNo);
+            user.executeUpdate();
+
+            PreparedStatement lecturer = connection.prepareStatement(
+                    "UPDATE lecturer SET department=?, position=? WHERE registrationNo=?"
+            );
+
+            lecturer.setString(1, clean(dep));
+            lecturer.setString(2, clean(pos));
+            lecturer.setString(3, regNo);
+            lecturer.executeUpdate();
+
+            imageRepo.upsertImagePath(connection, regNo, image);
+
             connection.commit();
+
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
         } catch (Exception e) {
             connection.rollback();
-            if (e instanceof SQLException) {
-                throw (SQLException) e;
-            }
             throw new SQLException(e.getMessage(), e);
         } finally {
-            connection.setAutoCommit(autoCommit);
+            connection.setAutoCommit(oldAutoCommit);
         }
     }
 
-    public void updateTechnicalOfficerProfile(String registrationNo, String firstName, String lastName, String email,
-                                              String phone, String address, String imagePath) throws SQLException {
-        String sql = "UPDATE users SET firstName = ?, lastName = ?, email = ?, phoneNumber = ?, address = ? WHERE user_id = ?";
+    public void updateTechnicalOfficerProfile(String regNo, String first, String last,
+                                              String email, String phone, String address, String image) throws SQLException {
+
+        String sql = "UPDATE users SET firstName=?, lastName=?, email=?, phoneNumber=?, address=? WHERE user_id=?";
+
         Connection connection = DBConnection.getInstance().getConnection();
-        boolean autoCommit = connection.getAutoCommit();
+        boolean oldAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, emptyToNull(firstName));
-            statement.setString(2, emptyToNull(lastName));
-            statement.setString(3, emptyToNull(email));
-            statement.setString(4, emptyToNull(phone));
-            statement.setString(5, emptyToNull(address));
-            statement.setString(6, registrationNo);
+
+        try {
+
+            PreparedStatement statement = connection.prepareStatement(sql);
+
+            statement.setString(1, clean(first));
+            statement.setString(2, clean(last));
+            statement.setString(3, clean(email));
+            statement.setString(4, clean(phone));
+            statement.setString(5, clean(address));
+            statement.setString(6, regNo);
+
             statement.executeUpdate();
-            userImageRepository.upsertImagePath(connection, registrationNo, imagePath);
+
+            imageRepo.upsertImagePath(connection, regNo, image);
+
             connection.commit();
+
+        } catch (SQLException e) {
+            connection.rollback();
+            throw e;
         } catch (Exception e) {
             connection.rollback();
-            if (e instanceof SQLException) {
-                throw (SQLException) e;
-            }
             throw new SQLException(e.getMessage(), e);
         } finally {
-            connection.setAutoCommit(autoCommit);
+            connection.setAutoCommit(oldAutoCommit);
         }
     }
 
-    private String emptyToNull(String value) {
+    // =========================
+    // HELPER METHODS
+    // =========================
+
+    private void updatePassword(Connection con, String regNo, String currentPw, String newPw) throws SQLException {
+
+        String stored = getPassword(con, regNo);
+
+        if (stored == null || !PasswordUtil.matches(currentPw, stored)) {
+            throw new IllegalArgumentException("Wrong current password");
+        }
+
+        PreparedStatement stm = con.prepareStatement(
+                "UPDATE student SET password=? WHERE registrationNo=?"
+        );
+
+        stm.setString(1, PasswordUtil.hashPassword(newPw));
+        stm.setString(2, regNo);
+
+        stm.executeUpdate();
+    }
+
+    private String getPassword(Connection con, String regNo) throws SQLException {
+
+        PreparedStatement stm = con.prepareStatement("SELECT password FROM student WHERE registrationNo=?");
+        stm.setString(1, regNo);
+
+        ResultSet rs = stm.executeQuery();
+
+        if (rs.next()) {
+            return rs.getString("password");
+        }
+
+        return null;
+    }
+
+    private String clean(String value) {
         if (value == null) {
             return null;
         }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
+
+        String v = value.trim();
+        return v.isEmpty() ? null : v;
     }
 
-    private void updateStudentPassword(Connection connection, String registrationNo,
-                                       String currentPassword, String newPassword) throws SQLException {
-        String storedPassword = findStudentPassword(connection, registrationNo);
-        if (storedPassword == null || !PasswordUtil.matches(currentPassword, storedPassword)) {
-            throw new IllegalArgumentException("Current password is incorrect.");
-        }
-
-        try (PreparedStatement statement =
-                     connection.prepareStatement("UPDATE student SET password = ? WHERE registrationNo = ?")) {
-            statement.setString(1, PasswordUtil.hashPassword(newPassword.trim()));
-            statement.setString(2, registrationNo);
-            statement.executeUpdate();
-        }
-    }
-
-    private String findStudentPassword(Connection connection, String registrationNo) throws SQLException {
-        try (PreparedStatement statement =
-                     connection.prepareStatement("SELECT password FROM student WHERE registrationNo = ?")) {
-            statement.setString(1, registrationNo);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    return null;
-                }
-                return resultSet.getString("password");
-            }
-        }
-    }
-
-    private boolean hasText(String value) {
-        return value != null && !value.trim().isEmpty();
+    private boolean hasText(String v) {
+        return v != null && !v.trim().isEmpty();
     }
 }

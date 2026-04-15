@@ -3,58 +3,177 @@ package com.example.java_lms_group_01.model;
 import javafx.beans.property.SimpleStringProperty;
 
 /**
- * JavaFX table row used to display marks entered by the lecturer.
+ * Simple mark model used in tables.
  */
 public class Mark {
-    private final SimpleStringProperty markId;
-    private final SimpleStringProperty studentReg;
-    private final SimpleStringProperty courseCode;
-    private final SimpleStringProperty quiz1;
-    private final SimpleStringProperty quiz2;
-    private final SimpleStringProperty quiz3;
-    private final SimpleStringProperty assessment;
-    private final SimpleStringProperty project;
-    private final SimpleStringProperty midTerm;
-    private final SimpleStringProperty finalTheory;
-    private final SimpleStringProperty finalPractical;
+    private String markId;
+    private String studentReg;
+    private String courseCode;
+    private String quiz1;
+    private String quiz2;
+    private String quiz3;
+    private String assessment;
+    private String project;
+    private String midTerm;
+    private String finalTheory;
+    private String finalPractical;
+
+    public Mark() {
+    }
 
     public Mark(String markId, String studentReg, String courseCode, String quiz1, String quiz2,
                 String quiz3, String assessment, String project, String midTerm,
                 String finalTheory, String finalPractical) {
-        this.markId = new SimpleStringProperty(markId);
-        this.studentReg = new SimpleStringProperty(studentReg);
-        this.courseCode = new SimpleStringProperty(courseCode);
-        this.quiz1 = new SimpleStringProperty(quiz1);
-        this.quiz2 = new SimpleStringProperty(quiz2);
-        this.quiz3 = new SimpleStringProperty(quiz3);
-        this.assessment = new SimpleStringProperty(assessment);
-        this.project = new SimpleStringProperty(project);
-        this.midTerm = new SimpleStringProperty(midTerm);
-        this.finalTheory = new SimpleStringProperty(finalTheory);
-        this.finalPractical = new SimpleStringProperty(finalPractical);
+        setMarkId(markId);
+        setStudentReg(studentReg);
+        setCourseCode(courseCode);
+        setQuiz1(quiz1);
+        setQuiz2(quiz2);
+        setQuiz3(quiz3);
+        setAssessment(assessment);
+        setProject(project);
+        setMidTerm(midTerm);
+        setFinalTheory(finalTheory);
+        setFinalPractical(finalPractical);
     }
 
-    public SimpleStringProperty markIdProperty() { return markId; }
-    public SimpleStringProperty studentRegProperty() { return studentReg; }
-    public SimpleStringProperty courseCodeProperty() { return courseCode; }
-    public SimpleStringProperty quiz1Property() { return quiz1; }
-    public SimpleStringProperty quiz2Property() { return quiz2; }
-    public SimpleStringProperty quiz3Property() { return quiz3; }
-    public SimpleStringProperty assessmentProperty() { return assessment; }
-    public SimpleStringProperty projectProperty() { return project; }
-    public SimpleStringProperty midTermProperty() { return midTerm; }
-    public SimpleStringProperty finalTheoryProperty() { return finalTheory; }
-    public SimpleStringProperty finalPracticalProperty() { return finalPractical; }
+    public String getMarkId() {
+        return markId;
+    }
 
-    public String getMarkId() { return markId.get(); }
-    public String getStudentReg() { return studentReg.get(); }
-    public String getCourseCode() { return courseCode.get(); }
-    public String getQuiz1() { return quiz1.get(); }
-    public String getQuiz2() { return quiz2.get(); }
-    public String getQuiz3() { return quiz3.get(); }
-    public String getAssessment() { return assessment.get(); }
-    public String getProject() { return project.get(); }
-    public String getMidTerm() { return midTerm.get(); }
-    public String getFinalTheory() { return finalTheory.get(); }
-    public String getFinalPractical() { return finalPractical.get(); }
+    public void setMarkId(String markId) {
+        this.markId = text(markId);
+    }
+
+    public String getStudentReg() {
+        return studentReg;
+    }
+
+    public void setStudentReg(String studentReg) {
+        this.studentReg = text(studentReg);
+    }
+
+    public String getCourseCode() {
+        return courseCode;
+    }
+
+    public void setCourseCode(String courseCode) {
+        this.courseCode = text(courseCode);
+    }
+
+    public String getQuiz1() {
+        return quiz1;
+    }
+
+    public void setQuiz1(String quiz1) {
+        this.quiz1 = text(quiz1);
+    }
+
+    public String getQuiz2() {
+        return quiz2;
+    }
+
+    public void setQuiz2(String quiz2) {
+        this.quiz2 = text(quiz2);
+    }
+
+    public String getQuiz3() {
+        return quiz3;
+    }
+
+    public void setQuiz3(String quiz3) {
+        this.quiz3 = text(quiz3);
+    }
+
+    public String getAssessment() {
+        return assessment;
+    }
+
+    public void setAssessment(String assessment) {
+        this.assessment = text(assessment);
+    }
+
+    public String getProject() {
+        return project;
+    }
+
+    public void setProject(String project) {
+        this.project = text(project);
+    }
+
+    public String getMidTerm() {
+        return midTerm;
+    }
+
+    public void setMidTerm(String midTerm) {
+        this.midTerm = text(midTerm);
+    }
+
+    public String getFinalTheory() {
+        return finalTheory;
+    }
+
+    public void setFinalTheory(String finalTheory) {
+        this.finalTheory = text(finalTheory);
+    }
+
+    public String getFinalPractical() {
+        return finalPractical;
+    }
+
+    public void setFinalPractical(String finalPractical) {
+        this.finalPractical = text(finalPractical);
+    }
+
+    public SimpleStringProperty markIdProperty() {
+        return property(markId);
+    }
+
+    public SimpleStringProperty studentRegProperty() {
+        return property(studentReg);
+    }
+
+    public SimpleStringProperty courseCodeProperty() {
+        return property(courseCode);
+    }
+
+    public SimpleStringProperty quiz1Property() {
+        return property(quiz1);
+    }
+
+    public SimpleStringProperty quiz2Property() {
+        return property(quiz2);
+    }
+
+    public SimpleStringProperty quiz3Property() {
+        return property(quiz3);
+    }
+
+    public SimpleStringProperty assessmentProperty() {
+        return property(assessment);
+    }
+
+    public SimpleStringProperty projectProperty() {
+        return property(project);
+    }
+
+    public SimpleStringProperty midTermProperty() {
+        return property(midTerm);
+    }
+
+    public SimpleStringProperty finalTheoryProperty() {
+        return property(finalTheory);
+    }
+
+    public SimpleStringProperty finalPracticalProperty() {
+        return property(finalPractical);
+    }
+
+    private static SimpleStringProperty property(String value) {
+        return new SimpleStringProperty(text(value));
+    }
+
+    private static String text(String value) {
+        return value == null ? "" : value;
+    }
 }

@@ -66,19 +66,19 @@ public class Notice {
     }
 
     public SimpleStringProperty noticeIdProperty() {
-        return new SimpleStringProperty(String.valueOf(noticeId));
+        return property(String.valueOf(noticeId));
     }
 
     public SimpleStringProperty titleProperty() {
-        return new SimpleStringProperty(value(title));
+        return property(title);
     }
 
     public SimpleStringProperty contentProperty() {
-        return new SimpleStringProperty(value(content));
+        return property(content);
     }
 
     public SimpleStringProperty publishDateProperty() {
-        return new SimpleStringProperty(publishDate == null ? "" : publishDate.toString());
+        return property(publishDate == null ? "" : publishDate.toString());
     }
 
     public SimpleStringProperty dateProperty() {
@@ -86,11 +86,10 @@ public class Notice {
     }
 
     public SimpleStringProperty createdByProperty() {
-        return new SimpleStringProperty(value(createdBy));
+        return property(createdBy);
     }
 
-    private String value(String text) {
-        return text == null ? "" : text;
+    private static SimpleStringProperty property(String value) {
+        return new SimpleStringProperty(value == null ? "" : value);
     }
-
 }

@@ -107,23 +107,23 @@ public class Course {
     }
 
     public SimpleStringProperty courseCodeProperty() {
-        return new SimpleStringProperty(value(courseCode));
+        return property(courseCode);
     }
 
     public SimpleStringProperty nameProperty() {
-        return new SimpleStringProperty(value(name));
+        return property(name);
     }
 
     public SimpleStringProperty lecturerProperty() {
-        return new SimpleStringProperty(value(lecturerRegistrationNo));
+        return property(lecturerRegistrationNo);
     }
 
     public SimpleStringProperty departmentProperty() {
-        return new SimpleStringProperty(value(department));
+        return property(department);
     }
 
     public SimpleStringProperty semesterProperty() {
-        return new SimpleStringProperty(value(semester));
+        return property(semester);
     }
 
     public SimpleStringProperty creditProperty() {
@@ -131,14 +131,14 @@ public class Course {
     }
 
     public SimpleStringProperty typeProperty() {
-        return new SimpleStringProperty(getCourseType());
+        return property(getCourseType());
     }
 
     public SimpleStringProperty enrollmentStatusProperty() {
-        return new SimpleStringProperty(getEnrollmentStatus());
+        return property(getEnrollmentStatus());
     }
 
-    private String value(String text) {
-        return text == null ? "" : text;
+    private static SimpleStringProperty property(String value) {
+        return new SimpleStringProperty(value == null ? "" : value);
     }
 }

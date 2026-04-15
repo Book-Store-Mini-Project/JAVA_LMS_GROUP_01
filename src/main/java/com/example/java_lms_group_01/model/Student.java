@@ -3,41 +3,120 @@ package com.example.java_lms_group_01.model;
 import javafx.beans.property.SimpleStringProperty;
 
 /**
- * JavaFX table row used to show student details in lecturer screens.
+ * Simple student table model.
  */
 public class Student {
-    private final SimpleStringProperty regNo;
-    private final SimpleStringProperty name;
-    private final SimpleStringProperty email;
-    private final SimpleStringProperty phone;
-    private final SimpleStringProperty department;
-    private final SimpleStringProperty status;
-    private final SimpleStringProperty gpa;
+    private String regNo;
+    private String name;
+    private String email;
+    private String phone;
+    private String department;
+    private String status;
+    private String gpa;
+
+    public Student() {
+    }
 
     public Student(String regNo, String name, String email, String phone, String department,
                    String status, String gpa) {
-        this.regNo = new SimpleStringProperty(regNo);
-        this.name = new SimpleStringProperty(name);
-        this.email = new SimpleStringProperty(email);
-        this.phone = new SimpleStringProperty(phone);
-        this.department = new SimpleStringProperty(department);
-        this.status = new SimpleStringProperty(status);
-        this.gpa = new SimpleStringProperty(gpa);
+        setRegNo(regNo);
+        setName(name);
+        setEmail(email);
+        setPhone(phone);
+        setDepartment(department);
+        setStatus(status);
+        setGpa(gpa);
     }
 
-    public SimpleStringProperty regNoProperty() { return regNo; }
-    public SimpleStringProperty nameProperty() { return name; }
-    public SimpleStringProperty emailProperty() { return email; }
-    public SimpleStringProperty phoneProperty() { return phone; }
-    public SimpleStringProperty departmentProperty() { return department; }
-    public SimpleStringProperty statusProperty() { return status; }
-    public SimpleStringProperty gpaProperty() { return gpa; }
+    public String getRegNo() {
+        return regNo;
+    }
 
-    public String getRegNo() { return regNo.get(); }
-    public String getName() { return name.get(); }
-    public String getEmail() { return email.get(); }
-    public String getPhone() { return phone.get(); }
-    public String getDepartment() { return department.get(); }
-    public String getStatus() { return status.get(); }
-    public String getGpa() { return gpa.get(); }
+    public void setRegNo(String regNo) {
+        this.regNo = text(regNo);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = text(name);
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = text(email);
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = text(phone);
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = text(department);
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = text(status);
+    }
+
+    public String getGpa() {
+        return gpa;
+    }
+
+    public void setGpa(String gpa) {
+        this.gpa = text(gpa);
+    }
+
+    public SimpleStringProperty regNoProperty() {
+        return property(regNo);
+    }
+
+    public SimpleStringProperty nameProperty() {
+        return property(name);
+    }
+
+    public SimpleStringProperty emailProperty() {
+        return property(email);
+    }
+
+    public SimpleStringProperty phoneProperty() {
+        return property(phone);
+    }
+
+    public SimpleStringProperty departmentProperty() {
+        return property(department);
+    }
+
+    public SimpleStringProperty statusProperty() {
+        return property(status);
+    }
+
+    public SimpleStringProperty gpaProperty() {
+        return property(gpa);
+    }
+
+    private static SimpleStringProperty property(String value) {
+        return new SimpleStringProperty(text(value));
+    }
+
+    private static String text(String value) {
+        return value == null ? "" : value;
+    }
 }

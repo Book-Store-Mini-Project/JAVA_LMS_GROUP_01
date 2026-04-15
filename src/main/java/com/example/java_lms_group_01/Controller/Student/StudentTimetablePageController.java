@@ -9,8 +9,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Shows timetable entries for the logged-in student's department.
@@ -49,22 +47,7 @@ public class StudentTimetablePageController {
         }
 
         try {
-            List<StudentRepository.TimetableRecord> recordList = studentRepository.findTimetableByStudent(regNo);
-            List<Timetable> rows = new ArrayList<>();
-            for (StudentRepository.TimetableRecord record : recordList) {
-                rows.add(new Timetable(
-                        record.getTimetableId(),
-                        record.getDepartment(),
-                        record.getLecId(),
-                        record.getCourseCode(),
-                        record.getAdminId(),
-                        record.getDay(),
-                        parseTime(record.getStartTime()),
-                        parseTime(record.getEndTime()),
-                        record.getSessionType()
-                ));
-            }
-            tblTimetable.getItems().setAll(rows);
+            tblTimetable.getItems().setAll(studentRepository.findTimetableByStudent(regNo));
         } catch (SQLException e) {
             showError("Failed to load timetable details.", e);
         }
@@ -76,9 +59,5 @@ public class StudentTimetablePageController {
         alert.setHeaderText(null);
         alert.setContentText(message + "\n" + e.getMessage());
         alert.showAndWait();
-    }
-
-    private java.time.LocalTime parseTime(String value) {
-        return value == null || value.isBlank() ? null : java.time.LocalTime.parse(value);
     }
 }

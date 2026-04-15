@@ -5,7 +5,7 @@ import java.time.LocalDate;
 /**
  * Base class that stores common details shared by every system user.
  */
-public class User {
+public class User implements UserContract {
     private String userId;
     private String firstName;
     private String lastName;

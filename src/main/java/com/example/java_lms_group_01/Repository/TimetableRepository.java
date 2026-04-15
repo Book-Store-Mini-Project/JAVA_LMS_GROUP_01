@@ -8,191 +8,199 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Database access for timetable records.
+ * Handles timetable database operations
  */
 public class TimetableRepository {
 
-    private static final String BASE_SELECT =
-            "SELECT time_table_id, department, lec_id, courseCode, admin_id, day, start_time, end_time, session_type FROM timetable";
+    // =========================
+    // GET TIMETABLE (WITH FILTERS)
+    // =========================
 
-    // Read timetable rows using optional filters from the admin screen.
     public List<Timetable> findByFilters(String department, String day, String keyword) throws SQLException {
-        StringBuilder sql = new StringBuilder(BASE_SELECT + " WHERE 1=1");
-        List<Object> params = new ArrayList<>();
 
-        if (department != null && !department.isBlank()) {
-            sql.append(" AND department = ?");
+        String sql = "SELECT * FROM timetable WHERE 1=1";
+
+        List<String> params = new ArrayList<>();
+
+        // Filter by department
+        if (department != null && !department.isEmpty()) {
+            sql += " AND department = ?";
             params.add(department);
         }
 
-        if (day != null && !day.isBlank()) {
-            sql.append(" AND day = ?");
+        // Filter by day
+        if (day != null && !day.isEmpty()) {
+            sql += " AND day = ?";
             params.add(day);
         }
 
-        if (keyword != null && !keyword.isBlank()) {
-            sql.append(" AND (time_table_id LIKE ? OR courseCode LIKE ? OR lec_id LIKE ?)");
-            String pattern = "%" + keyword.trim() + "%";
+        // Filter by keyword
+        if (keyword != null && !keyword.isEmpty()) {
+            sql += " AND (time_table_id LIKE ? OR courseCode LIKE ? OR lec_id LIKE ?)";
+
+            String pattern = "%" + keyword + "%";
+
             params.add(pattern);
             params.add(pattern);
             params.add(pattern);
         }
 
-        sql.append(" ORDER BY time_table_id DESC");
+        sql += " ORDER BY time_table_id DESC";
 
-        Connection connection = DBConnection.getInstance().getConnection();
-        try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
-            for (int i = 0; i < params.size(); i++) {
-                statement.setObject(i + 1, params.get(i));
-            }
+        Connection con = DBConnection.getInstance().getConnection();
+        PreparedStatement stm = con.prepareStatement(sql);
 
-            try (ResultSet rs = statement.executeQuery()) {
-                List<Timetable> timetables = new ArrayList<>();
-                while (rs.next()) {
-                    timetables.add(mapRow(rs));
-                }
-                return timetables;
-            }
+        // Set parameters
+        for (int i = 0; i < params.size(); i++) {
+            stm.setString(i + 1, params.get(i));
         }
+
+        ResultSet rs = stm.executeQuery();
+
+        List<Timetable> list = new ArrayList<>();
+
+        while (rs.next()) {
+            list.add(mapRow(rs));
+        }
+
+        return list;
     }
+
+    // =========================
+    // GET ALL DEPARTMENTS
+    // =========================
 
     public List<String> findAllDepartments() throws SQLException {
+
         String sql = "SELECT DISTINCT department FROM timetable ORDER BY department";
-        Connection connection = DBConnection.getInstance().getConnection();
 
-        try (PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet rs = statement.executeQuery()) {
+        Connection con = DBConnection.getInstance().getConnection();
+        PreparedStatement stm = con.prepareStatement(sql);
 
-            List<String> departments = new ArrayList<>();
-            while (rs.next()) {
-                String department = rs.getString("department");
-                if (department != null && !department.isBlank()) {
-                    departments.add(department);
-                }
+        ResultSet rs = stm.executeQuery();
+
+        List<String> list = new ArrayList<>();
+
+        while (rs.next()) {
+            String dep = rs.getString("department");
+
+            if (dep != null && !dep.isEmpty()) {
+                list.add(dep);
             }
-            return departments;
         }
+
+        return list;
     }
+
+    // =========================
+    // GET ALL DAYS
+    // =========================
 
     public List<String> findAllDays() throws SQLException {
+
         String sql = "SELECT DISTINCT day FROM timetable ORDER BY day";
-        Connection connection = DBConnection.getInstance().getConnection();
 
-        try (PreparedStatement statement = connection.prepareStatement(sql);
-             ResultSet rs = statement.executeQuery()) {
+        Connection con = DBConnection.getInstance().getConnection();
+        PreparedStatement stm = con.prepareStatement(sql);
 
-            List<String> days = new ArrayList<>();
-            while (rs.next()) {
-                String day = rs.getString("day");
-                if (day != null && !day.isBlank()) {
-                    days.add(day);
-                }
+        ResultSet rs = stm.executeQuery();
+
+        List<String> list = new ArrayList<>();
+
+        while (rs.next()) {
+            String day = rs.getString("day");
+
+            if (day != null && !day.isEmpty()) {
+                list.add(day);
             }
-            return days;
         }
+
+        return list;
     }
 
-    public boolean save(Timetable timetable) throws SQLException {
-        String sql = "INSERT INTO timetable (time_table_id, department, lec_id, courseCode, admin_id, day, start_time, end_time, session_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        Connection connection = DBConnection.getInstance().getConnection();
+    // =========================
+    // SAVE TIMETABLE
+    // =========================
 
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            bindTimetable(statement, timetable, false);
-            return statement.executeUpdate() > 0;
-        }
+    public boolean save(Timetable t) throws SQLException {
+
+        String sql = "INSERT INTO timetable VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        Connection con = DBConnection.getInstance().getConnection();
+        PreparedStatement stm = con.prepareStatement(sql);
+
+        setData(stm, t, false);
+
+        return stm.executeUpdate() > 0;
     }
 
-    public boolean update(Timetable timetable) throws SQLException {
-        String sql = "UPDATE timetable SET department = ?, lec_id = ?, courseCode = ?, admin_id = ?, day = ?, start_time = ?, end_time = ?, session_type = ? WHERE time_table_id = ?";
-        Connection connection = DBConnection.getInstance().getConnection();
+    // =========================
+    // UPDATE TIMETABLE
+    // =========================
 
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            bindTimetable(statement, timetable, true);
-            return statement.executeUpdate() > 0;
-        }
+    public boolean update(Timetable t) throws SQLException {
+
+        String sql = "UPDATE timetable SET department=?, lec_id=?, courseCode=?, admin_id=?, day=?, start_time=?, end_time=?, session_type=? WHERE time_table_id=?";
+
+        Connection con = DBConnection.getInstance().getConnection();
+        PreparedStatement stm = con.prepareStatement(sql);
+
+        setData(stm, t, true);
+
+        return stm.executeUpdate() > 0;
     }
 
-    public boolean deleteById(String timetableId) throws SQLException {
-        String sql = "DELETE FROM timetable WHERE time_table_id = ?";
-        Connection connection = DBConnection.getInstance().getConnection();
+    // =========================
+    // DELETE TIMETABLE
+    // =========================
 
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, timetableId);
-            return statement.executeUpdate() > 0;
-        }
+    public boolean deleteById(String id) throws SQLException {
+
+        String sql = "DELETE FROM timetable WHERE time_table_id=?";
+
+        Connection con = DBConnection.getInstance().getConnection();
+        PreparedStatement stm = con.prepareStatement(sql);
+
+        stm.setString(1, id);
+
+        return stm.executeUpdate() > 0;
     }
 
-    private void bindTimetable(PreparedStatement statement, Timetable timetable, boolean forUpdate) throws SQLException {
-        if (!forUpdate) {
-            statement.setString(1, timetable.getTimeTableId());
-            statement.setString(2, timetable.getDepartment());
-            if (timetable.getLecId() == null || timetable.getLecId().isBlank()) {
-                statement.setNull(3, Types.VARCHAR);
-            } else {
-                statement.setString(3, timetable.getLecId());
-            }
-            if (timetable.getCourseCode() == null || timetable.getCourseCode().isBlank()) {
-                statement.setNull(4, Types.VARCHAR);
-            } else {
-                statement.setString(4, timetable.getCourseCode());
-            }
-            if (timetable.getAdminId() == null || timetable.getAdminId().isBlank()) {
-                statement.setNull(5, Types.VARCHAR);
-            } else {
-                statement.setString(5, timetable.getAdminId());
-            }
-            statement.setString(6, timetable.getDay());
-            if (timetable.getStartTime() == null) {
-                statement.setNull(7, Types.TIME);
-            } else {
-                statement.setTime(7, Time.valueOf(timetable.getStartTime()));
-            }
-            if (timetable.getEndTime() == null) {
-                statement.setNull(8, Types.TIME);
-            } else {
-                statement.setTime(8, Time.valueOf(timetable.getEndTime()));
-            }
-            statement.setString(9, timetable.getSessionType());
-            return;
-        }
+    // =========================
+    // HELPER METHODS
+    // =========================
 
-        statement.setString(1, timetable.getDepartment());
-        if (timetable.getLecId() == null || timetable.getLecId().isBlank()) {
-            statement.setNull(2, Types.VARCHAR);
+    private void setData(PreparedStatement stm, Timetable t, boolean update) throws SQLException {
+
+        if (!update) {
+            stm.setString(1, t.getTimeTableId());
+            stm.setString(2, t.getDepartment());
+            stm.setString(3, t.getLecId());
+            stm.setString(4, t.getCourseCode());
+            stm.setString(5, t.getAdminId());
+            stm.setString(6, t.getDay());
+            stm.setTime(7, t.getStartTime() == null ? null : Time.valueOf(t.getStartTime()));
+            stm.setTime(8, t.getEndTime() == null ? null : Time.valueOf(t.getEndTime()));
+            stm.setString(9, t.getSessionType());
         } else {
-            statement.setString(2, timetable.getLecId());
+            stm.setString(1, t.getDepartment());
+            stm.setString(2, t.getLecId());
+            stm.setString(3, t.getCourseCode());
+            stm.setString(4, t.getAdminId());
+            stm.setString(5, t.getDay());
+            stm.setTime(6, t.getStartTime() == null ? null : Time.valueOf(t.getStartTime()));
+            stm.setTime(7, t.getEndTime() == null ? null : Time.valueOf(t.getEndTime()));
+            stm.setString(8, t.getSessionType());
+            stm.setString(9, t.getTimeTableId());
         }
-        if (timetable.getCourseCode() == null || timetable.getCourseCode().isBlank()) {
-            statement.setNull(3, Types.VARCHAR);
-        } else {
-            statement.setString(3, timetable.getCourseCode());
-        }
-        if (timetable.getAdminId() == null || timetable.getAdminId().isBlank()) {
-            statement.setNull(4, Types.VARCHAR);
-        } else {
-            statement.setString(4, timetable.getAdminId());
-        }
-        statement.setString(5, timetable.getDay());
-        if (timetable.getStartTime() == null) {
-            statement.setNull(6, Types.TIME);
-        } else {
-            statement.setTime(6, Time.valueOf(timetable.getStartTime()));
-        }
-        if (timetable.getEndTime() == null) {
-            statement.setNull(7, Types.TIME);
-        } else {
-            statement.setTime(7, Time.valueOf(timetable.getEndTime()));
-        }
-        statement.setString(8, timetable.getSessionType());
-        statement.setString(9, timetable.getTimeTableId());
     }
 
     private Timetable mapRow(ResultSet rs) throws SQLException {
+
         Time start = rs.getTime("start_time");
         Time end = rs.getTime("end_time");
 

@@ -31,7 +31,7 @@ public class UserImageRepository {
     }
 
     public void upsertImagePath(Connection connection, String userId, String imagePath) throws SQLException {
-        if (imagePath == null || imagePath.trim().isBlank()) {
+        if (imagePath == null || imagePath.trim().isEmpty()) {
             try (PreparedStatement statement = connection.prepareStatement("DELETE FROM user_profile_images WHERE user_id = ?")) {
                 statement.setString(1, userId);
                 statement.executeUpdate();

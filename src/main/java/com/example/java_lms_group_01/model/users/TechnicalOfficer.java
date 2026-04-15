@@ -5,14 +5,16 @@ import java.time.LocalDate;
 /**
  * Technical officer object with the extra fields needed for login and profile data.
  */
-public class TechnicalOfficer extends User {
+public class TechnicalOfficer extends User implements TechnicalOfficerRole {
     private String registrationNo;
     private String password;
 
     public TechnicalOfficer() {
     }
 
-    public TechnicalOfficer(String userId, String firstName, String lastName, String email, String address, String phoneNumber, LocalDate dateOfBirth, String gender, String registrationNo, String password) {
+    public TechnicalOfficer(String userId, String firstName, String lastName, String email, String address,
+                            String phoneNumber, LocalDate dateOfBirth, String gender,
+                            String registrationNo, String password) {
         super(userId, firstName, lastName, email, address, phoneNumber, dateOfBirth, gender);
         this.registrationNo = registrationNo;
         this.password = password;

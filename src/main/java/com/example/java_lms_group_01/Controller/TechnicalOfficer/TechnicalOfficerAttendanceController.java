@@ -2,6 +2,7 @@ package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
 import com.example.java_lms_group_01.Repository.TechnicalOfficerRepository;
 import com.example.java_lms_group_01.model.Attendance;
+import com.example.java_lms_group_01.model.request.AttendanceRequest;
 import com.example.java_lms_group_01.util.TechnicalOfficerContext;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -15,8 +16,6 @@ import javafx.scene.control.TextField;
 
 import java.time.LocalDate;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Lets a technical officer add, update, search, and delete attendance records.
@@ -87,7 +86,7 @@ public class TechnicalOfficerAttendanceController {
             return;
         }
         try {
-            technicalOfficerRepository.addAttendance(buildAttendanceMutation());
+            technicalOfficerRepository.addAttendance(buildAttendanceRequest());
             loadAttendance(txtSearch.getText());
             clearForm(event);
         } catch (Exception e) {
@@ -106,7 +105,7 @@ public class TechnicalOfficerAttendanceController {
             return;
         }
         try {
-            technicalOfficerRepository.updateAttendance(Integer.parseInt(selected.getAttendanceId()), buildAttendanceMutation());
+            technicalOfficerRepository.updateAttendance(Integer.parseInt(selected.getAttendanceId()), buildAttendanceRequest());
             loadAttendance(txtSearch.getText());
         } catch (Exception e) {
             showError("Failed to update attendance record.", e);
@@ -181,21 +180,7 @@ public class TechnicalOfficerAttendanceController {
 
     private void loadAttendance(String keyword) {
         try {
-            List<TechnicalOfficerRepository.AttendanceRecord> recordList =
-                    technicalOfficerRepository.findAttendance(keyword);
-            List<Attendance> rows = new ArrayList<>();
-            for (TechnicalOfficerRepository.AttendanceRecord record : recordList) {
-                rows.add(new Attendance(
-                        record.getAttendanceId(),
-                        record.getStudentRegNo(),
-                        record.getCourseCode(),
-                        record.getDate(),
-                        record.getSessionType(),
-                        record.getStatus(),
-                        record.getTechOfficerReg()
-                ));
-            }
-            tblAttendance.getItems().setAll(rows);
+            tblAttendance.getItems().setAll(technicalOfficerRepository.findAttendance(keyword));
         } catch (SQLException e) {
             showError("Failed to load attendance records.", e);
         }
@@ -206,8 +191,8 @@ public class TechnicalOfficerAttendanceController {
         return reg == null ? "" : reg.trim();
     }
 
-    private TechnicalOfficerRepository.AttendanceMutation buildAttendanceMutation() {
-        return new TechnicalOfficerRepository.AttendanceMutation(
+    private AttendanceRequest buildAttendanceRequest() {
+        return new AttendanceRequest(
                 value(txtStudentRegNo),
                 value(txtCourseCode),
                 currentTechOfficerReg(),

@@ -10,9 +10,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Shows students enrolled in courses taught by the logged-in lecturer.
  */
@@ -64,21 +61,9 @@ public class LecturerStudentsController {
 
     private void loadStudents(String keyword) {
         try {
-            List<LecturerRepository.StudentRecord> recordList =
-                    lecturerRepository.findStudentsByLecturer(currentLecturer(), keyword);
-            List<Student> rows = new ArrayList<>();
-            for (LecturerRepository.StudentRecord record : recordList) {
-                rows.add(new Student(
-                        record.getRegNo(),
-                        record.getName(),
-                        record.getEmail(),
-                        record.getPhone(),
-                        record.getDepartment(),
-                        record.getStatus(),
-                        record.getGpa()
-                ));
-            }
-            tblStudents.getItems().setAll(rows);
+            tblStudents.getItems().setAll(
+                    lecturerRepository.findStudentsByLecturer(currentLecturer(), keyword)
+            );
         } catch (SQLException e) {
             showError("Failed to load undergraduate details.", e);
         }

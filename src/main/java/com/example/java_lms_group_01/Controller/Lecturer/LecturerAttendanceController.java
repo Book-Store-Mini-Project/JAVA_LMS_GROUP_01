@@ -1,7 +1,7 @@
 package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
-import com.example.java_lms_group_01.model.AttendanceMedical;
+import com.example.java_lms_group_01.model.Attendance;
 import com.example.java_lms_group_01.util.LecturerContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -11,9 +11,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Shows attendance records together with related medical requests for the lecturer.
  */
@@ -22,27 +19,27 @@ public class LecturerAttendanceController {
     @FXML
     private TextField txtSearch;
     @FXML
-    private TableView<AttendanceMedical> tblAttendanceMedical;
+    private TableView<Attendance> tblAttendanceMedical;
     @FXML
-    private TableColumn<AttendanceMedical, String> colAttendanceId;
+    private TableColumn<Attendance, String> colAttendanceId;
     @FXML
-    private TableColumn<AttendanceMedical, String> colStudentReg;
+    private TableColumn<Attendance, String> colStudentReg;
     @FXML
-    private TableColumn<AttendanceMedical, String> colCourseCode;
+    private TableColumn<Attendance, String> colCourseCode;
     @FXML
-    private TableColumn<AttendanceMedical, String> colDate;
+    private TableColumn<Attendance, String> colDate;
     @FXML
-    private TableColumn<AttendanceMedical, String> colSessionType;
+    private TableColumn<Attendance, String> colSessionType;
     @FXML
-    private TableColumn<AttendanceMedical, String> colAttendanceStatus;
+    private TableColumn<Attendance, String> colAttendanceStatus;
     @FXML
-    private TableColumn<AttendanceMedical, String> colMedicalId;
+    private TableColumn<Attendance, String> colMedicalId;
     @FXML
-    private TableColumn<AttendanceMedical, String> colMedicalDescription;
+    private TableColumn<Attendance, String> colMedicalDescription;
     @FXML
-    private TableColumn<AttendanceMedical, String> colMedicalApproval;
+    private TableColumn<Attendance, String> colMedicalApproval;
     @FXML
-    private TableColumn<AttendanceMedical, String> colTechOfficerReg;
+    private TableColumn<Attendance, String> colTechOfficerReg;
     @FXML
     private Button btnApproveMedical;
     @FXML
@@ -79,7 +76,7 @@ public class LecturerAttendanceController {
 
     @FXML
     private void approveMedical() {
-        updateMedicalDecision("approved", "medical", "Medical approved.");
+        updateMedicalDecision("approved", "present", "Medical approved. Attendance marked as present.");
     }
 
     @FXML
@@ -89,24 +86,9 @@ public class LecturerAttendanceController {
 
     private void loadRecords(String keyword) {
         try {
-            List<LecturerRepository.AttendanceMedicalRecord> recordList =
-                    lecturerRepository.findAttendanceMedicalByLecturer(currentLecturer(), keyword);
-            List<AttendanceMedical> rows = new ArrayList<>();
-            for (LecturerRepository.AttendanceMedicalRecord record : recordList) {
-                rows.add(new AttendanceMedical(
-                        record.getAttendanceId(),
-                        record.getStudentReg(),
-                        record.getCourseCode(),
-                        record.getDate(),
-                        record.getSessionType(),
-                        record.getAttendanceStatus(),
-                        record.getMedicalId(),
-                        record.getMedicalDescription(),
-                        record.getMedicalApprovalStatus(),
-                        record.getTechOfficerReg()
-                ));
-            }
-            tblAttendanceMedical.getItems().setAll(rows);
+            tblAttendanceMedical.getItems().setAll(
+                    lecturerRepository.findAttendanceMedicalByLecturer(currentLecturer(), keyword)
+            );
             updateActionState(tblAttendanceMedical.getSelectionModel().getSelectedItem());
         } catch (SQLException e) {
             showError("Failed to load attendance/medical records.", e);
@@ -114,7 +96,7 @@ public class LecturerAttendanceController {
     }
 
     private void updateMedicalDecision(String approvalStatus, String attendanceStatus, String successMessage) {
-        AttendanceMedical selected = tblAttendanceMedical.getSelectionModel().getSelectedItem();
+        Attendance selected = tblAttendanceMedical.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showWarn("Select a medical record first.");
             return;
@@ -139,7 +121,7 @@ public class LecturerAttendanceController {
         }
     }
 
-    private void updateActionState(AttendanceMedical row) {
+    private void updateActionState(Attendance row) {
         boolean enabled = row != null && !row.getMedicalId().isBlank();
         if (btnApproveMedical != null) {
             btnApproveMedical.setDisable(!enabled);

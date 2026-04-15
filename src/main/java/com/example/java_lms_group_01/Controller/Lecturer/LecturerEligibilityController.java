@@ -2,7 +2,6 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Eligibility;
-import com.example.java_lms_group_01.util.AttendanceEligibilityUtil;
 import com.example.java_lms_group_01.util.LecturerContext;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -60,12 +59,12 @@ public class LecturerEligibilityController {
         colEligibility.setCellValueFactory(d -> d.getValue().eligibilityProperty());
 
         loadBatchOptions();
-        loadEligibility("", "", "");
+        loadEligibility("", "");
     }
 
     @FXML
     private void submitFilters() {
-        loadEligibility(value(txtStudentSearch), "", selectedBatch());
+        loadEligibility(value(txtStudentSearch), selectedBatch());
     }
 
     private void loadBatchOptions() {
@@ -86,25 +85,11 @@ public class LecturerEligibilityController {
         return batch == null || "All Batches".equals(batch) ? "" : batch.trim();
     }
 
-    private void loadEligibility(String studentReg, String courseCode, String batch) {
+    private void loadEligibility(String studentReg, String batch) {
         try {
-            List<LecturerRepository.EligibilityRecord> recordList =
-                    lecturerRepository.findEligibilityByLecturer(currentLecturer(), studentReg, courseCode, batch);
-            List<Eligibility> rows = new ArrayList<>();
-            for (LecturerRepository.EligibilityRecord record : recordList) {
-                rows.add(new Eligibility(
-                        record.getStudentReg(),
-                        record.getStudentName(),
-                        record.getCourseCode(),
-                        String.valueOf(record.getEligibleSessions()),
-                        String.valueOf(record.getTotalSessions()),
-                        AttendanceEligibilityUtil.formatPercentage(record.getEligibleSessions(), record.getTotalSessions()),
-                        String.format("%.2f", record.getCaMarks()),
-                        String.format("%.2f", record.getCaThreshold()),
-                        buildEligibilityStatus(record.isAttendanceEligible(), record.isCaEligible())
-                ));
-            }
-            tblEligibility.getItems().setAll(rows);
+            tblEligibility.getItems().setAll(
+                    lecturerRepository.findEligibilityByLecturer(currentLecturer(), studentReg, "", batch)
+            );
         } catch (SQLException e) {
             showError("Failed to load undergraduate eligibility.", e);
         }
@@ -117,19 +102,6 @@ public class LecturerEligibilityController {
 
     private String value(TextField textField) {
         return textField.getText() == null ? "" : textField.getText().trim();
-    }
-
-    private String buildEligibilityStatus(boolean attendanceEligible, boolean caEligible) {
-        if (attendanceEligible && caEligible) {
-            return "Eligible";
-        }
-        if (!attendanceEligible && !caEligible) {
-            return "Attendance + CA Shortage";
-        }
-        if (!attendanceEligible) {
-            return "Attendance Shortage";
-        }
-        return "CA Shortage";
     }
 
     private void showError(String message, Exception e) {

@@ -9,9 +9,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Shows the timetable for the logged-in lecturer.
  */
@@ -52,23 +49,9 @@ public class LecturerTimetableController {
         }
 
         try {
-            List<LecturerRepository.TimetableRecord> recordList =
-                    lecturerRepository.findTimetableByLecturer(lecturerReg, null);
-            List<Timetable> rows = new ArrayList<>();
-            for (LecturerRepository.TimetableRecord record : recordList) {
-                rows.add(new Timetable(
-                        record.getTimetableId(),
-                        record.getDepartment(),
-                        record.getLecId(),
-                        record.getCourseCode(),
-                        record.getAdminId(),
-                        record.getDay(),
-                        parseTime(record.getStartTime()),
-                        parseTime(record.getEndTime()),
-                        record.getSessionType()
-                ));
-            }
-            tblTimetable.getItems().setAll(rows);
+            tblTimetable.getItems().setAll(
+                    lecturerRepository.findTimetableByLecturer(lecturerReg, null)
+            );
         } catch (SQLException e) {
             showError("Failed to load lecturer timetable.", e);
         }
@@ -81,9 +64,4 @@ public class LecturerTimetableController {
         alert.setContentText(message + "\n" + e.getMessage());
         alert.showAndWait();
     }
-
-    private java.time.LocalTime parseTime(String value) {
-        return value == null || value.isBlank() ? null : java.time.LocalTime.parse(value);
-    }
-
 }

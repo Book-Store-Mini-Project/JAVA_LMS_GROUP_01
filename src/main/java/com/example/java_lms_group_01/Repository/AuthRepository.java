@@ -9,40 +9,76 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/**
- * Handles login validation.
- * This class checks each role table until it finds a matching registration number and password.
- */
 public class AuthRepository {
 
-    // Return the role of the user who logged in successfully.
     public UserRole findRoleByRegistrationNo(String registrationNo, String rawPassword) throws SQLException {
+
+        // Get database connection
         Connection connection = DBConnection.getInstance().getConnection();
-        if (isPasswordValid(connection, "SELECT password FROM admin WHERE registrationNo = ?", registrationNo, rawPassword)) {
+
+        // Check Admin table
+        if (checkPassword(connection,
+                "SELECT password FROM admin WHERE registrationNo = ?",
+                registrationNo,
+                rawPassword)) {
             return UserRole.ADMIN;
         }
-        if (isPasswordValid(connection, "SELECT password FROM lecturer WHERE registrationNo = ?", registrationNo, rawPassword)) {
+
+        // Check Lecturer table
+        if (checkPassword(connection,
+                "SELECT password FROM lecturer WHERE registrationNo = ?",
+                registrationNo,
+                rawPassword)) {
             return UserRole.LECTURER;
         }
-        if (isPasswordValid(connection, "SELECT password FROM student WHERE registrationNo = ?", registrationNo, rawPassword)) {
+
+        // Check Student table
+        if (checkPassword(connection,
+                "SELECT password FROM student WHERE registrationNo = ?",
+                registrationNo,
+                rawPassword)) {
             return UserRole.STUDENT;
         }
-        if (isPasswordValid(connection, "SELECT password FROM tech_officer WHERE registrationNo = ?", registrationNo, rawPassword)) {
+
+        // Check Technical Officer table
+        if (checkPassword(connection,
+                "SELECT password FROM tech_officer WHERE registrationNo = ?",
+                registrationNo,
+                rawPassword)) {
             return UserRole.TECHNICAL_OFFICER;
         }
+
+        // If no match found
         return null;
     }
 
-    // Compare the entered password with the stored password for one table.
-    private boolean isPasswordValid(Connection connection, String sql, String registrationNo, String rawPassword) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, registrationNo);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    return false;
-                }
-                return PasswordUtil.matches(rawPassword, resultSet.getString("password"));
-            }
+    private boolean checkPassword(Connection connection,
+                                  String sql,
+                                  String registrationNo,
+                                  String rawPassword) throws SQLException {
+
+        // Prepare SQL query
+        PreparedStatement statement = connection.prepareStatement(sql);
+
+        // Set registration number in query
+        statement.setString(1, registrationNo);
+
+        // Execute query
+        ResultSet resultSet = statement.executeQuery();
+
+        // If no user found
+        if (!resultSet.next()) {
+            return false;
         }
+
+        // Get password from database
+        String storedPassword = resultSet.getString("password");
+
+        if (storedPassword == null) {
+            return false;
+        }
+
+        // Compare entered password with stored password
+        return PasswordUtil.matches(rawPassword, storedPassword);
     }
 }
