@@ -49,6 +49,7 @@ public class StudentCoursePageController {
         loadCourses();
     }
 
+    //loard code
     private void loadCourses() {
         String regNo = LoggedInStudent.getRegistrationNo();
         if (regNo == null || regNo.isBlank()) {

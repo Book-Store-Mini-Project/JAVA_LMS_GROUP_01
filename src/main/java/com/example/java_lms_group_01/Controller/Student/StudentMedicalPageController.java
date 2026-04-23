@@ -40,6 +40,7 @@ public class StudentMedicalPageController {
         loadMedical();
     }
 
+    //loard medical
     private void loadMedical() {
         String regNo = LoggedInStudent.getRegistrationNo();
         if (regNo == null || regNo.isBlank()) {
@@ -52,6 +53,7 @@ public class StudentMedicalPageController {
             showError("Failed to load medical details.", e);
         }
     }
+
 
     private void showError(String message, Exception e) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
