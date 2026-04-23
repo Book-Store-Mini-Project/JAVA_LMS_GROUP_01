@@ -56,7 +56,7 @@ public class TechnicalOfficerAttendanceController {
     private final TechnicalOfficerRepository technicalOfficerRepository = new TechnicalOfficerRepository();
 
 
-    //ui open and automatically run
+    //ui open and automatically run method
 
     @FXML
     public void initialize() {

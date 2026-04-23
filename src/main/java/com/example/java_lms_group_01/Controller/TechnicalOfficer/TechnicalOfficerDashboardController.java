@@ -22,6 +22,9 @@ import java.util.List;
 
 public class TechnicalOfficerDashboardController {
 
+
+    //UI Components
+
     @FXML
     private Label lblRegistrationNo;
 
@@ -46,10 +49,13 @@ public class TechnicalOfficerDashboardController {
     @FXML
     private AnchorPane contentArea;
 
+    //save dashboard home ui
     private final List<javafx.scene.Node> dashboardHomeNodes = new ArrayList<>();
+   //connect db
     private final UserProfileRepository userProfileRepository = new UserProfileRepository();
     private final TechnicalOfficerRepository technicalOfficerRepository = new TechnicalOfficerRepository();
 
+    //when open run ui
     @FXML
     public void initialize() {
         setLabelText(lblRegistrationNo, "Registration No: -");
@@ -61,6 +67,7 @@ public class TechnicalOfficerDashboardController {
         dashboardHomeNodes.addAll(contentArea.getChildren());
     }
 
+    //logged user sv,update label ,load officer details and count dash board ...
     public void setTechnicalOfficerData(String registrationNo) {
         LoggedInTechnicalOfficer.setRegistrationNo(registrationNo);
         setLabelText(lblRegistrationNo, "Registration No: " + registrationNo);
@@ -68,42 +75,49 @@ public class TechnicalOfficerDashboardController {
         loadDashboardCounts();
     }
 
+    //dashboard
     @FXML
     private void navDashboard(ActionEvent event) {
         contentArea.getChildren().setAll(dashboardHomeNodes);
         loadDashboardCounts();
     }
-
+    //attendance page
     @FXML
     private void navAttendance(ActionEvent event) {
         loadContent("/view/technicalofficer/technical_officer_attendance.fxml");
     }
 
+    //profile page
     @FXML
     private void navProfile(ActionEvent event) {
         loadContent("/view/technicalofficer/technical_officer_profile.fxml");
     }
 
+    //medical page
     @FXML
     private void navMedical(ActionEvent event) {
         loadContent("/view/technicalofficer/technical_officer_medical.fxml");
     }
 
+    //exam attendance page
     @FXML
     private void navExamAttendance(ActionEvent event) {
         loadContent("/view/technicalofficer/technical_officer_exam_attendance.fxml");
     }
 
+    //notice
     @FXML
     private void navNotices(ActionEvent event) {
         loadContent("/view/technicalofficer/technical_officer_notices.fxml");
     }
 
+    //time table
     @FXML
     private void navTimetables(ActionEvent event) {
         loadContent("/view/technicalofficer/technical_officer_timetable.fxml");
     }
 
+    //logout user clear and load login page
     @FXML
     private void logout(ActionEvent event) {
         LoggedInTechnicalOfficer.clear();
@@ -158,6 +172,7 @@ public class TechnicalOfficerDashboardController {
         }
     }
 
+    //attendance count ,medical count,notice count
     private void loadDashboardCounts() {
         try {
             setLabelText(lblAttendanceCount, String.valueOf(technicalOfficerRepository.countAttendance()));
@@ -178,6 +193,7 @@ public class TechnicalOfficerDashboardController {
         alert.showAndWait();
     }
 
+    //helper method
     private String safe(String value) {
         return value == null || value.isBlank() ? "-" : value;
     }
