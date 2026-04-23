@@ -79,7 +79,7 @@ public class LecturerRepository {
 
         return list;
     }
-
+    //update medical decision
     public void updateMedicalDecision(String lecturerReg, int medicalId, int attendanceId, String approvalStatus, String attendanceStatus) throws SQLException {
 
         Connection con = DBConnection.getInstance().getConnection();
@@ -191,7 +191,7 @@ public class LecturerRepository {
 
         return list;
     }
-
+    //update FindPerformanceByLecture method
     public List<Performance> findPerformanceByLecturer( String lecturerReg, String studentKeyword, String courseCode, String batch) throws SQLException {
 
         String sql =
