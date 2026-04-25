@@ -347,7 +347,7 @@ public class LecturerRepository {
             return list;
         }
     }
-
+    //addMarks method
     public void addMarks(String lecturerReg, MarkRequest request) throws SQLException {
 
         Connection con = DBConnection.getInstance().getConnection();
@@ -373,7 +373,7 @@ public class LecturerRepository {
 
         stm.executeUpdate();
     }
-
+    //updateMarks method
     public void updateMarks(String lecturerReg, int markId, MarkRequest request) throws SQLException {
 
         Connection con = DBConnection.getInstance().getConnection();
