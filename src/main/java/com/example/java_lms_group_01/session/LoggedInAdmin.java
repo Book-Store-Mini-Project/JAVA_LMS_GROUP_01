@@ -1,11 +1,11 @@
-package com.example.java_lms_group_01.util;
+package com.example.java_lms_group_01.session;
 
-// maintains a class for current Logged User [ get registrationNo for operations ]
-public class LoggedInStudent {
+// Stores the current logged-in admin registration number.
+public class LoggedInAdmin {
 
     private static String registrationNo;
 
-    private LoggedInStudent() {
+    private LoggedInAdmin() {
     }
 
     public static void setRegistrationNo(String regNo) {

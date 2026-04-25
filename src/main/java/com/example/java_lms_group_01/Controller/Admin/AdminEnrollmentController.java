@@ -4,15 +4,7 @@ import com.example.java_lms_group_01.Repository.AdminRepository;
 import com.example.java_lms_group_01.model.Course;
 import com.example.java_lms_group_01.model.EnrollmentRecord;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 
 import java.sql.SQLException;
@@ -24,31 +16,22 @@ public class AdminEnrollmentController {
 
     @FXML
     private TextField txtSearchEnrollment;
-
     @FXML
     private ComboBox<String> cmbBatchFilter;
-
     @FXML
     private TableView<EnrollmentRecord> tblEnrollments;
-
     @FXML
     private TableColumn<EnrollmentRecord, String> colStudentReg;
-
     @FXML
     private TableColumn<EnrollmentRecord, String> colStudentName;
-
     @FXML
     private TableColumn<EnrollmentRecord, String> colBatch;
-
     @FXML
     private TableColumn<EnrollmentRecord, String> colCourseCode;
-
     @FXML
     private TableColumn<EnrollmentRecord, String> colCourseName;
-
     @FXML
     private TableColumn<EnrollmentRecord, String> colEnrollmentDate;
-
     @FXML
     private TableColumn<EnrollmentRecord, String> colStatus;
 
@@ -56,12 +39,23 @@ public class AdminEnrollmentController {
 
     @FXML
     public void initialize() {
-        configureTable();
+        setupColumns();
         loadBatchFilter("All");
         loadEnrollments();
 
         txtSearchEnrollment.textProperty().addListener((obs, oldValue, newValue) -> loadEnrollments());
         cmbBatchFilter.valueProperty().addListener((obs, oldValue, newValue) -> loadEnrollments());
+    }
+
+    // Set the enrollment table columns.
+    private void setupColumns() {
+        colStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
+        colStudentName.setCellValueFactory(d -> d.getValue().studentNameProperty());
+        colBatch.setCellValueFactory(d -> d.getValue().batchProperty());
+        colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
+        colCourseName.setCellValueFactory(d -> d.getValue().courseNameProperty());
+        colEnrollmentDate.setCellValueFactory(d -> d.getValue().enrollmentDateProperty());
+        colStatus.setCellValueFactory(d -> d.getValue().statusProperty());
     }
 
     @FXML
@@ -73,60 +67,18 @@ public class AdminEnrollmentController {
 
         try {
             List<Course> courses = adminRepository.findAvailableCoursesForStudent(selected.getStudentReg());
-
             if (courses.isEmpty()) {
                 showInfo("No available courses for the selected student.");
                 return;
             }
 
-            Dialog<ButtonType> dialog = new Dialog<>();
-            dialog.setTitle("Add Enrollment");
-            dialog.setHeaderText("Create a new active enrollment for " + selected.getStudentReg());
-
-            ButtonType saveButtonType = new ButtonType("Add Enrollment", ButtonBar.ButtonData.OK_DONE);
-            dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
-
-            ComboBox<String> cmbCourse = new ComboBox<>();
-            List<String> courseLabels = new ArrayList<>();
-
-            for (Course course : courses) {
-                courseLabels.add(value(course.getCourseCode()) + " - " + value(course.getName()));
-            }
-
-            cmbCourse.getItems().setAll(courseLabels);
-
-            GridPane grid = new GridPane();
-            grid.setHgap(10);
-            grid.setVgap(10);
-            grid.add(new Label("Student Reg:"), 0, 0);
-            grid.add(new Label(value(selected.getStudentReg())), 1, 0);
-            grid.add(new Label("Student Name:"), 0, 1);
-            grid.add(new Label(value(selected.getStudentName())), 1, 1);
-            grid.add(new Label("Course:"), 0, 2);
-            grid.add(cmbCourse, 1, 2);
-
-            dialog.getDialogPane().setContent(grid);
-            dialog.setResultConverter(buttonType -> buttonType);
-
-            Optional<ButtonType> result = dialog.showAndWait();
-            if (result.isEmpty() || result.get() != saveButtonType) {
+            Optional<Course> course = openEnrollmentDialog(selected, courses);
+            if (course.isEmpty()) {
                 return;
             }
 
-            int selectedIndex = cmbCourse.getSelectionModel().getSelectedIndex();
-            if (selectedIndex < 0) {
-                showInfo("Please select a course.");
-                return;
-            }
-
-            Course selectedCourse = courses.get(selectedIndex);
-            boolean saved = adminRepository.createEnrollment(
-                    selected.getStudentReg(),
-                    selectedCourse.getCourseCode()
-            );
-
-            if (saved) {
-                loadBatchFilter(cmbBatchFilter.getValue());
+            if (adminRepository.createEnrollment(selected.getStudentReg(), course.get().getCourseCode())) {
+                loadBatchFilter(text(cmbBatchFilter.getValue()));
                 loadEnrollments();
                 showInfo("Enrollment created as active.");
             } else {
@@ -149,39 +101,31 @@ public class AdminEnrollmentController {
 
     @FXML
     private void btnOnActionRefresh() {
-        loadBatchFilter(cmbBatchFilter.getValue());
+        loadBatchFilter(text(cmbBatchFilter.getValue()));
         loadEnrollments();
     }
 
-    private void configureTable() {
-        colStudentReg.setCellValueFactory(data -> data.getValue().studentRegProperty());
-        colStudentName.setCellValueFactory(data -> data.getValue().studentNameProperty());
-        colBatch.setCellValueFactory(data -> data.getValue().batchProperty());
-        colCourseCode.setCellValueFactory(data -> data.getValue().courseCodeProperty());
-        colCourseName.setCellValueFactory(data -> data.getValue().courseNameProperty());
-        colEnrollmentDate.setCellValueFactory(data -> data.getValue().enrollmentDateProperty());
-        colStatus.setCellValueFactory(data -> data.getValue().statusProperty());
-    }
-
+    // Load the batch filter list.
     private void loadBatchFilter(String selectedValue) {
         try {
-            String currentValue = selectedValue == null ? "All" : selectedValue;
             cmbBatchFilter.getItems().clear();
             cmbBatchFilter.getItems().add("All");
             cmbBatchFilter.getItems().addAll(adminRepository.findStudentBatches());
-            cmbBatchFilter.setValue(cmbBatchFilter.getItems().contains(currentValue) ? currentValue : "All");
+            cmbBatchFilter.setValue(cmbBatchFilter.getItems().contains(selectedValue) ? selectedValue : "All");
         } catch (SQLException e) {
             showError("Failed to load batch filter.", e);
         }
     }
 
+    // Load all enrollment rows using the current search and batch filter.
     private void loadEnrollments() {
         try {
-            List<EnrollmentRecord> enrollments = adminRepository.findEnrollments(
-                    txtSearchEnrollment.getText(),
-                    cmbBatchFilter.getValue()
+            tblEnrollments.getItems().setAll(
+                    adminRepository.findEnrollments(
+                            text(txtSearchEnrollment),
+                            cmbBatchFilter.getValue()
+                    )
             );
-            tblEnrollments.getItems().setAll(enrollments);
         } catch (SQLException e) {
             showError("Failed to load students.", e);
         }
@@ -199,8 +143,7 @@ public class AdminEnrollmentController {
         }
 
         try {
-            boolean updated = adminRepository.updateEnrollmentStatus(selected.getEnrollmentId(), status);
-            if (updated) {
+            if (adminRepository.updateEnrollmentStatus(selected.getEnrollmentId(), status)) {
                 loadEnrollments();
                 showInfo("Enrollment status updated to " + status + ".");
             } else {
@@ -209,6 +152,49 @@ public class AdminEnrollmentController {
         } catch (IllegalArgumentException | SQLException e) {
             showError("Failed to update enrollment status.", e);
         }
+    }
+
+    // Open a small dialog to pick one course for the selected student.
+    private Optional<Course> openEnrollmentDialog(EnrollmentRecord selected, List<Course> courses) {
+        Dialog<Course> dialog = new Dialog<>();
+        dialog.setTitle("Add Enrollment");
+        dialog.setHeaderText("Create a new active enrollment for " + selected.getStudentReg());
+
+        ButtonType save = new ButtonType("Add Enrollment", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(save, ButtonType.CANCEL);
+
+        ComboBox<String> cmbCourse = new ComboBox<>();
+        List<String> labels = new ArrayList<>();
+        for (Course course : courses) {
+            labels.add(text(course.getCourseCode()) + " - " + text(course.getName()));
+        }
+        cmbCourse.getItems().setAll(labels);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.add(new Label("Student Reg:"), 0, 0);
+        grid.add(new Label(text(selected.getStudentReg())), 1, 0);
+        grid.add(new Label("Student Name:"), 0, 1);
+        grid.add(new Label(text(selected.getStudentName())), 1, 1);
+        grid.add(new Label("Course:"), 0, 2);
+        grid.add(cmbCourse, 1, 2);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.setResultConverter(button -> {
+            if (button != save) {
+                return null;
+            }
+            int index = cmbCourse.getSelectionModel().getSelectedIndex();
+            if (index < 0) {
+                showInfo("Please select a course.");
+                return null;
+            }
+            return courses.get(index);
+        });
+
+        Optional<Course> result = dialog.showAndWait();
+        return result;
     }
 
     private EnrollmentRecord selectedRecord() {
@@ -220,8 +206,16 @@ public class AdminEnrollmentController {
         return selected;
     }
 
-    private String value(String text) {
-        return text == null ? "" : text;
+    private String text(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String text(TextField field) {
+        return field.getText() == null ? "" : field.getText().trim();
+    }
+
+    private String text(ComboBox<String> comboBox) {
+        return comboBox.getValue() == null ? "" : comboBox.getValue().trim();
     }
 
     private void showInfo(String message) {

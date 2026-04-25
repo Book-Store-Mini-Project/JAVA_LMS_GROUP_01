@@ -1,8 +1,8 @@
 package com.example.java_lms_group_01.Controller.Student;
 
 import com.example.java_lms_group_01.Repository.UserImageRepository;
+import com.example.java_lms_group_01.session.LoggedInStudent;
 import com.example.java_lms_group_01.util.ProfileImageUtil;
-import com.example.java_lms_group_01.util.LoggedInStudent;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -17,25 +17,20 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.sql.SQLException;
 
-/**
- * Main dashboard for students.
- * The selected page is loaded into the content area on the right side.
- */
 public class StudentDashboardController {
 
     @FXML
     private Label lblRegistrationNo;
     @FXML
     private ImageView imgProfile;
-
     @FXML
     private AnchorPane contentArea;
 
     private final UserImageRepository userImageRepository = new UserImageRepository();
 
     public void setStudentData(String registrationNo) {
-        lblRegistrationNo.setText("Registration No: " + registrationNo);
         LoggedInStudent.setRegistrationNo(registrationNo);
+        lblRegistrationNo.setText("Registration No: " + registrationNo);
         loadProfileImage(registrationNo);
         loadContent("/view/Student/student_profile.fxml");
     }
@@ -83,21 +78,10 @@ public class StudentDashboardController {
     @FXML
     private void logout(ActionEvent event) {
         LoggedInStudent.clear();
-        try {
-            Parent root = FXMLLoader.load(getClass().getResource("/view/login_page.fxml"));
-            Stage stage = (Stage) contentArea.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("LMS Login");
-            stage.show();
-        } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setHeaderText(null);
-            alert.setContentText("Cannot open login page.");
-            alert.showAndWait();
-        }
+        openLoginPage();
     }
 
-    // Load student page into the center area.
+    // Load one student page into the dashboard content area.
     private void loadContent(String fxmlPath) {
         try {
             Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
@@ -107,18 +91,35 @@ public class StudentDashboardController {
             AnchorPane.setLeftAnchor(view, 0.0);
             AnchorPane.setRightAnchor(view, 0.0);
         } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setHeaderText(null);
-            alert.setContentText("Cannot open: " + fxmlPath);
-            alert.showAndWait();
+            showError("Cannot open: " + fxmlPath, e);
+        }
+    }
+
+    private void openLoginPage() {
+        try {
+            Parent root = FXMLLoader.load(getClass().getResource("/view/login_page.fxml"));
+            Stage stage = (Stage) contentArea.getScene().getWindow();
+            stage.setScene(new Scene(root));
+            stage.setTitle("LMS Login");
+            stage.show();
+        } catch (IOException e) {
+            showError("Cannot open login page.", e);
         }
     }
 
     private void loadProfileImage(String registrationNo) {
         try {
             ProfileImageUtil.loadImage(imgProfile, userImageRepository.findImagePathByUserId(registrationNo));
-        } catch (SQLException ignored) {
+        } catch (SQLException e) {
             ProfileImageUtil.loadImage(imgProfile, null);
         }
+    }
+
+    private void showError(String message, Exception e) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Navigation Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message + "\n" + e.getMessage());
+        alert.showAndWait();
     }
 }

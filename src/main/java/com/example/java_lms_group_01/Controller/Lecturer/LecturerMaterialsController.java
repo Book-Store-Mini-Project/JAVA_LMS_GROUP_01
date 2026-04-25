@@ -3,19 +3,13 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Material;
 import com.example.java_lms_group_01.model.request.MaterialRequest;
-import com.example.java_lms_group_01.util.LoggedInLecture;
+import com.example.java_lms_group_01.session.LoggedInLecture;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 
 import java.sql.SQLException;
-/**
- * Lets a lecturer manage course materials for the courses assigned to that lecturer.
- */
+
 public class LecturerMaterialsController {
 
     @FXML
@@ -43,32 +37,46 @@ public class LecturerMaterialsController {
 
     @FXML
     public void initialize() {
+        setupScreen();
+        loadMaterials();
+        setupSelectionListener();
+    }
+
+    // Prepare the dropdown and table columns.
+    private void setupScreen() {
         cmbMaterialType.setItems(FXCollections.observableArrayList("pdf", "video", "ppt", "other"));
         colMaterialId.setCellValueFactory(d -> d.getValue().materialIdProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
         colMaterialName.setCellValueFactory(d -> d.getValue().nameProperty());
         colPath.setCellValueFactory(d -> d.getValue().pathProperty());
         colType.setCellValueFactory(d -> d.getValue().typeProperty());
-        loadMaterials();
+    }
 
-        tblMaterials.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, row) -> {
+    // Copy the selected row into the form.
+    private void setupSelectionListener() {
+        tblMaterials.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, row) -> {
             if (row == null) {
                 return;
             }
-            txtCourseCode.setText(row.getCourseCode());
-            txtMaterialName.setText(row.getName());
-            txtPath.setText(row.getPath());
-            cmbMaterialType.setValue(row.getType());
+            fillForm(row);
         });
+    }
+
+    private void fillForm(Material row) {
+        txtCourseCode.setText(row.getCourseCode());
+        txtMaterialName.setText(row.getName());
+        txtPath.setText(row.getPath());
+        cmbMaterialType.setValue(row.getType());
     }
 
     @FXML
     private void addMaterial() {
-        if (!validForm()) {
+        if (!isFormValid()) {
             return;
         }
+
         try {
-            int affectedRows = lecturerRepository.addMaterial(currentLecturer(), buildMutation());
+            int affectedRows = lecturerRepository.addMaterial(currentLecturer(), buildRequest());
             if (affectedRows == 0) {
                 showWarn("You can add materials only for courses assigned to you.");
                 return;
@@ -87,11 +95,16 @@ public class LecturerMaterialsController {
             showWarn("Select a material to update.");
             return;
         }
-        if (!validForm()) {
+        if (!isFormValid()) {
             return;
         }
+
         try {
-            int affectedRows = lecturerRepository.updateMaterial(currentLecturer(), Integer.parseInt(selected.getMaterialId()), buildMutation());
+            int affectedRows = lecturerRepository.updateMaterial(
+                    currentLecturer(),
+                    Integer.parseInt(selected.getMaterialId()),
+                    buildRequest()
+            );
             if (affectedRows == 0) {
                 showWarn("You can update only materials for your own courses.");
                 return;
@@ -109,8 +122,12 @@ public class LecturerMaterialsController {
             showWarn("Select a material to delete.");
             return;
         }
+
         try {
-            int affectedRows = lecturerRepository.deleteMaterial(currentLecturer(), Integer.parseInt(selected.getMaterialId()));
+            int affectedRows = lecturerRepository.deleteMaterial(
+                    currentLecturer(),
+                    Integer.parseInt(selected.getMaterialId())
+            );
             if (affectedRows == 0) {
                 showWarn("You can delete only materials for your own courses.");
                 return;
@@ -131,6 +148,7 @@ public class LecturerMaterialsController {
         tblMaterials.getSelectionModel().clearSelection();
     }
 
+    // Read materials from the database and show them in the table.
     private void loadMaterials() {
         try {
             tblMaterials.getItems().setAll(
@@ -141,8 +159,11 @@ public class LecturerMaterialsController {
         }
     }
 
-    private boolean validForm() {
-        if (value(txtCourseCode).isBlank() || value(txtMaterialName).isBlank() || value(txtPath).isBlank() || cmbMaterialType.getValue() == null) {
+    private boolean isFormValid() {
+        if (value(txtCourseCode).isBlank()
+                || value(txtMaterialName).isBlank()
+                || value(txtPath).isBlank()
+                || cmbMaterialType.getValue() == null) {
             showWarn("Fill all required fields.");
             return false;
         }
@@ -158,21 +179,21 @@ public class LecturerMaterialsController {
         return textField.getText() == null ? "" : textField.getText().trim();
     }
 
-    private void showWarn(String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Validation");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-    private MaterialRequest buildMutation() {
+    private MaterialRequest buildRequest() {
         return new MaterialRequest(
                 value(txtCourseCode),
                 value(txtMaterialName),
                 value(txtPath),
                 cmbMaterialType.getValue()
         );
+    }
+
+    private void showWarn(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Validation");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private void showError(String message, Exception e) {
@@ -182,5 +203,4 @@ public class LecturerMaterialsController {
         alert.setContentText(message + "\n" + e.getMessage());
         alert.showAndWait();
     }
-
 }

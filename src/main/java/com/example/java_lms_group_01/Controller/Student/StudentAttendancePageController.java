@@ -3,14 +3,13 @@ package com.example.java_lms_group_01.Controller.Student;
 import com.example.java_lms_group_01.Repository.StudentRepository;
 import com.example.java_lms_group_01.model.Attendance;
 import com.example.java_lms_group_01.model.Eligibility;
-import com.example.java_lms_group_01.util.LoggedInStudent;
+import com.example.java_lms_group_01.session.LoggedInStudent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.sql.SQLException;
-
 
 public class StudentAttendancePageController {
 
@@ -45,6 +44,12 @@ public class StudentAttendancePageController {
 
     @FXML
     public void initialize() {
+        setupColumns();
+        loadAttendanceData();
+    }
+
+    // Set both tables in a simple way.
+    private void setupColumns() {
         colSummaryCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
         colEligibleSessions.setCellValueFactory(d -> d.getValue().eligibleSessionsProperty());
         colTotalSessions.setCellValueFactory(d -> d.getValue().totalSessionsProperty());
@@ -57,12 +62,12 @@ public class StudentAttendancePageController {
         colSubmissionDate.setCellValueFactory(d -> d.getValue().submissionDateProperty());
         colSessionType.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
         colAttendanceStatus.setCellValueFactory(d -> d.getValue().attendanceStatusProperty());
-        loadAttendanceData();
     }
 
+    // Load attendance and eligibility data for the current student.
     private void loadAttendanceData() {
-        String regNo = LoggedInStudent.getRegistrationNo();
-        if (regNo == null || regNo.isBlank()) {
+        String regNo = currentStudent();
+        if (regNo.isBlank()) {
             return;
         }
 
@@ -78,6 +83,11 @@ public class StudentAttendancePageController {
         }
     }
 
+    private String currentStudent() {
+        String reg = LoggedInStudent.getRegistrationNo();
+        return reg == null ? "" : reg.trim();
+    }
+
     private void showError(String message, Exception e) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Database Error");
@@ -85,5 +95,4 @@ public class StudentAttendancePageController {
         alert.setContentText(message + "\n" + e.getMessage());
         alert.showAndWait();
     }
-
 }

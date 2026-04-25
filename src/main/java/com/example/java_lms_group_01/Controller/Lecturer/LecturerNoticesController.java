@@ -10,9 +10,6 @@ import javafx.scene.control.TableView;
 import java.sql.SQLException;
 import java.util.List;
 
-/**
- * Shows all notices to the lecturer.
- */
 public class LecturerNoticesController {
 
     @FXML
@@ -30,11 +27,16 @@ public class LecturerNoticesController {
 
     @FXML
     public void initialize() {
+        setupColumns();
+        loadNotices();
+    }
+
+    // Set the table columns so each notice field appears in the table.
+    private void setupColumns() {
         colTitle.setCellValueFactory(d -> d.getValue().titleProperty());
         colContent.setCellValueFactory(d -> d.getValue().contentProperty());
         colDate.setCellValueFactory(d -> d.getValue().publishDateProperty());
         colCreatedBy.setCellValueFactory(d -> d.getValue().createdByProperty());
-        loadNotices();
     }
 
     private void loadNotices() {

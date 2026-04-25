@@ -2,11 +2,13 @@ package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
 import com.example.java_lms_group_01.Repository.TechnicalOfficerRepository;
 import com.example.java_lms_group_01.Repository.UserProfileRepository;
+import com.example.java_lms_group_01.model.UserRecord;
+import com.example.java_lms_group_01.session.LoggedInTechnicalOfficer;
 import com.example.java_lms_group_01.util.ProfileImageUtil;
-import com.example.java_lms_group_01.util.LoggedInTechnicalOfficer;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -22,66 +24,57 @@ import java.util.List;
 
 public class TechnicalOfficerDashboardController {
 
-    @FXML
-    private Label lblRegistrationNo;
+    @FXML private Label lblRegistrationNo, lblOfficerName, lblOfficerEmail;
+    @FXML private Label lblAttendanceCount, lblMedicalCount, lblUnreadNoticeCount;
+    @FXML private ImageView imgProfile;
+    @FXML private AnchorPane contentArea;
 
-    @FXML
-    private Label lblOfficerName;
-
-    @FXML
-    private Label lblOfficerEmail;
-
-    @FXML
-    private Label lblAttendanceCount;
-
-    @FXML
-    private Label lblMedicalCount;
-
-    @FXML
-    private Label lblUnreadNoticeCount;
-
-    @FXML
-    private ImageView imgProfile;
-
-    @FXML
-    private AnchorPane contentArea;
-
-    private final List<javafx.scene.Node> dashboardHomeNodes = new ArrayList<>();
     private final UserProfileRepository userProfileRepository = new UserProfileRepository();
     private final TechnicalOfficerRepository technicalOfficerRepository = new TechnicalOfficerRepository();
+    private final List<Node> dashboardHomeContent = new ArrayList<>();
 
     @FXML
     public void initialize() {
-        setLabelText(lblRegistrationNo, "Registration No: -");
-        setLabelText(lblOfficerName, "Name: -");
-        setLabelText(lblOfficerEmail, "Email: -");
-        setLabelText(lblAttendanceCount, "0");
-        setLabelText(lblMedicalCount, "0");
-        setLabelText(lblUnreadNoticeCount, "0");
-        dashboardHomeNodes.addAll(contentArea.getChildren());
+        // Set default values when the dashboard opens
+        lblRegistrationNo.setText("Registration No: -");
+        lblOfficerName.setText("Name: -");
+        lblOfficerEmail.setText("Email: -");
+
+        lblAttendanceCount.setText("0");
+        lblMedicalCount.setText("0");
+        lblUnreadNoticeCount.setText("0");
+
+        // Save the first dashboard view so we can bring it back later
+        dashboardHomeContent.clear();
+        dashboardHomeContent.addAll(contentArea.getChildren());
     }
 
+    // This method is called right after the Technical Officer logs in
     public void setTechnicalOfficerData(String registrationNo) {
+        // Save the ID globally
         LoggedInTechnicalOfficer.setRegistrationNo(registrationNo);
-        setLabelText(lblRegistrationNo, "Registration No: " + registrationNo);
-        loadOfficerDetails(registrationNo);
-        loadDashboardCounts();
+
+        // Display ID on the dashboard
+        lblRegistrationNo.setText("Registration No: " + registrationNo);
+
+        // Get name/email/image from database
+        loadOfficerProfile(registrationNo);
+
+        // Update the small counter boxes
+        updateDashboardStats();
     }
 
+    // NAVIGATION
     @FXML
     private void navDashboard(ActionEvent event) {
-        contentArea.getChildren().setAll(dashboardHomeNodes);
-        loadDashboardCounts();
+        // Put the original dashboard content back
+        contentArea.getChildren().setAll(dashboardHomeContent);
+        updateDashboardStats();
     }
 
     @FXML
     private void navAttendance(ActionEvent event) {
         loadContent("/view/technicalofficer/technical_officer_attendance.fxml");
-    }
-
-    @FXML
-    private void navProfile(ActionEvent event) {
-        loadContent("/view/technicalofficer/technical_officer_profile.fxml");
     }
 
     @FXML
@@ -92,6 +85,11 @@ public class TechnicalOfficerDashboardController {
     @FXML
     private void navExamAttendance(ActionEvent event) {
         loadContent("/view/technicalofficer/technical_officer_exam_attendance.fxml");
+    }
+
+    @FXML
+    private void navProfile(ActionEvent event) {
+        loadContent("/view/technicalofficer/technical_officer_profile.fxml");
     }
 
     @FXML
@@ -106,101 +104,74 @@ public class TechnicalOfficerDashboardController {
 
     @FXML
     private void logout(ActionEvent event) {
+        // Clear login session
         LoggedInTechnicalOfficer.clear();
+
         try {
-            Parent root = FXMLLoader.load(getClass().getResource("/view/login_page.fxml"));
+            // Switch back to Login Screen
+            Parent loginPage = FXMLLoader.load(getClass().getResource("/view/login_page.fxml"));
             Stage stage = (Stage) contentArea.getScene().getWindow();
-            stage.setScene(new Scene(root));
+            stage.setScene(new Scene(loginPage));
             stage.setTitle("LMS Login");
             stage.show();
         } catch (IOException e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Navigation Error");
-            alert.setHeaderText(null);
-            alert.setContentText("Cannot open login page.");
-            alert.showAndWait();
+            showError("Could not log out", e);
         }
     }
 
-    // Load one technical officer sub page into the dashboard content area.
+    // Swaps the middle part of the screen with a new FXML page
     private void loadContent(String fxmlPath) {
         try {
-            Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
-            contentArea.getChildren().setAll(view);
-            AnchorPane.setTopAnchor(view, 0.0);
-            AnchorPane.setBottomAnchor(view, 0.0);
-            AnchorPane.setLeftAnchor(view, 0.0);
-            AnchorPane.setRightAnchor(view, 0.0);
-        } catch (Exception e) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Navigation Error");
-            alert.setHeaderText(null);
-            alert.setContentText("Cannot open: " + fxmlPath + "\n" + rootMessage(e));
-            alert.showAndWait();
+            Parent page = FXMLLoader.load(getClass().getResource(fxmlPath));
+
+            // Clear current view and add new one
+            contentArea.getChildren().setAll(page);
+
+            // Anchor to all sides so it fits the screen
+            AnchorPane.setTopAnchor(page, 0.0);
+            AnchorPane.setBottomAnchor(page, 0.0);
+            AnchorPane.setLeftAnchor(page, 0.0);
+            AnchorPane.setRightAnchor(page, 0.0);
+
+        } catch (IOException e) {
+            showError("Cannot open page: " + fxmlPath, e);
         }
     }
 
-    private void loadOfficerDetails(String registrationNo) {
+    private void loadOfficerProfile(String registrationNo) {
         try {
-            com.example.java_lms_group_01.model.UserRecord profile =
-                    userProfileRepository.findTechnicalOfficerProfile(registrationNo);
-            if (profile == null) {
-                return;
-            }
-            String fullName = (raw(profile.getFirstName()) + " " + raw(profile.getLastName())).trim();
-            setLabelText(lblOfficerName, "Name: " + (fullName.isBlank() ? "-" : fullName));
-            setLabelText(lblOfficerEmail, "Email: " + safe(profile.getEmail()));
-            if (imgProfile != null) {
+            UserRecord profile = userProfileRepository.findTechnicalOfficerProfile(registrationNo);
+
+            if (profile != null) {
+                String fullName = profile.getFirstName() + " " + profile.getLastName();
+                lblOfficerName.setText("Name: " + fullName);
+                lblOfficerEmail.setText("Email: " + profile.getEmail());
+
+                // Load the profile picture
                 ProfileImageUtil.loadImage(imgProfile, profile.getProfileImagePath());
             }
         } catch (SQLException e) {
-            showError("Failed to load technical officer details.", e);
+            showError("Failed to load profile details", e);
         }
     }
 
-    private void loadDashboardCounts() {
+    private void updateDashboardStats() {
         try {
-            setLabelText(lblAttendanceCount, String.valueOf(technicalOfficerRepository.countAttendance()));
-            setLabelText(lblMedicalCount, String.valueOf(technicalOfficerRepository.countMedical()));
-            setLabelText(lblUnreadNoticeCount, String.valueOf(technicalOfficerRepository.countNotices()));
+            // Ask repository for counts to show on the main cards
+            lblAttendanceCount.setText(String.valueOf(technicalOfficerRepository.countAttendance()));
+            lblMedicalCount.setText(String.valueOf(technicalOfficerRepository.countMedical()));
+            lblUnreadNoticeCount.setText(String.valueOf(technicalOfficerRepository.countNotices()));
         } catch (SQLException e) {
-            setLabelText(lblAttendanceCount, "0");
-            setLabelText(lblMedicalCount, "0");
-            setLabelText(lblUnreadNoticeCount, "0");
+            // If database fails, just keep them at 0
+            lblAttendanceCount.setText("0");
         }
     }
 
-    private void showError(String message, Exception e) {
+    private void showError(String title, Exception e) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Database Error");
+        alert.setTitle(title);
         alert.setHeaderText(null);
-        alert.setContentText(message + "\n" + e.getMessage());
+        alert.setContentText(e.getMessage());
         alert.showAndWait();
-    }
-
-    private String safe(String value) {
-        return value == null || value.isBlank() ? "-" : value;
-    }
-
-    private String raw(String value) {
-        return value == null ? "" : value.trim();
-    }
-
-    private void setLabelText(Label label, String text) {
-        if (label != null) {
-            label.setText(text);
-        }
-    }
-
-    private String rootMessage(Exception exception) {
-        Throwable current = exception;
-        while (current.getCause() != null) {
-            current = current.getCause();
-        }
-        String message = current.getMessage();
-        if (message == null || message.isBlank()) {
-            return current.getClass().getSimpleName();
-        }
-        return message;
     }
 }

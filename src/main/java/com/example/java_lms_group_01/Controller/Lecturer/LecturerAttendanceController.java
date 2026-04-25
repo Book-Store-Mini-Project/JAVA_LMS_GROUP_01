@@ -2,18 +2,13 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Attendance;
-import com.example.java_lms_group_01.util.LoggedInLecture;
+import com.example.java_lms_group_01.session.LoggedInLecture;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 
 import java.sql.SQLException;
-/**
- * Shows attendance records together with related medical requests for the lecturer.
- */
+import java.util.List;
+
 public class LecturerAttendanceController {
 
     @FXML
@@ -49,6 +44,13 @@ public class LecturerAttendanceController {
 
     @FXML
     public void initialize() {
+        setupColumns();
+        setupSelectionListener();
+        loadRecords("");
+    }
+
+    // Set the table columns one by one.
+    private void setupColumns() {
         colAttendanceId.setCellValueFactory(d -> d.getValue().attendanceIdProperty());
         colStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
@@ -59,19 +61,24 @@ public class LecturerAttendanceController {
         colMedicalDescription.setCellValueFactory(d -> d.getValue().medicalDescriptionProperty());
         colMedicalApproval.setCellValueFactory(d -> d.getValue().medicalApprovalStatusProperty());
         colTechOfficerReg.setCellValueFactory(d -> d.getValue().techOfficerRegProperty());
-        tblAttendanceMedical.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, row) -> updateActionState(row));
-        loadRecords(null);
+    }
+
+    // Enable or disable buttons when the selected row changes.
+    private void setupSelectionListener() {
+        tblAttendanceMedical.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            updateActionState(newValue);
+        });
     }
 
     @FXML
     private void searchRecords() {
-        loadRecords(txtSearch.getText());
+        loadRecords(text(txtSearch));
     }
 
     @FXML
     private void refreshRecords() {
         txtSearch.clear();
-        loadRecords(null);
+        loadRecords("");
     }
 
     @FXML
@@ -84,24 +91,27 @@ public class LecturerAttendanceController {
         updateMedicalDecision("rejected", "absent", "Medical rejected. Attendance marked as absent.");
     }
 
+    // Load attendance and medical data for the current lecturer.
     private void loadRecords(String keyword) {
         try {
-            tblAttendanceMedical.getItems().setAll(
-                    lecturerRepository.findAttendanceMedicalByLecturer(currentLecturer(), keyword)
-            );
+            String lecturer = currentLecturer();
+            List<Attendance> list = lecturerRepository.findAttendanceMedicalByLecturer(lecturer, keyword);
+            tblAttendanceMedical.getItems().setAll(list);
             updateActionState(tblAttendanceMedical.getSelectionModel().getSelectedItem());
         } catch (SQLException e) {
             showError("Failed to load attendance/medical records.", e);
         }
     }
 
+    // Update the database after the lecturer approves or rejects a medical request.
     private void updateMedicalDecision(String approvalStatus, String attendanceStatus, String successMessage) {
         Attendance selected = tblAttendanceMedical.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showWarn("Select a medical record first.");
             return;
         }
-        if (selected.getMedicalId().isBlank()) {
+
+        if (!hasMedicalRecord(selected)) {
             showWarn("Selected attendance record has no medical submission.");
             return;
         }
@@ -114,21 +124,24 @@ public class LecturerAttendanceController {
                     approvalStatus,
                     attendanceStatus
             );
-            loadRecords(txtSearch.getText());
+            loadRecords(text(txtSearch));
             showInfo(successMessage);
         } catch (Exception e) {
             showError("Failed to update medical approval.", e);
         }
     }
 
+    // Only enable the buttons when the row has a medical record.
     private void updateActionState(Attendance row) {
-        boolean enabled = row != null && !row.getMedicalId().isBlank();
-        if (btnApproveMedical != null) {
-            btnApproveMedical.setDisable(!enabled);
-        }
-        if (btnRejectMedical != null) {
-            btnRejectMedical.setDisable(!enabled);
-        }
+        boolean enabled = hasMedicalRecord(row);
+        btnApproveMedical.setDisable(!enabled);
+        btnRejectMedical.setDisable(!enabled);
+    }
+
+    private boolean hasMedicalRecord(Attendance row) {
+        return row != null
+                && row.getMedicalId() != null
+                && !row.getMedicalId().isBlank();
     }
 
     private String currentLecturer() {
@@ -136,9 +149,13 @@ public class LecturerAttendanceController {
         return reg == null ? "" : reg.trim();
     }
 
+    private String text(TextField field) {
+        return field.getText() == null ? "" : field.getText().trim();
+    }
+
     private void showError(String message, Exception e) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Database Error");
+        alert.setTitle("Error");
         alert.setHeaderText(null);
         alert.setContentText(message + "\n" + e.getMessage());
         alert.showAndWait();
@@ -146,7 +163,7 @@ public class LecturerAttendanceController {
 
     private void showWarn(String message) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Validation");
+        alert.setTitle("Warning");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
@@ -154,10 +171,9 @@ public class LecturerAttendanceController {
 
     private void showInfo(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Medical Decision");
+        alert.setTitle("Success");
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
     }
-
 }

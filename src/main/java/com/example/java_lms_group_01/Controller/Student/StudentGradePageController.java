@@ -3,7 +3,7 @@ package com.example.java_lms_group_01.Controller.Student;
 import com.example.java_lms_group_01.Repository.StudentRepository;
 import com.example.java_lms_group_01.model.Grade;
 import com.example.java_lms_group_01.model.summary.StudentGradeSummary;
-import com.example.java_lms_group_01.util.LoggedInStudent;
+import com.example.java_lms_group_01.session.LoggedInStudent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
@@ -11,9 +11,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.sql.SQLException;
-/**
- * Shows published grades plus GPA and SGPA for the logged-in student.
- */
+
 public class StudentGradePageController {
 
     @FXML
@@ -37,18 +35,22 @@ public class StudentGradePageController {
 
     @FXML
     public void initialize() {
+        setupColumns();
+        loadGradesAndGpa();
+    }
+
+    private void setupColumns() {
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
         colCourseName.setCellValueFactory(d -> d.getValue().courseNameProperty());
         colFinalMarks.setCellValueFactory(d -> d.getValue().finalMarksProperty());
         colTotalMarks.setCellValueFactory(d -> d.getValue().totalProperty());
         colGrade.setCellValueFactory(d -> d.getValue().gradeProperty());
-        loadGradesAndGpa();
     }
 
-    //loard grade and GPA method
+    // Load grades and GPA for the current student.
     private void loadGradesAndGpa() {
-        String regNo = LoggedInStudent.getRegistrationNo();
-        if (regNo == null || regNo.isBlank()) {
+        String regNo = currentStudent();
+        if (regNo.isBlank()) {
             return;
         }
 
@@ -65,6 +67,11 @@ public class StudentGradePageController {
         } catch (SQLException e) {
             showError("Failed to load grades and GPA.", e);
         }
+    }
+
+    private String currentStudent() {
+        String reg = LoggedInStudent.getRegistrationNo();
+        return reg == null ? "" : reg.trim();
     }
 
     private void showError(String message, Exception e) {

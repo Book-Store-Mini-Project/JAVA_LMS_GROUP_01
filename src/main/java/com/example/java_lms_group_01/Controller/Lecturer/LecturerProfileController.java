@@ -1,16 +1,14 @@
 package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.UserProfileRepository;
-import com.example.java_lms_group_01.util.LoggedInLecture;
+import com.example.java_lms_group_01.model.UserRecord;
+import com.example.java_lms_group_01.session.LoggedInLecture;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
 
 import java.sql.SQLException;
 
-/**
- * Lets the logged-in lecturer view and update personal profile details.
- */
 public class LecturerProfileController {
 
     @FXML
@@ -42,8 +40,8 @@ public class LecturerProfileController {
 
     @FXML
     private void saveProfile() {
-        String regNo = LoggedInLecture.getRegistrationNo();
-        if (regNo == null || regNo.isBlank()) {
+        String regNo = currentLecturer();
+        if (regNo.isBlank()) {
             show(Alert.AlertType.WARNING, "Session Error", "Lecturer session not found. Please login again.");
             return;
         }
@@ -51,14 +49,14 @@ public class LecturerProfileController {
         try {
             userProfileRepository.updateLecturerProfile(
                     regNo,
-                    value(txtFirstName),
-                    value(txtLastName),
-                    value(txtEmail),
-                    value(txtAddress),
-                    value(txtPhone),
-                    value(txtDepartment),
-                    value(txtPosition),
-                    value(txtPicturePath)
+                    text(txtFirstName),
+                    text(txtLastName),
+                    text(txtEmail),
+                    text(txtAddress),
+                    text(txtPhone),
+                    text(txtDepartment),
+                    text(txtPosition),
+                    text(txtPicturePath)
             );
             show(Alert.AlertType.INFORMATION, "Profile Updated", "Lecturer profile updated successfully.");
         } catch (Exception e) {
@@ -66,18 +64,19 @@ public class LecturerProfileController {
         }
     }
 
+    // Load the lecturer profile data into the form.
     private void loadProfile() {
-        String regNo = LoggedInLecture.getRegistrationNo();
-        if (regNo == null || regNo.isBlank()) {
+        String regNo = currentLecturer();
+        if (regNo.isBlank()) {
             return;
         }
 
         try {
-            com.example.java_lms_group_01.model.UserRecord profile =
-                    userProfileRepository.findLecturerProfile(regNo);
+            UserRecord profile = userProfileRepository.findLecturerProfile(regNo);
             if (profile == null) {
                 return;
             }
+
             txtRegistrationNo.setText(safe(profile.getUserId()));
             txtFirstName.setText(safe(profile.getFirstName()));
             txtLastName.setText(safe(profile.getLastName()));
@@ -92,7 +91,12 @@ public class LecturerProfileController {
         }
     }
 
-    private String value(TextField field) {
+    private String currentLecturer() {
+        String reg = LoggedInLecture.getRegistrationNo();
+        return reg == null ? "" : reg.trim();
+    }
+
+    private String text(TextField field) {
         return field.getText() == null ? "" : field.getText().trim();
     }
 

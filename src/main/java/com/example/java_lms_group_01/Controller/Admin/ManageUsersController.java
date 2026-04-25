@@ -7,29 +7,18 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
+import javafx.scene.Node;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 
 import java.io.File;
 import java.net.URL;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
+import java.util.function.Function;
 
 public class ManageUsersController implements Initializable {
 
@@ -131,13 +120,13 @@ public class ManageUsersController implements Initializable {
     private TableView<UserRecord> tblTechnicalOfficers;
 
     private final AdminRepository adminRepository = new AdminRepository();
+    private Map<UserRole, Tab> tabs;
+    private Map<UserRole, TableView<UserRecord>> tables;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        configureAdminTable();
-        configureLecturerTable();
-        configureStudentTable();
-        configureTechnicalOfficerTable();
+        bindRoleViews();
+        configureTables();
         loadAllTables();
     }
 
@@ -148,62 +137,12 @@ public class ManageUsersController implements Initializable {
 
     @FXML
     void btnOnActionAdd(ActionEvent event) {
-        UserRole role = getActiveRole();
-        if (role == null) {
-            showInfo("Please select a valid role tab.");
-            return;
-        }
-
-        try {
-            UserRecord row = showRoleDialog(role, null);
-            if (row == null) {
-                return;
-            }
-
-            boolean created = addUser(role, row);
-
-            if (created) {
-                loadAllTables();
-            showInfo(role.getValue() + " created successfully.");
-            }
-        } catch (IllegalArgumentException e) {
-            showInfo(e.getMessage());
-        } catch (SQLException e) {
-            showError("Failed to add " + role.getValue() + ".", e);
-        }
+        handleSave(false);
     }
 
     @FXML
     void btnOnActionEdit(ActionEvent event) {
-        UserRole role = getActiveRole();
-        if (role == null) {
-            showInfo("Please select a valid role tab.");
-            return;
-        }
-
-        UserRecord selected = getSelectedRowByRole(role);
-        if (selected == null) {
-            showInfo("Please select a row in the active tab.");
-            return;
-        }
-
-        try {
-            UserRecord row = showRoleDialog(role, selected);
-            if (row == null) {
-                return;
-            }
-
-            boolean updated = updateUser(role, row);
-
-            if (updated) {
-                loadAllTables();
-            showInfo(role.getValue() + " updated successfully.");
-            }
-        } catch (IllegalArgumentException e) {
-            showInfo(e.getMessage());
-        } catch (SQLException e) {
-            showError("Failed to update " + role.getValue() + ".", e);
-        }
+        handleSave(true);
     }
 
     @FXML
@@ -229,210 +168,94 @@ public class ManageUsersController implements Initializable {
         }
 
         try {
-            boolean deleted = deleteUser(role, selected.getUserId());
-
-            if (deleted) {
+            if (deleteUser(role, selected.getUserId())) {
                 loadAllTables();
-            showInfo(role.getValue() + " deleted successfully.");
+                showInfo(role.getValue() + " deleted successfully.");
             }
         } catch (SQLException e) {
             showError("Failed to delete " + role.getValue() + ".", e);
         }
     }
 
+    private void handleSave(boolean edit) {
+        UserRole role = getActiveRole();
+        if (role == null) {
+            showInfo("Please select a valid role tab.");
+            return;
+        }
+
+        UserRecord selected = null;
+        if (edit) {
+            selected = getSelectedRowByRole(role);
+            if (selected == null) {
+                showInfo("Please select a row in the active tab.");
+                return;
+            }
+        }
+
+        try {
+            UserRecord row = showRoleDialog(role, selected);
+            if (row == null) {
+                return;
+            }
+
+            boolean changed = edit ? updateUser(role, row) : addUser(role, row);
+            if (changed) {
+                loadAllTables();
+                showInfo(role.getValue() + (edit ? " updated successfully." : " created successfully."));
+            }
+        } catch (IllegalArgumentException e) {
+            showInfo(e.getMessage());
+        } catch (SQLException e) {
+            showError("Failed to " + (edit ? "update " : "add ") + role.getValue() + ".", e);
+        }
+    }
+
+    private void bindRoleViews() {
+        tabs = new EnumMap<>(UserRole.class);
+        tabs.put(UserRole.ADMIN, tabAdmins);
+        tabs.put(UserRole.LECTURER, tabLecturers);
+        tabs.put(UserRole.STUDENT, tabStudents);
+        tabs.put(UserRole.TECHNICAL_OFFICER, tabTechnicalOfficers);
+
+        tables = new EnumMap<>(UserRole.class);
+        tables.put(UserRole.ADMIN, tblAdmins);
+        tables.put(UserRole.LECTURER, tblLecturers);
+        tables.put(UserRole.STUDENT, tblStudents);
+        tables.put(UserRole.TECHNICAL_OFFICER, tblTechnicalOfficers);
+    }
+
+    private void configureTables() {
+        configureAdminTable();
+        configureLecturerTable();
+        configureStudentTable();
+        configureTechnicalOfficerTable();
+    }
+
     private UserRole getActiveRole() {
         Tab selectedTab = tabUsers.getSelectionModel().getSelectedItem();
-        if (selectedTab == tabAdmins) {
-            return UserRole.ADMIN;
-        }
-        if (selectedTab == tabLecturers) {
-            return UserRole.LECTURER;
-        }
-        if (selectedTab == tabStudents) {
-            return UserRole.STUDENT;
-        }
-        if (selectedTab == tabTechnicalOfficers) {
-            return UserRole.TECHNICAL_OFFICER;
+        for (Map.Entry<UserRole, Tab> entry : tabs.entrySet()) {
+            if (entry.getValue() == selectedTab) {
+                return entry.getKey();
+            }
         }
         return null;
     }
 
     private UserRecord getSelectedRowByRole(UserRole role) {
-        if (role == UserRole.ADMIN) {
-            return tblAdmins.getSelectionModel().getSelectedItem();
-        }
-        if (role == UserRole.LECTURER) {
-            return tblLecturers.getSelectionModel().getSelectedItem();
-        }
-        if (role == UserRole.STUDENT) {
-            return tblStudents.getSelectionModel().getSelectedItem();
-        }
-        if (role == UserRole.TECHNICAL_OFFICER) {
-            return tblTechnicalOfficers.getSelectionModel().getSelectedItem();
-        }
-        return null;
+        return tableFor(role).getSelectionModel().getSelectedItem();
     }
 
     private UserRecord showRoleDialog(UserRole role, UserRecord existing) {
-        if (role == UserRole.ADMIN) {
-            return showAdminDialog(existing);
-        }
-        if (role == UserRole.LECTURER) {
-            return showLecturerDialog(existing);
-        }
-        if (role == UserRole.STUDENT) {
-            return showStudentDialog(existing);
-        }
-        if (role == UserRole.TECHNICAL_OFFICER) {
-            return showTechnicalOfficerDialog(existing);
-        }
-        return null;
-    }
-
-    private UserRecord showAdminDialog(UserRecord existing) {
         boolean edit = existing != null;
-        Dialog<UserRecord> dialog = baseDialog(edit ? "Edit Admin" : "Add Admin", edit);
+        Dialog<UserRecord> dialog = baseDialog(dialogTitle(role, edit), edit);
+        RoleForm form = createRoleForm(existing);
 
-        UserFormFields formFields = createCommonFields(existing);
-        DatePicker dob = dateOfBirthPicker(existing);
-        ComboBox<String> gender = genderBox(existing);
-
-        TextField txtReg = new TextField(edit ? value(existing.getRegistrationNo()) : "");
-        txtReg.setDisable(edit);
-        TextField txtPassword = new TextField("");
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        int rowIndex = addCommonGrid(grid, formFields, dob, gender);
-        grid.add(new Label("Registration No:"), 0, rowIndex);
-        grid.add(txtReg, 1, rowIndex++);
-        grid.add(new Label(edit ? "New Password (optional):" : "Password:"), 0, rowIndex);
-        grid.add(txtPassword, 1, rowIndex);
-
-        dialog.getDialogPane().setContent(grid);
-        dialog.setResultConverter(button -> {
-            if (button.getButtonData() != ButtonBar.ButtonData.OK_DONE) {
-                return null;
-            }
-            return buildAdminRow(existing, edit, formFields, dob, gender, txtReg, txtPassword);
-        });
-
-        return dialog.showAndWait().orElse(null);
-    }
-
-    private UserRecord showLecturerDialog(UserRecord existing) {
-        boolean edit = existing != null;
-        Dialog<UserRecord> dialog = baseDialog(edit ? "Edit Lecturer" : "Add Lecturer", edit);
-
-        UserFormFields formFields = createCommonFields(existing);
-        DatePicker dob = dateOfBirthPicker(existing);
-        ComboBox<String> gender = genderBox(existing);
-
-        TextField txtReg = new TextField(edit ? value(existing.getRegistrationNo()) : "");
-        txtReg.setDisable(edit);
-        TextField txtPassword = new TextField("");
-        TextField txtDepartment = new TextField(edit ? value(existing.getDepartment()) : "");
-        TextField txtPosition = new TextField(edit ? value(existing.getPosition()) : "");
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        int rowIndex = addCommonGrid(grid, formFields, dob, gender);
-        grid.add(new Label("Registration No:"), 0, rowIndex);
-        grid.add(txtReg, 1, rowIndex++);
-        grid.add(new Label(edit ? "New Password (optional):" : "Password:"), 0, rowIndex);
-        grid.add(txtPassword, 1, rowIndex++);
-        grid.add(new Label("Department:"), 0, rowIndex);
-        grid.add(txtDepartment, 1, rowIndex++);
-        grid.add(new Label("Position:"), 0, rowIndex);
-        grid.add(txtPosition, 1, rowIndex);
-
-        dialog.getDialogPane().setContent(grid);
-        dialog.setResultConverter(button -> {
-            if (button.getButtonData() != ButtonBar.ButtonData.OK_DONE) {
-                return null;
-            }
-            return buildLecturerRow(existing, edit, formFields, dob, gender, txtReg, txtPassword, txtDepartment, txtPosition);
-        });
-
-        return dialog.showAndWait().orElse(null);
-    }
-
-    private UserRecord showStudentDialog(UserRecord existing) {
-        boolean edit = existing != null;
-        Dialog<UserRecord> dialog = baseDialog(edit ? "Edit Student" : "Add Student", edit);
-
-        UserFormFields formFields = createCommonFields(existing);
-        DatePicker dob = dateOfBirthPicker(existing);
-        ComboBox<String> gender = genderBox(existing);
-
-        TextField txtReg = new TextField(edit ? value(existing.getRegistrationNo()) : "");
-        txtReg.setDisable(edit);
-        TextField txtPassword = new TextField("");
-        TextField txtDepartment = new TextField(edit ? value(existing.getDepartment()) : "");
-        TextField txtBatch = new TextField(edit ? value(existing.getBatch()) : "");
-        TextField txtGpa = new TextField(edit && existing.getGpa() != null ? String.valueOf(existing.getGpa()) : "");
-        ComboBox<String> cmbStatus = new ComboBox<>();
-        cmbStatus.getItems().addAll("proper", "repeat");
-        cmbStatus.setValue(edit ? value(existing.getStatus()) : "proper");
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        int rowIndex = addCommonGrid(grid, formFields, dob, gender);
-        grid.add(new Label("Registration No:"), 0, rowIndex);
-        grid.add(txtReg, 1, rowIndex++);
-        grid.add(new Label(edit ? "New Password (optional):" : "Password:"), 0, rowIndex);
-        grid.add(txtPassword, 1, rowIndex++);
-        grid.add(new Label("Department:"), 0, rowIndex);
-        grid.add(txtDepartment, 1, rowIndex++);
-        grid.add(new Label("Batch:"), 0, rowIndex);
-        grid.add(txtBatch, 1, rowIndex++);
-        grid.add(new Label("GPA (optional):"), 0, rowIndex);
-        grid.add(txtGpa, 1, rowIndex++);
-        grid.add(new Label("Status:"), 0, rowIndex);
-        grid.add(cmbStatus, 1, rowIndex);
-
-        dialog.getDialogPane().setContent(grid);
-        dialog.setResultConverter(button -> {
-            if (button.getButtonData() != ButtonBar.ButtonData.OK_DONE) {
-                return null;
-            }
-            return buildStudentRow(existing, edit, formFields, dob, gender, txtReg, txtPassword, txtDepartment, txtBatch, txtGpa, cmbStatus);
-        });
-
-        return dialog.showAndWait().orElse(null);
-    }
-
-    private UserRecord showTechnicalOfficerDialog(UserRecord existing) {
-        boolean edit = existing != null;
-        Dialog<UserRecord> dialog = baseDialog(edit ? "Edit Technical Officer" : "Add Technical Officer", edit);
-
-        UserFormFields formFields = createCommonFields(existing);
-        DatePicker dob = dateOfBirthPicker(existing);
-        ComboBox<String> gender = genderBox(existing);
-
-        TextField txtReg = new TextField(edit ? value(existing.getRegistrationNo()) : "");
-        txtReg.setDisable(edit);
-        TextField txtPassword = new TextField("");
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        int rowIndex = addCommonGrid(grid, formFields, dob, gender);
-        grid.add(new Label("Registration No:"), 0, rowIndex);
-        grid.add(txtReg, 1, rowIndex++);
-        grid.add(new Label(edit ? "New Password (optional):" : "Password:"), 0, rowIndex);
-        grid.add(txtPassword, 1, rowIndex);
-
-        dialog.getDialogPane().setContent(grid);
-        dialog.setResultConverter(button -> {
-            if (button.getButtonData() != ButtonBar.ButtonData.OK_DONE) {
-                return null;
-            }
-            return buildTechnicalOfficerRow(existing, edit, formFields, dob, gender, txtReg, txtPassword);
-        });
+        dialog.getDialogPane().setContent(buildFormGrid(role, form, edit));
+        dialog.setResultConverter(button ->
+                button.getButtonData() == ButtonBar.ButtonData.OK_DONE
+                        ? buildUserRecord(role, existing, form, edit)
+                        : null);
 
         return dialog.showAndWait().orElse(null);
     }
@@ -446,14 +269,141 @@ public class ManageUsersController implements Initializable {
         return dialog;
     }
 
+    private String dialogTitle(UserRole role, boolean edit) {
+        return (edit ? "Edit " : "Add ") + role.getValue();
+    }
+
+    private RoleForm createRoleForm(UserRecord existing) {
+        UserFormFields common = createCommonFields(existing);
+        return new RoleForm(
+                common,
+                dateOfBirthPicker(existing),
+                genderBox(existing),
+                textField(existing == null ? "" : value(existing.getRegistrationNo())),
+                new PasswordField(),
+                textField(existing == null ? "" : value(existing.getDepartment())),
+                textField(existing == null ? "" : value(existing.getBatch())),
+                textField(existing != null && existing.getGpa() != null ? value(existing.getGpa()) : ""),
+                statusBox(existing),
+                textField(existing == null ? "" : value(existing.getPosition()))
+        );
+    }
+
+    private GridPane buildFormGrid(UserRole role, RoleForm form, boolean edit) {
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+
+        int row = addCommonGrid(grid, form.commonFields(), form.dob(), form.gender());
+        row = addRow(grid, "Registration No:", form.registrationNoField(), row);
+        row = addRow(grid, edit ? "New Password (optional):" : "Password:", form.passwordField(), row);
+
+        if (role == UserRole.LECTURER) {
+            row = addRow(grid, "Department:", form.departmentField(), row);
+            row = addRow(grid, "Position:", form.positionField(), row);
+        } else if (role == UserRole.STUDENT) {
+            row = addRow(grid, "Department:", form.departmentField(), row);
+            row = addRow(grid, "Batch:", form.batchField(), row);
+            row = addRow(grid, "GPA (optional):", form.gpaField(), row);
+            row = addRow(grid, "Status:", form.statusField(), row);
+        }
+
+        return grid;
+    }
+
+    private UserRecord buildUserRecord(UserRole role, UserRecord existing, RoleForm form, boolean edit) {
+        String registrationNo = required(form.registrationNoField(), "Registration No");
+        String password = requirePasswordForCreate(edit, form.passwordField());
+        String userId = edit ? existing.getUserId() : registrationNo;
+
+        return switch (role) {
+            case ADMIN -> new UserRecord(
+                    userId,
+                    required(form.commonFields().getFirstNameField(), "First name"),
+                    required(form.commonFields().getLastNameField(), "Last name"),
+                    required(form.commonFields().getEmailField(), "Email"),
+                    value(form.commonFields().getAddressField()),
+                    value(form.commonFields().getPhoneField()),
+                    form.dob().getValue(),
+                    form.gender().getValue(),
+                    UserRole.ADMIN.getValue(),
+                    registrationNo,
+                    password,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    value(form.commonFields().getImagePathField())
+            );
+            case LECTURER -> new UserRecord(
+                    userId,
+                    required(form.commonFields().getFirstNameField(), "First name"),
+                    required(form.commonFields().getLastNameField(), "Last name"),
+                    required(form.commonFields().getEmailField(), "Email"),
+                    value(form.commonFields().getAddressField()),
+                    value(form.commonFields().getPhoneField()),
+                    form.dob().getValue(),
+                    form.gender().getValue(),
+                    UserRole.LECTURER.getValue(),
+                    registrationNo,
+                    password,
+                    required(form.departmentField(), "Department"),
+                    null,
+                    null,
+                    null,
+                    required(form.positionField(), "Position"),
+                    value(form.commonFields().getImagePathField())
+            );
+            case STUDENT -> new UserRecord(
+                    userId,
+                    required(form.commonFields().getFirstNameField(), "First name"),
+                    required(form.commonFields().getLastNameField(), "Last name"),
+                    required(form.commonFields().getEmailField(), "Email"),
+                    value(form.commonFields().getAddressField()),
+                    value(form.commonFields().getPhoneField()),
+                    form.dob().getValue(),
+                    form.gender().getValue(),
+                    UserRole.STUDENT.getValue(),
+                    registrationNo,
+                    password,
+                    required(form.departmentField(), "Department"),
+                    required(form.batchField(), "Batch"),
+                    parseOptionalDouble(form.gpaField()),
+                    requiredCombo(form.statusField(), "Status"),
+                    null,
+                    value(form.commonFields().getImagePathField())
+            );
+            case TECHNICAL_OFFICER -> new UserRecord(
+                    userId,
+                    required(form.commonFields().getFirstNameField(), "First name"),
+                    required(form.commonFields().getLastNameField(), "Last name"),
+                    required(form.commonFields().getEmailField(), "Email"),
+                    value(form.commonFields().getAddressField()),
+                    value(form.commonFields().getPhoneField()),
+                    form.dob().getValue(),
+                    form.gender().getValue(),
+                    UserRole.TECHNICAL_OFFICER.getValue(),
+                    registrationNo,
+                    password,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    value(form.commonFields().getImagePathField())
+            );
+        };
+    }
+
     private UserFormFields createCommonFields(UserRecord existing) {
         return new UserFormFields(
-                new TextField(existing == null ? "" : value(existing.getFirstName())),
-                new TextField(existing == null ? "" : value(existing.getLastName())),
-                new TextField(existing == null ? "" : value(existing.getEmail())),
-                new TextField(existing == null ? "" : value(existing.getAddress())),
-                new TextField(existing == null ? "" : value(existing.getPhoneNumber())),
-                new TextField(existing == null ? "" : value(existing.getProfileImagePath()))
+                textField(existing == null ? "" : value(existing.getFirstName())),
+                textField(existing == null ? "" : value(existing.getLastName())),
+                textField(existing == null ? "" : value(existing.getEmail())),
+                textField(existing == null ? "" : value(existing.getAddress())),
+                textField(existing == null ? "" : value(existing.getPhoneNumber())),
+                textField(existing == null ? "" : value(existing.getProfileImagePath()))
         );
     }
 
@@ -468,136 +418,36 @@ public class ManageUsersController implements Initializable {
         return cmbGender;
     }
 
+    private ComboBox<String> statusBox(UserRecord existing) {
+        ComboBox<String> cmbStatus = new ComboBox<>();
+        cmbStatus.getItems().addAll("proper", "repeat");
+        String status = existing == null ? "proper" : value(existing.getStatus());
+        cmbStatus.setValue(status.isBlank() ? "proper" : status);
+        return cmbStatus;
+    }
+
     private int addCommonGrid(GridPane grid, UserFormFields fields, DatePicker dob, ComboBox<String> gender) {
-        int rowIndex = 0;
-        grid.add(new Label("First Name:"), 0, rowIndex);
-        grid.add(fields.getFirstNameField(), 1, rowIndex++);
-        grid.add(new Label("Last Name:"), 0, rowIndex);
-        grid.add(fields.getLastNameField(), 1, rowIndex++);
-        grid.add(new Label("Email:"), 0, rowIndex);
-        grid.add(fields.getEmailField(), 1, rowIndex++);
-        grid.add(new Label("Address:"), 0, rowIndex);
-        grid.add(fields.getAddressField(), 1, rowIndex++);
-        grid.add(new Label("Phone:"), 0, rowIndex);
-        grid.add(fields.getPhoneField(), 1, rowIndex++);
-        grid.add(new Label("Profile Image:"), 0, rowIndex);
+        int row = 0;
+        row = addRow(grid, "First Name:", fields.getFirstNameField(), row);
+        row = addRow(grid, "Last Name:", fields.getLastNameField(), row);
+        row = addRow(grid, "Email:", fields.getEmailField(), row);
+        row = addRow(grid, "Address:", fields.getAddressField(), row);
+        row = addRow(grid, "Phone:", fields.getPhoneField(), row);
+
         HBox imageBox = new HBox(8.0);
         Button btnBrowseImage = new Button("Browse");
         btnBrowseImage.setOnAction(event -> chooseImageFile(fields.getImagePathField()));
         imageBox.getChildren().addAll(fields.getImagePathField(), btnBrowseImage);
-        grid.add(imageBox, 1, rowIndex++);
-        grid.add(new Label("Date of Birth:"), 0, rowIndex);
-        grid.add(dob, 1, rowIndex++);
-        grid.add(new Label("Gender:"), 0, rowIndex);
-        grid.add(gender, 1, rowIndex++);
-        return rowIndex;
+        row = addRow(grid, "Profile Image:", imageBox, row);
+
+        row = addRow(grid, "Date of Birth:", dob, row);
+        return addRow(grid, "Gender:", gender, row);
     }
 
-    private UserRecord buildAdminRow(UserRecord existing, boolean edit, UserFormFields fields,
-                                            DatePicker dob, ComboBox<String> gender, TextField txtReg, TextField txtPassword) {
-        String password = requirePasswordForCreate(edit, txtPassword);
-        return new UserRecord(
-                edit ? existing.getUserId() : required(txtReg, "Registration No"),
-                required(fields.getFirstNameField(), "First name"),
-                required(fields.getLastNameField(), "Last name"),
-                required(fields.getEmailField(), "Email"),
-                value(fields.getAddressField()),
-                value(fields.getPhoneField()),
-                dob.getValue(),
-                gender.getValue(),
-                UserRole.ADMIN.getValue(),
-                required(txtReg, "Registration No"),
-                password,
-                null,
-                null,
-                null,
-                null,
-                null,
-                value(fields.getImagePathField())
-        );
-    }
-
-    private UserRecord buildLecturerRow(UserRecord existing, boolean edit, UserFormFields fields,
-                                               DatePicker dob, ComboBox<String> gender, TextField txtReg, TextField txtPassword,
-                                               TextField txtDepartment, TextField txtPosition) {
-        String password = requirePasswordForCreate(edit, txtPassword);
-        return new UserRecord(
-                edit ? existing.getUserId() : required(txtReg, "Registration No"),
-                required(fields.getFirstNameField(), "First name"),
-                required(fields.getLastNameField(), "Last name"),
-                required(fields.getEmailField(), "Email"),
-                value(fields.getAddressField()),
-                value(fields.getPhoneField()),
-                dob.getValue(),
-                gender.getValue(),
-                UserRole.LECTURER.getValue(),
-                required(txtReg, "Registration No"),
-                password,
-                required(txtDepartment, "Department"),
-                null,
-                null,
-                null,
-                required(txtPosition, "Position"),
-                value(fields.getImagePathField())
-        );
-    }
-
-    private UserRecord buildStudentRow(UserRecord existing, boolean edit, UserFormFields fields,
-                                              DatePicker dob, ComboBox<String> gender, TextField txtReg, TextField txtPassword,
-                                              TextField txtDepartment, TextField txtBatch, TextField txtGpa,
-                                              ComboBox<String> cmbStatus) {
-        String password = requirePasswordForCreate(edit, txtPassword);
-        return new UserRecord(
-                edit ? existing.getUserId() : required(txtReg, "Registration No"),
-                required(fields.getFirstNameField(), "First name"),
-                required(fields.getLastNameField(), "Last name"),
-                required(fields.getEmailField(), "Email"),
-                value(fields.getAddressField()),
-                value(fields.getPhoneField()),
-                dob.getValue(),
-                gender.getValue(),
-                UserRole.STUDENT.getValue(),
-                required(txtReg, "Registration No"),
-                password,
-                required(txtDepartment, "Department"),
-                required(txtBatch, "Batch"),
-                parseOptionalDouble(txtGpa),
-                requiredCombo(cmbStatus, "Status"),
-                null,
-                value(fields.getImagePathField())
-        );
-    }
-
-    private UserRecord buildTechnicalOfficerRow(UserRecord existing, boolean edit, UserFormFields fields,
-                                                       DatePicker dob, ComboBox<String> gender, TextField txtReg, TextField txtPassword) {
-        String password = requirePasswordForCreate(edit, txtPassword);
-        return new UserRecord(
-                edit ? existing.getUserId() : required(txtReg, "Registration No"),
-                required(fields.getFirstNameField(), "First name"),
-                required(fields.getLastNameField(), "Last name"),
-                required(fields.getEmailField(), "Email"),
-                value(fields.getAddressField()),
-                value(fields.getPhoneField()),
-                dob.getValue(),
-                gender.getValue(),
-                UserRole.TECHNICAL_OFFICER.getValue(),
-                required(txtReg, "Registration No"),
-                password,
-                null,
-                null,
-                null,
-                null,
-                null,
-                value(fields.getImagePathField())
-        );
-    }
-
-    private String requirePasswordForCreate(boolean edit, TextField txtPassword) {
-        String password = value(txtPassword);
-        if (!edit && password.isBlank()) {
-            throw new IllegalArgumentException("Password is required.");
-        }
-        return password;
+    private int addRow(GridPane grid, String label, Node field, int row) {
+        grid.add(new Label(label), 0, row);
+        grid.add(field, 1, row);
+        return row + 1;
     }
 
     private void chooseImageFile(TextField targetField) {
@@ -614,110 +464,109 @@ public class ManageUsersController implements Initializable {
 
     private void loadAllTables() {
         try {
-            tblAdmins.getItems().setAll(adminRepository.findAdmins());
-            tblLecturers.getItems().setAll(adminRepository.findLecturers());
-            tblStudents.getItems().setAll(adminRepository.findStudents());
-            tblTechnicalOfficers.getItems().setAll(adminRepository.findTechnicalOfficers());
+            for (UserRole role : UserRole.values()) {
+                tableFor(role).getItems().setAll(findUsers(role));
+            }
         } catch (SQLException e) {
             showError("Failed to load user tables.", e);
         }
     }
 
+    private List<UserRecord> findUsers(UserRole role) throws SQLException {
+        return switch (role) {
+            case ADMIN -> adminRepository.findAdmins();
+            case LECTURER -> adminRepository.findLecturers();
+            case STUDENT -> adminRepository.findStudents();
+            case TECHNICAL_OFFICER -> adminRepository.findTechnicalOfficers();
+        };
+    }
+
     private boolean addUser(UserRole role, UserRecord row) throws SQLException {
-        if (role == UserRole.ADMIN) {
-            return adminRepository.createAdmin(row);
-        }
-        if (role == UserRole.LECTURER) {
-            return adminRepository.createLecturer(row);
-        }
-        if (role == UserRole.STUDENT) {
-            return adminRepository.createStudent(row);
-        }
-        if (role == UserRole.TECHNICAL_OFFICER) {
-            return adminRepository.createTechnicalOfficer(row);
-        }
-        throw new IllegalArgumentException("Unknown role: " + role);
+        return switch (role) {
+            case ADMIN -> adminRepository.createAdmin(row);
+            case LECTURER -> adminRepository.createLecturer(row);
+            case STUDENT -> adminRepository.createStudent(row);
+            case TECHNICAL_OFFICER -> adminRepository.createTechnicalOfficer(row);
+        };
     }
 
     private boolean updateUser(UserRole role, UserRecord row) throws SQLException {
-        if (role == UserRole.ADMIN) {
-            return adminRepository.updateAdmin(row);
-        }
-        if (role == UserRole.LECTURER) {
-            return adminRepository.updateLecturer(row);
-        }
-        if (role == UserRole.STUDENT) {
-            return adminRepository.updateStudent(row);
-        }
-        if (role == UserRole.TECHNICAL_OFFICER) {
-            return adminRepository.updateTechnicalOfficer(row);
-        }
-        throw new IllegalArgumentException("Unknown role: " + role);
+        return switch (role) {
+            case ADMIN -> adminRepository.updateAdmin(row);
+            case LECTURER -> adminRepository.updateLecturer(row);
+            case STUDENT -> adminRepository.updateStudent(row);
+            case TECHNICAL_OFFICER -> adminRepository.updateTechnicalOfficer(row);
+        };
     }
 
     private boolean deleteUser(UserRole role, String userId) throws SQLException {
-        if (role == UserRole.ADMIN) {
-            return adminRepository.deleteAdmin(userId);
-        }
-        if (role == UserRole.LECTURER) {
-            return adminRepository.deleteLecturer(userId);
-        }
-        if (role == UserRole.STUDENT) {
-            return adminRepository.deleteStudent(userId);
-        }
-        if (role == UserRole.TECHNICAL_OFFICER) {
-            return adminRepository.deleteTechnicalOfficer(userId);
-        }
-        throw new IllegalArgumentException("Unknown role: " + role);
+        return switch (role) {
+            case ADMIN -> adminRepository.deleteAdmin(userId);
+            case LECTURER -> adminRepository.deleteLecturer(userId);
+            case STUDENT -> adminRepository.deleteStudent(userId);
+            case TECHNICAL_OFFICER -> adminRepository.deleteTechnicalOfficer(userId);
+        };
+    }
+
+    private TableView<UserRecord> tableFor(UserRole role) {
+        return tables.get(role);
+    }
+
+    private void bind(TableColumn<UserRecord, String> column, Function<UserRecord, ?> extractor) {
+        column.setCellValueFactory(d -> new SimpleStringProperty(display(extractor.apply(d.getValue()))));
     }
 
     private void configureAdminTable() {
-        adminId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getUserId())));
-        adminFirstName.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getFirstName())));
-        adminLastName.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getLastName())));
-        adminEmail.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getEmail())));
-        adminPhone.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getPhoneNumber())));
-        adminGender.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getGender())));
-        adminDeptId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getAddress())));
-        adminAccessLevel.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getRegistrationNo())));
+        bind(adminId, UserRecord::getUserId);
+        bind(adminFirstName, UserRecord::getFirstName);
+        bind(adminLastName, UserRecord::getLastName);
+        bind(adminEmail, UserRecord::getEmail);
+        bind(adminPhone, UserRecord::getPhoneNumber);
+        bind(adminGender, UserRecord::getGender);
+        bind(adminDeptId, UserRecord::getAddress);
+        bind(adminAccessLevel, UserRecord::getRegistrationNo);
     }
 
     private void configureLecturerTable() {
-        lecId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getUserId())));
-        lecFirstName.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getFirstName())));
-        lecLastName.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getLastName())));
-        lecEmail.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getEmail())));
-        lecPhone.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getPhoneNumber())));
-        lecGender.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getGender())));
-        lecRegNo.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getRegistrationNo())));
-        lecDeptId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getDepartment())));
-        lecPosition.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getPosition())));
+        bind(lecId, UserRecord::getUserId);
+        bind(lecFirstName, UserRecord::getFirstName);
+        bind(lecLastName, UserRecord::getLastName);
+        bind(lecEmail, UserRecord::getEmail);
+        bind(lecPhone, UserRecord::getPhoneNumber);
+        bind(lecGender, UserRecord::getGender);
+        bind(lecRegNo, UserRecord::getRegistrationNo);
+        bind(lecDeptId, UserRecord::getDepartment);
+        bind(lecPosition, UserRecord::getPosition);
     }
 
     private void configureStudentTable() {
-        stuId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getUserId())));
-        stuFirstName.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getFirstName())));
-        stuLastName.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getLastName())));
-        stuEmail.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getEmail())));
-        stuPhone.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getPhoneNumber())));
-        stuGender.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getGender())));
-        stuRegNo.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getRegistrationNo())));
-        stuDeptId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getDepartment())));
-        stuBatchId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getBatch())));
-        stuStatus.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getStatus())));
+        bind(stuId, UserRecord::getUserId);
+        bind(stuFirstName, UserRecord::getFirstName);
+        bind(stuLastName, UserRecord::getLastName);
+        bind(stuEmail, UserRecord::getEmail);
+        bind(stuPhone, UserRecord::getPhoneNumber);
+        bind(stuGender, UserRecord::getGender);
+        bind(stuRegNo, UserRecord::getRegistrationNo);
+        bind(stuDeptId, UserRecord::getDepartment);
+        bind(stuBatchId, UserRecord::getBatch);
+        bind(stuStatus, UserRecord::getStatus);
     }
 
     private void configureTechnicalOfficerTable() {
-        toId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getUserId())));
-        toFirstName.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getFirstName())));
-        toLastName.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getLastName())));
-        toEmail.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getEmail())));
-        toPhone.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getPhoneNumber())));
-        toGender.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getGender())));
-        toDeptId.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getAddress())));
-        toPosition.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getRegistrationNo())));
-        toLab.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getDateOfBirth())));
-        toShift.setCellValueFactory(d -> new SimpleStringProperty(value(d.getValue().getRole())));
+        bind(toId, UserRecord::getUserId);
+        bind(toFirstName, UserRecord::getFirstName);
+        bind(toLastName, UserRecord::getLastName);
+        bind(toEmail, UserRecord::getEmail);
+        bind(toPhone, UserRecord::getPhoneNumber);
+        bind(toGender, UserRecord::getGender);
+        bind(toDeptId, UserRecord::getAddress);
+        bind(toPosition, UserRecord::getRegistrationNo);
+        bind(toLab, UserRecord::getDateOfBirth);
+        bind(toShift, UserRecord::getRole);
+    }
+
+    private String display(Object value) {
+        return value == null ? "" : value.toString();
     }
 
     private String value(String text) {
@@ -736,6 +585,10 @@ public class ManageUsersController implements Initializable {
         return textField.getText() == null ? "" : textField.getText().trim();
     }
 
+    private TextField textField(String value) {
+        return new TextField(value == null ? "" : value);
+    }
+
     private String required(TextField textField, String fieldName) {
         String text = value(textField);
         if (text.isBlank()) {
@@ -745,11 +598,11 @@ public class ManageUsersController implements Initializable {
     }
 
     private String requiredCombo(ComboBox<String> comboBox, String fieldName) {
-        String value = comboBox.getValue();
-        if (value == null || value.isBlank()) {
+        String selected = comboBox.getValue();
+        if (selected == null || selected.isBlank()) {
             throw new IllegalArgumentException(fieldName + " is required.");
         }
-        return value;
+        return selected;
     }
 
     private Double parseOptionalDouble(TextField textField) {
@@ -768,6 +621,14 @@ public class ManageUsersController implements Initializable {
         }
     }
 
+    private String requirePasswordForCreate(boolean edit, TextField txtPassword) {
+        String password = value(txtPassword);
+        if (!edit && password.isBlank()) {
+            throw new IllegalArgumentException("Password is required.");
+        }
+        return password;
+    }
+
     private void showInfo(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setHeaderText(null);
@@ -782,4 +643,17 @@ public class ManageUsersController implements Initializable {
         alert.showAndWait();
     }
 
+    private record RoleForm(
+            UserFormFields commonFields,
+            DatePicker dob,
+            ComboBox<String> gender,
+            TextField registrationNoField,
+            PasswordField passwordField,
+            TextField departmentField,
+            TextField batchField,
+            TextField gpaField,
+            ComboBox<String> statusField,
+            TextField positionField
+    ) {
+    }
 }

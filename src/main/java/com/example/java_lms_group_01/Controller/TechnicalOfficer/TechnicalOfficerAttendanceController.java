@@ -3,148 +3,190 @@ package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 import com.example.java_lms_group_01.Repository.TechnicalOfficerRepository;
 import com.example.java_lms_group_01.model.Attendance;
 import com.example.java_lms_group_01.model.request.AttendanceRequest;
-import com.example.java_lms_group_01.util.LoggedInTechnicalOfficer;
+import com.example.java_lms_group_01.session.LoggedInTechnicalOfficer;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 
-import java.time.LocalDate;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.List;
 
-/**
- * Lets a technical officer add, update, search, and delete attendance records.
- */
 public class TechnicalOfficerAttendanceController {
 
-    //ui element
+    @FXML private TextField txtStudentRegNo, txtCourseCode, txtSearch;
+    @FXML private DatePicker dpAttendanceDate;
+    @FXML private ComboBox<String> cmbSessionType, cmbStatus;
 
-    @FXML
-    private TextField txtStudentRegNo;
-    @FXML
-    private TextField txtCourseCode;
-    @FXML
-    private DatePicker dpAttendanceDate;
-    @FXML
-    private ComboBox<String> cmbSessionType;
-    @FXML
-    private ComboBox<String> cmbStatus;
-    @FXML
-    private TextField txtSearch;
-    @FXML
-    private TableView<Attendance> tblAttendance;
-    @FXML
-    private TableColumn<Attendance, String> colAttendanceId;
-    @FXML
-    private TableColumn<Attendance, String> colStudentRegNo;
-    @FXML
-    private TableColumn<Attendance, String> colCourseCode;
-    @FXML
-    private TableColumn<Attendance, String> colDate;
-    @FXML
-    private TableColumn<Attendance, String> colSessionType;
-    @FXML
-    private TableColumn<Attendance, String> colStatus;
-    @FXML
-    private TableColumn<Attendance, String> colTechOfficerReg;
+    @FXML private TableView<Attendance> tblAttendance;
+    @FXML private TableColumn<Attendance, String> colAttendanceId, colStudentRegNo, colCourseCode,
+            colDate, colSessionType, colStatus, colTechOfficerReg;
 
     private final TechnicalOfficerRepository technicalOfficerRepository = new TechnicalOfficerRepository();
 
-
-    //ui open and automatically run
-
     @FXML
     public void initialize() {
+        // Setup Dropdown Menus (ComboBoxes)
         cmbSessionType.setItems(FXCollections.observableArrayList("theory", "practical"));
         cmbStatus.setItems(FXCollections.observableArrayList("present", "absent", "medical"));
 
-        colAttendanceId.setCellValueFactory(d -> d.getValue().attendanceIdProperty());
-        colStudentRegNo.setCellValueFactory(d -> d.getValue().studentRegNoProperty());
-        colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
-        colDate.setCellValueFactory(d -> d.getValue().dateProperty());
-        colSessionType.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
-        colStatus.setCellValueFactory(d -> d.getValue().statusProperty());
-        colTechOfficerReg.setCellValueFactory(d -> d.getValue().techOfficerRegProperty());
+        // Setup Table Columns (Standard Beginner Style)
+        colAttendanceId.setCellValueFactory(data -> { return data.getValue().attendanceIdProperty(); });
+        colStudentRegNo.setCellValueFactory(data -> { return data.getValue().studentRegNoProperty(); });
+        colCourseCode.setCellValueFactory(data -> { return data.getValue().courseCodeProperty(); });
+        colDate.setCellValueFactory(data -> { return data.getValue().dateProperty(); });
+        colSessionType.setCellValueFactory(data -> { return data.getValue().sessionTypeProperty(); });
+        colStatus.setCellValueFactory(data -> { return data.getValue().statusProperty(); });
+        colTechOfficerReg.setCellValueFactory(data -> { return data.getValue().techOfficerRegProperty(); });
 
-        loadAttendance(null);
-
+        // Setup Selection Listener (When you click a row, fill the input fields)
         tblAttendance.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, row) -> {
-            if (row == null) {
-                return;
-            }
-            txtStudentRegNo.setText(row.getStudentRegNo());
-            txtCourseCode.setText(row.getCourseCode());
-            dpAttendanceDate.setValue(row.getDate().isBlank() ? null : LocalDate.parse(row.getDate()));
-            cmbSessionType.setValue(row.getSessionType());
-            cmbStatus.setValue(row.getStatus());
-        });
-    }
+            if (row != null) {
+                txtStudentRegNo.setText(row.getStudentRegNo());
+                txtCourseCode.setText(row.getCourseCode());
 
-    //add record(add button)
+                // Convert the String date from database back to a LocalDate for the Picker
+                if (row.getDate() != null && !row.getDate().isBlank()) {
+                    dpAttendanceDate.setValue(LocalDate.parse(row.getDate()));
+                } else {
+                    dpAttendanceDate.setValue(null);
+                }
+
+                cmbSessionType.setValue(row.getSessionType());
+                cmbStatus.setValue(row.getStatus());
+            }
+        });
+
+        // 4. Initial load of data
+        loadAttendanceData("");
+    }
 
     @FXML
     private void addRecord(ActionEvent event) {
-        if (!validForm()) {
-            return;
-        }
-        try {
-            technicalOfficerRepository.addAttendance(buildAttendanceRequest());
-            loadAttendance(txtSearch.getText());
-            clearForm(event);
-        } catch (Exception e) {
-            showError("Failed to add attendance record.", e);
+        // First, check if form is filled correctly
+        if (isFormValid()) {
+            try {
+                // Build the request and send to database
+                AttendanceRequest request = buildRequest();
+                technicalOfficerRepository.addAttendance(request);
+
+                // Refresh table and clear inputs
+                loadAttendanceData(txtSearch.getText());
+                clearFormFields();
+                showInfo("Record added successfully!");
+
+            } catch (Exception e) {
+                showError("Failed to add record.", e);
+            }
         }
     }
-
-    //update record(update button)
 
     @FXML
     private void updateRecord(ActionEvent event) {
         Attendance selected = tblAttendance.getSelectionModel().getSelectedItem();
+
         if (selected == null) {
-            showWarn("Select a record to update.");
+            showWarning("Please select a record from the table first.");
             return;
         }
-        if (!validForm()) {
-            return;
-        }
-        try {
-            technicalOfficerRepository.updateAttendance(Integer.parseInt(selected.getAttendanceId()), buildAttendanceRequest());
-            loadAttendance(txtSearch.getText());
-        } catch (Exception e) {
-            showError("Failed to update attendance record.", e);
+
+        if (isFormValid()) {
+            try {
+                int id = Integer.parseInt(selected.getAttendanceId());
+                AttendanceRequest request = buildRequest();
+
+                technicalOfficerRepository.updateAttendance(id, request);
+
+                loadAttendanceData(txtSearch.getText());
+                showInfo("Record updated successfully!");
+
+            } catch (Exception e) {
+                showError("Failed to update record.", e);
+            }
         }
     }
-
-
-    //delete record(delete button)
 
     @FXML
     private void deleteRecord(ActionEvent event) {
         Attendance selected = tblAttendance.getSelectionModel().getSelectedItem();
+
         if (selected == null) {
-            showWarn("Select a record to delete.");
+            showWarning("Please select a record to delete.");
             return;
         }
+
         try {
-            technicalOfficerRepository.deleteAttendance(Integer.parseInt(selected.getAttendanceId()));
-            loadAttendance(txtSearch.getText());
-            clearForm(event);
+            int id = Integer.parseInt(selected.getAttendanceId());
+            technicalOfficerRepository.deleteAttendance(id);
+
+            loadAttendanceData(txtSearch.getText());
+            clearFormFields();
+            showInfo("Record deleted.");
+
         } catch (Exception e) {
-            showError("Failed to delete attendance record.", e);
+            showError("Failed to delete record.", e);
         }
     }
 
-
-    //form clear
-
     @FXML
     private void clearForm(ActionEvent event) {
+        clearFormFields();
+    }
+
+    @FXML
+    private void searchRecords(ActionEvent event) {
+        loadAttendanceData(txtSearch.getText());
+    }
+
+    @FXML
+    private void refreshRecords(ActionEvent event) {
+        txtSearch.clear();
+        loadAttendanceData("");
+    }
+
+    private void loadAttendanceData(String keyword) {
+        try {
+            // Fetch list from repository
+            List<Attendance> list = technicalOfficerRepository.findAttendance(keyword);
+            // Update table items
+            tblAttendance.getItems().setAll(list);
+        } catch (SQLException e) {
+            showError("Could not load data.", e);
+        }
+    }
+
+    private boolean isFormValid() {
+        // Simple check to see if all fields have values
+        if (txtStudentRegNo.getText().isBlank() ||
+                txtCourseCode.getText().isBlank() ||
+                dpAttendanceDate.getValue() == null ||
+                cmbSessionType.getValue() == null ||
+                cmbStatus.getValue() == null) {
+
+            showWarning("Please fill in all the required fields.");
+            return false;
+        }
+        return true;
+    }
+
+    private AttendanceRequest buildRequest() {
+        // Get current officer's registration
+        String officerReg = LoggedInTechnicalOfficer.getRegistrationNo();
+        if (officerReg == null) officerReg = "";
+
+        // Package all data into an AttendanceRequest object
+        return new AttendanceRequest(
+                txtStudentRegNo.getText().trim(),
+                txtCourseCode.getText().trim(),
+                officerReg,
+                dpAttendanceDate.getValue(),
+                cmbSessionType.getValue(),
+                cmbStatus.getValue()
+        );
+    }
+
+    private void clearFormFields() {
         txtStudentRegNo.clear();
         txtCourseCode.clear();
         dpAttendanceDate.setValue(null);
@@ -153,81 +195,18 @@ public class TechnicalOfficerAttendanceController {
         tblAttendance.getSelectionModel().clearSelection();
     }
 
-    //search
-
-    @FXML
-    private void searchRecords(ActionEvent event) {
-        loadAttendance(txtSearch.getText());
+    private void showInfo(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, message);
+        alert.showAndWait();
     }
 
-    //refresh record(search clear and full data load)
-
-    @FXML
-    private void refreshRecords(ActionEvent event) {
-        txtSearch.clear();
-        loadAttendance(null);
-    }
-
-    //form validation and warning mzg
-
-    private boolean validForm() {
-        if (value(txtStudentRegNo).isBlank() || value(txtCourseCode).isBlank() || dpAttendanceDate.getValue() == null
-                || cmbSessionType.getValue() == null || cmbStatus.getValue() == null) {
-            showWarn("Fill all required fields.");
-            return false;
-        }
-        return true;
-    }
-
-    private String value(TextField textField) {
-        return textField.getText() == null ? "" : textField.getText().trim();
-    }
-
-    private void showWarn(String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Validation");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
+    private void showWarning(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING, message);
         alert.showAndWait();
     }
 
     private void showError(String message, Exception e) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Database Error");
-        alert.setHeaderText(null);
-        alert.setContentText(message + "\n" + e.getMessage());
+        Alert alert = new Alert(Alert.AlertType.ERROR, message + "\n" + e.getMessage());
         alert.showAndWait();
     }
-
-    //bring data from database and put the table
-
-    private void loadAttendance(String keyword) {
-        try {
-            tblAttendance.getItems().setAll(technicalOfficerRepository.findAttendance(keyword));
-        } catch (SQLException e) {
-            showError("Failed to load attendance records.", e);
-        }
-    }
-
-    //get currunt
-
-
-    private String currentTechOfficerReg() {
-        String reg = LoggedInTechnicalOfficer.getRegistrationNo();
-        return reg == null ? "" : reg.trim();
-    }
-
-    //collect form data and create object
-
-    private AttendanceRequest buildAttendanceRequest() {
-        return new AttendanceRequest(
-                value(txtStudentRegNo),
-                value(txtCourseCode),
-                currentTechOfficerReg(),
-                dpAttendanceDate.getValue(),
-                cmbSessionType.getValue(),
-                cmbStatus.getValue()
-        );
-    }
-
 }

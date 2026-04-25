@@ -10,50 +10,68 @@ import javafx.scene.control.TableView;
 import java.sql.SQLException;
 import java.util.List;
 
-/**
- * Shows notices to the technical officer.
- */
 public class TechnicalOfficerNoticesController {
 
-    @FXML
-    private TableView<Notice> tblNotices;
-    @FXML
-    private TableColumn<Notice, String> colNoticeId;
-    @FXML
-    private TableColumn<Notice, String> colTitle;
-    @FXML
-    private TableColumn<Notice, String> colContent;
-    @FXML
-    private TableColumn<Notice, String> colPublishDate;
-    @FXML
-    private TableColumn<Notice, String> colCreatedBy;
+    @FXML private TableView<Notice> tblNotices;
+
+    @FXML private TableColumn<Notice, String> colNoticeId;
+    @FXML private TableColumn<Notice, String> colTitle;
+    @FXML private TableColumn<Notice, String> colContent;
+    @FXML private TableColumn<Notice, String> colPublishDate;
+    @FXML private TableColumn<Notice, String> colCreatedBy;
 
     private final NoticeRepository noticeRepository = new NoticeRepository();
 
     @FXML
     public void initialize() {
-        colNoticeId.setCellValueFactory(d -> d.getValue().noticeIdProperty());
-        colTitle.setCellValueFactory(d -> d.getValue().titleProperty());
-        colContent.setCellValueFactory(d -> d.getValue().contentProperty());
-        colPublishDate.setCellValueFactory(d -> d.getValue().publishDateProperty());
-        colCreatedBy.setCellValueFactory(d -> d.getValue().createdByProperty());
-        loadNotices();
+        // Bind table columns to the Notice model properties
+        configureTableColumns();
+
+        // Load the notices from the database
+        loadAllNotices();
     }
 
-    private void loadNotices() {
+    private void configureTableColumns() {
+        // Beginner-friendly way to link columns to data
+        colNoticeId.setCellValueFactory(data -> {
+            return data.getValue().noticeIdProperty();
+        });
+
+        colTitle.setCellValueFactory(data -> {
+            return data.getValue().titleProperty();
+        });
+
+        colContent.setCellValueFactory(data -> {
+            return data.getValue().contentProperty();
+        });
+
+        colPublishDate.setCellValueFactory(data -> {
+            return data.getValue().publishDateProperty();
+        });
+
+        colCreatedBy.setCellValueFactory(data -> {
+            return data.getValue().createdByProperty();
+        });
+    }
+
+    private void loadAllNotices() {
         try {
-            List<Notice> notices = noticeRepository.findAll();
-            tblNotices.getItems().setAll(notices);
+            // Fetch the list from the repository
+            List<Notice> noticeList = noticeRepository.findAll();
+
+            // Set the list into the TableView
+            tblNotices.getItems().setAll(noticeList);
+
         } catch (SQLException e) {
-            showError("Failed to load notices.", e);
+            showErrorMessage("Database Error", "Failed to load notices.");
         }
     }
 
-    private void showError(String message, Exception e) {
+    private void showErrorMessage(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Database Error");
+        alert.setTitle(title);
         alert.setHeaderText(null);
-        alert.setContentText(message + "\n" + e.getMessage());
+        alert.setContentText(message);
         alert.showAndWait();
     }
 }

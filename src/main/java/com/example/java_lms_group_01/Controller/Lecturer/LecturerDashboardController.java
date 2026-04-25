@@ -1,7 +1,7 @@
 package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.UserImageRepository;
-import com.example.java_lms_group_01.util.LoggedInLecture;
+import com.example.java_lms_group_01.session.LoggedInLecture;
 import com.example.java_lms_group_01.util.ProfileImageUtil;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -19,10 +19,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Main dashboard for lecturers.
- * Each navigation method loads one lecturer page into the shared content area.
- */
 public class LecturerDashboardController {
 
     @FXML
@@ -103,18 +99,10 @@ public class LecturerDashboardController {
     @FXML
     private void logout(ActionEvent event) {
         LoggedInLecture.clear();
-        try {
-            Parent root = FXMLLoader.load(getClass().getResource("/view/login_page.fxml"));
-            Stage stage = (Stage) contentArea.getScene().getWindow();
-            stage.setScene(new Scene(root));
-            stage.setTitle("LMS Login");
-            stage.show();
-        } catch (IOException e) {
-            showError("Cannot open login page.", e);
-        }
+        openLoginPage();
     }
 
-    // Load a lecturer sub page into the center content area.
+    // Load one lecturer screen into the dashboard content area.
     private void loadContent(String fxmlPath) {
         try {
             Parent view = FXMLLoader.load(getClass().getResource(fxmlPath));
@@ -128,19 +116,35 @@ public class LecturerDashboardController {
         }
     }
 
+    // Go back to the login screen.
+    private void openLoginPage() {
+        try {
+            Parent root = FXMLLoader.load(getClass().getResource("/view/login_page.fxml"));
+            Stage stage = (Stage) contentArea.getScene().getWindow();
+            stage.setScene(new Scene(root));
+            stage.setTitle("LMS Login");
+            stage.show();
+        } catch (IOException e) {
+            showError("Cannot open login page.", e);
+        }
+    }
+
+    private void loadProfileImage(String registrationNo) {
+        try {
+            ProfileImageUtil.loadImage(
+                    imgProfile,
+                    userImageRepository.findImagePathByUserId(registrationNo)
+            );
+        } catch (SQLException e) {
+            ProfileImageUtil.loadImage(imgProfile, null);
+        }
+    }
+
     private void showError(String message, Exception e) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Navigation Error");
         alert.setHeaderText(null);
         alert.setContentText(message + "\n" + e.getMessage());
         alert.showAndWait();
-    }
-
-    private void loadProfileImage(String registrationNo) {
-        try {
-            ProfileImageUtil.loadImage(imgProfile, userImageRepository.findImagePathByUserId(registrationNo));
-        } catch (SQLException ignored) {
-            ProfileImageUtil.loadImage(imgProfile, null);
-        }
     }
 }

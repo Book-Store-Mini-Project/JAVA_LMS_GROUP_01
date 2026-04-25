@@ -2,11 +2,12 @@ package com.example.java_lms_group_01.Controller.Admin;
 
 import com.example.java_lms_group_01.Repository.AdminRepository;
 import com.example.java_lms_group_01.model.Notice;
-import com.example.java_lms_group_01.util.LoggedInAdmin;
+import com.example.java_lms_group_01.session.LoggedInAdmin;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
-import javafx.fxml.*;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 
@@ -21,19 +22,14 @@ public class ManageNoticesController implements Initializable {
 
     @FXML
     private TableView<Notice> tblNotices;
-
     @FXML
     private TableColumn<Notice, Number> colNoticeId;
-
     @FXML
     private TableColumn<Notice, String> colTitle;
-
     @FXML
     private TableColumn<Notice, String> colDate;
-
     @FXML
     private TableColumn<Notice, String> colAuthor;
-
     @FXML
     private TextField txtSearchNotice;
 
@@ -41,208 +37,151 @@ public class ManageNoticesController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        setupTableColumns();
-        loadNotices(null);
+        setupColumns();
+        loadNotices("");
 
-        txtSearchNotice.textProperty().addListener((obs, oldValue, newValue) ->
-                loadNotices(newValue)
-        );
+        txtSearchNotice.textProperty().addListener((obs, oldValue, newValue) -> loadNotices(newValue));
     }
 
-    private void setupTableColumns() {
-        colNoticeId.setCellValueFactory(data ->
-                new SimpleIntegerProperty(data.getValue().getNoticeId()));
-
-        colTitle.setCellValueFactory(data ->
-                new SimpleStringProperty(data.getValue().getTitle()));
-
-        colDate.setCellValueFactory(data ->
-                new SimpleStringProperty(
-                        data.getValue().getPublishDate() == null
-                                ? ""
-                                : data.getValue().getPublishDate().toString()
-                ));
-
-        colAuthor.setCellValueFactory(data ->
-                new SimpleStringProperty(getSafeText(data.getValue().getCreatedBy())));
-    }
-
-    private void loadNotices(String keyword) {
-        try {
-            List<Notice> noticeList;
-
-            if (keyword == null || keyword.trim().isEmpty()) {
-                noticeList = adminRepository.findAllNotices();
-            } else {
-                noticeList = adminRepository.findNoticesByKeyword(keyword);
-            }
-
-            tblNotices.getItems().setAll(noticeList);
-
-        } catch (SQLException exception) {
-            showErrorMessage("Failed to load notices.", exception);
-        }
+    // Set up the notice table columns.
+    private void setupColumns() {
+        colNoticeId.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getNoticeId()));
+        colTitle.setCellValueFactory(data -> new SimpleStringProperty(text(data.getValue().getTitle())));
+        colDate.setCellValueFactory(data -> new SimpleStringProperty(dateText(data.getValue().getPublishDate())));
+        colAuthor.setCellValueFactory(data -> new SimpleStringProperty(text(data.getValue().getCreatedBy())));
     }
 
     @FXML
     void btnOnActionAddNewNotice(ActionEvent event) {
-        Notice newNotice = openNoticeDialog(null);
-
-        if (newNotice == null) return;
+        Notice notice = openNoticeDialog(null);
+        if (notice == null) {
+            return;
+        }
 
         try {
-            boolean isSaved = adminRepository.saveNotice(newNotice);
-
-            if (isSaved) {
-                refreshTable();
-                showInfoMessage("Notice added successfully.");
+            if (adminRepository.saveNotice(notice)) {
+                loadNotices(text(txtSearchNotice));
+                showInfo("Notice added successfully.");
             } else {
-                showInfoMessage("No notice was added.");
+                showInfo("No notice was added.");
             }
-
-        } catch (SQLException exception) {
-            showErrorMessage("Failed to add notice.", exception);
+        } catch (SQLException e) {
+            showError("Failed to add notice.", e);
         }
     }
 
     @FXML
     void btnOnActionDeleteNotice(ActionEvent event) {
-        Notice selectedNotice = tblNotices.getSelectionModel().getSelectedItem();
-
-        if (selectedNotice == null) {
-            showInfoMessage("Please select a notice to delete.");
+        Notice selected = tblNotices.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showInfo("Please select a notice to delete.");
             return;
         }
 
-        Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmationAlert.setHeaderText("Delete Notice");
-        confirmationAlert.setContentText("Delete notice: " + selectedNotice.getTitle() + "?");
-
-        Optional<ButtonType> userChoice = confirmationAlert.showAndWait();
-
-        if (userChoice.isEmpty() || userChoice.get() != ButtonType.OK) return;
+        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmation.setHeaderText("Delete Notice");
+        confirmation.setContentText("Delete notice: " + selected.getTitle() + "?");
+        Optional<ButtonType> answer = confirmation.showAndWait();
+        if (answer.isEmpty() || answer.get() != ButtonType.OK) {
+            return;
+        }
 
         try {
-            boolean isDeleted = adminRepository.deleteNoticeById(selectedNotice.getNoticeId());
-
-            if (isDeleted) {
-                refreshTable();
+            if (adminRepository.deleteNoticeById(selected.getNoticeId())) {
+                loadNotices(text(txtSearchNotice));
             } else {
-                showInfoMessage("No notice was deleted.");
+                showInfo("No notice was deleted.");
             }
-
-        } catch (SQLException exception) {
-            showErrorMessage("Failed to delete notice.", exception);
+        } catch (SQLException e) {
+            showError("Failed to delete notice.", e);
         }
     }
 
     @FXML
     void btnOnActionViewNotice(ActionEvent event) {
-        Notice selectedNotice = tblNotices.getSelectionModel().getSelectedItem();
-
-        if (selectedNotice == null) {
-            showInfoMessage("Please select a notice to view or edit.");
+        Notice selected = tblNotices.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showInfo("Please select a notice to view or edit.");
             return;
         }
 
-        Notice updatedNotice = openNoticeDialog(selectedNotice);
-
-        if (updatedNotice == null) return;
+        Notice updated = openNoticeDialog(selected);
+        if (updated == null) {
+            return;
+        }
 
         try {
-            boolean isUpdated = adminRepository.updateNotice(updatedNotice);
-
-            if (isUpdated) {
-                refreshTable();
-                showInfoMessage("Notice updated successfully.");
+            if (adminRepository.updateNotice(updated)) {
+                loadNotices(text(txtSearchNotice));
+                showInfo("Notice updated successfully.");
             } else {
-                showInfoMessage("No notice was updated.");
+                showInfo("No notice was updated.");
             }
-
-        } catch (SQLException exception) {
-            showErrorMessage("Failed to update notice.", exception);
+        } catch (SQLException e) {
+            showError("Failed to update notice.", e);
         }
     }
 
-    // ADD and Update Notice Form Access method
+    // Open one dialog for both adding and editing notices.
     private Notice openNoticeDialog(Notice existingNotice) {
+        boolean edit = existingNotice != null;
+        String adminRegNo = text(LoggedInAdmin.getRegistrationNo());
 
-        boolean isEditMode = existingNotice != null;
-        String adminRegistrationNumber = getSafeText(LoggedInAdmin.getRegistrationNo());
+        Dialog<Notice> dialog = new Dialog<>();
+        dialog.setTitle(edit ? "Edit Notice" : "Create Notice");
+        dialog.setHeaderText(edit ? "Update the notice details." : "Enter a new notice.");
 
-        Dialog<Notice> noticeDialog = new Dialog<>();
-        noticeDialog.setTitle(isEditMode ? "Edit Notice" : "Create Notice");
+        ButtonType save = new ButtonType(edit ? "Update" : "Save", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(save, ButtonType.CANCEL);
 
-        ButtonType saveButton = new ButtonType(
-                isEditMode ? "Update" : "Save",
-                ButtonBar.ButtonData.OK_DONE
-        );
-
-        noticeDialog.getDialogPane().getButtonTypes().addAll(saveButton, ButtonType.CANCEL);
-
-        TextField txtTitle = new TextField();
-        TextArea txtContent = new TextArea();
-        DatePicker datePicker = new DatePicker();
-        TextField txtCreatedBy = new TextField();
+        TextField txtTitle = new TextField(edit ? text(existingNotice.getTitle()) : "");
+        TextArea txtContent = new TextArea(edit ? text(existingNotice.getContent()) : "");
+        DatePicker datePicker = new DatePicker(edit ? existingNotice.getPublishDate() : LocalDate.now());
+        TextField txtCreatedBy = new TextField(edit ? text(existingNotice.getCreatedBy()) : adminRegNo);
 
         txtContent.setPrefRowCount(5);
 
-        if (isEditMode) {
-            txtTitle.setText(existingNotice.getTitle());
-            txtContent.setText(existingNotice.getContent());
-            datePicker.setValue(existingNotice.getPublishDate());
-            txtCreatedBy.setText(getSafeText(existingNotice.getCreatedBy()));
-        } else {
-            datePicker.setValue(LocalDate.now());
-            txtCreatedBy.setText(adminRegistrationNumber);
-        }
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.add(new Label("Title:"), 0, 0);
+        grid.add(txtTitle, 1, 0);
+        grid.add(new Label("Content:"), 0, 1);
+        grid.add(txtContent, 1, 1);
+        grid.add(new Label("Publish Date:"), 0, 2);
+        grid.add(datePicker, 1, 2);
+        grid.add(new Label("Created By:"), 0, 3);
+        grid.add(txtCreatedBy, 1, 3);
 
-        GridPane formGrid = new GridPane();
-        formGrid.setHgap(10);
-        formGrid.setVgap(10);
+        dialog.getDialogPane().setContent(grid);
+        dialog.setResultConverter(button -> {
+            if (button != save) {
+                return null;
+            }
 
-        formGrid.add(new Label("Title:"), 0, 0);
-        formGrid.add(txtTitle, 1, 0);
-        formGrid.add(new Label("Content:"), 0, 1);
-        formGrid.add(txtContent, 1, 1);
-        formGrid.add(new Label("Publish Date:"), 0, 2);
-        formGrid.add(datePicker, 1, 2);
-        formGrid.add(new Label("Created By:"), 0, 3);
-        formGrid.add(txtCreatedBy, 1, 3);
-
-        noticeDialog.getDialogPane().setContent(formGrid);
-
-        noticeDialog.setResultConverter(button -> {
-
-            if (button != saveButton) return null;
-
-            String title = getTextFieldValue(txtTitle);
-            String content = getTextAreaValue(txtContent);
+            String title = text(txtTitle);
+            String content = text(txtContent);
             LocalDate publishDate = datePicker.getValue();
+            String createdBy = text(txtCreatedBy);
 
             if (title.isBlank()) {
-                showInfoMessage("Title is required.");
+                showInfo("Title is required.");
                 return null;
             }
-
             if (publishDate == null) {
-                showInfoMessage("Publish date is required.");
+                showInfo("Publish date is required.");
                 return null;
             }
-
-            String createdBy = getTextFieldValue(txtCreatedBy);
-
             if (createdBy.isBlank()) {
-                createdBy = adminRegistrationNumber;
+                createdBy = adminRegNo;
             }
-
             if (createdBy.isBlank()) {
-                showInfoMessage("Created By is required.");
+                showInfo("Created By is required.");
                 return null;
             }
 
             return new Notice(
-                    isEditMode ? existingNotice.getNoticeId() : 0,
+                    edit ? existingNotice.getNoticeId() : 0,
                     title,
                     content,
                     publishDate,
@@ -250,35 +189,48 @@ public class ManageNoticesController implements Initializable {
             );
         });
 
-        Optional<Notice> result = noticeDialog.showAndWait();
+        Optional<Notice> result = dialog.showAndWait();
         return result.orElse(null);
     }
 
-
-
-    private void refreshTable() {
-        loadNotices(txtSearchNotice.getText());
+    private void loadNotices(String keyword) {
+        try {
+            List<Notice> notices;
+            if (keyword == null || keyword.trim().isEmpty()) {
+                notices = adminRepository.findAllNotices();
+            } else {
+                notices = adminRepository.findNoticesByKeyword(keyword.trim());
+            }
+            tblNotices.getItems().setAll(notices);
+        } catch (SQLException e) {
+            showError("Failed to load notices.", e);
+        }
     }
 
-    private String getTextFieldValue(TextField textField) {
-        return textField.getText() == null ? "" : textField.getText().trim();
+    private String text(String value) {
+        return value == null ? "" : value.trim();
     }
 
-    private String getTextAreaValue(TextArea textArea) {
-        return textArea.getText() == null ? "" : textArea.getText().trim();
+    private String text(TextField field) {
+        return field.getText() == null ? "" : field.getText().trim();
     }
 
-    private String getSafeText(String text) {
-        return text == null ? "" : text;
+    private String text(TextArea area) {
+        return area.getText() == null ? "" : area.getText().trim();
     }
 
-    private void showInfoMessage(String message) {
+    private String dateText(LocalDate date) {
+        return date == null ? "" : date.toString();
+    }
+
+    private void showInfo(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
     }
 
-    private void showErrorMessage(String message, Exception exception) {
+    private void showError(String message, Exception exception) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setHeaderText("Error");
         alert.setContentText(message + "\n" + exception.getMessage());

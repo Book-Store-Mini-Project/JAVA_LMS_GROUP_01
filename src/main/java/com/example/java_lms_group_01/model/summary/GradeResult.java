@@ -1,6 +1,6 @@
-package com.example.java_lms_group_01.util;
+package com.example.java_lms_group_01.model.summary;
 
-// To GET Grade for mapped gradepoint values
+// Holds the final published grade and grade point.
 public class GradeResult {
     private final String publishedGrade;
     private final Double gradePoint;

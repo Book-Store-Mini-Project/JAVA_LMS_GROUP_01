@@ -1,98 +1,95 @@
 package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 
 import com.example.java_lms_group_01.Repository.UserProfileRepository;
-import com.example.java_lms_group_01.util.LoggedInTechnicalOfficer;
+import com.example.java_lms_group_01.model.UserRecord;
+import com.example.java_lms_group_01.session.LoggedInTechnicalOfficer;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
 
 import java.sql.SQLException;
 
-/**
- * Lets the logged-in technical officer view and update personal profile details.
- */
 public class TechnicalOfficerProfileController {
 
-    @FXML
-    private TextField txtRegistrationNo;
-    @FXML
-    private TextField txtFirstName;
-    @FXML
-    private TextField txtLastName;
-    @FXML
-    private TextField txtEmail;
-    @FXML
-    private TextField txtPhone;
-    @FXML
-    private TextField txtAddress;
-    @FXML
-    private TextField txtPicturePath;
+    @FXML private TextField txtRegistrationNo;
+    @FXML private TextField txtFirstName;
+    @FXML private TextField txtLastName;
+    @FXML private TextField txtEmail;
+    @FXML private TextField txtPhone;
+    @FXML private TextField txtAddress;
+    @FXML private TextField txtPicturePath;
 
     private final UserProfileRepository userProfileRepository = new UserProfileRepository();
 
     @FXML
     public void initialize() {
+        // Lock the Registration Number field so it cannot be changed
         txtRegistrationNo.setEditable(false);
-        loadProfile();
+
+        // Load the officer's current data into the text fields
+        loadProfileData();
     }
 
     @FXML
     private void saveProfile() {
-        String registrationNo = LoggedInTechnicalOfficer.getRegistrationNo();
-        if (registrationNo == null || registrationNo.isBlank()) {
-            show(Alert.AlertType.WARNING, "Session Error", "Technical officer session not found. Please login again.");
+        // Get the ID of the person currently logged in
+        String regNo = LoggedInTechnicalOfficer.getRegistrationNo();
+
+        if (regNo == null || regNo.isEmpty()) {
+            showSimpleAlert(Alert.AlertType.WARNING, "Session Error", "Please login again.");
             return;
         }
 
         try {
+            // Send the current text from the fields to the database repository
             userProfileRepository.updateTechnicalOfficerProfile(
-                    registrationNo,
-                    value(txtFirstName),
-                    value(txtLastName),
-                    value(txtEmail),
-                    value(txtPhone),
-                    value(txtAddress),
-                    value(txtPicturePath)
+                    regNo,
+                    txtFirstName.getText().trim(),
+                    txtLastName.getText().trim(),
+                    txtEmail.getText().trim(),
+                    txtPhone.getText().trim(),
+                    txtAddress.getText().trim(),
+                    txtPicturePath.getText().trim()
             );
-            show(Alert.AlertType.INFORMATION, "Profile Updated", "Profile details updated successfully.");
+
+            showSimpleAlert(Alert.AlertType.INFORMATION, "Success", "Profile updated successfully!");
+
         } catch (SQLException e) {
-            show(Alert.AlertType.ERROR, "Database Error", e.getMessage());
+            showSimpleAlert(Alert.AlertType.ERROR, "Database Error", e.getMessage());
         }
     }
 
-    private void loadProfile() {
-        String registrationNo = LoggedInTechnicalOfficer.getRegistrationNo();
-        if (registrationNo == null || registrationNo.isBlank()) {
+    private void loadProfileData() {
+        String regNo = LoggedInTechnicalOfficer.getRegistrationNo();
+
+        if (regNo == null || regNo.isEmpty()) {
             return;
         }
 
         try {
-            com.example.java_lms_group_01.model.UserRecord profile =
-                    userProfileRepository.findTechnicalOfficerProfile(registrationNo);
-            if (profile == null) {
-                return;
+            // Fetch the profile record from the database
+            UserRecord profile = userProfileRepository.findTechnicalOfficerProfile(regNo);
+
+            if (profile != null) {
+                // Fill the text fields with data from the database record
+                txtRegistrationNo.setText(profile.getUserId());
+
+                // Use a simple check to avoid putting "null" text in the boxes
+                txtFirstName.setText(profile.getFirstName() != null ? profile.getFirstName() : "");
+                txtLastName.setText(profile.getLastName() != null ? profile.getLastName() : "");
+                txtEmail.setText(profile.getEmail() != null ? profile.getEmail() : "");
+                txtPhone.setText(profile.getPhoneNumber() != null ? profile.getPhoneNumber() : "");
+                txtAddress.setText(profile.getAddress() != null ? profile.getAddress() : "");
+                txtPicturePath.setText(profile.getProfileImagePath() != null ? profile.getProfileImagePath() : "");
             }
-            txtRegistrationNo.setText(safe(profile.getUserId()));
-            txtFirstName.setText(safe(profile.getFirstName()));
-            txtLastName.setText(safe(profile.getLastName()));
-            txtEmail.setText(safe(profile.getEmail()));
-            txtPhone.setText(safe(profile.getPhoneNumber()));
-            txtAddress.setText(safe(profile.getAddress()));
-            txtPicturePath.setText(safe(profile.getProfileImagePath()));
+
         } catch (SQLException e) {
-            show(Alert.AlertType.ERROR, "Database Error", e.getMessage());
+            showSimpleAlert(Alert.AlertType.ERROR, "Database Error", "Could not load profile.");
         }
     }
 
-    private String value(TextField field) {
-        return field.getText() == null ? "" : field.getText().trim();
-    }
 
-    private String safe(String value) {
-        return value == null ? "" : value;
-    }
-
-    private void show(Alert.AlertType type, String title, String message) {
+    private void showSimpleAlert(Alert.AlertType type, String title, String message) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
         alert.setHeaderText(null);

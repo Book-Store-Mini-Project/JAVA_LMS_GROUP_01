@@ -12,80 +12,78 @@ import javafx.scene.control.TableView;
 import java.sql.SQLException;
 import java.util.List;
 
-/**
- * Shows timetables to the technical officer with a simple department filter.
- */
 public class TechnicalOfficerTimetableController {
 
-    @FXML
-    private ComboBox<String> cmbDepartment;
-    @FXML
-    private TableView<Timetable> tblTimetables;
-    @FXML
-    private TableColumn<Timetable, String> colTimetableId;
-    @FXML
-    private TableColumn<Timetable, String> colDepartment;
-    @FXML
-    private TableColumn<Timetable, String> colLecturerId;
-    @FXML
-    private TableColumn<Timetable, String> colCourseCode;
-    @FXML
-    private TableColumn<Timetable, String> colAdminId;
-    @FXML
-    private TableColumn<Timetable, String> colDay;
-    @FXML
-    private TableColumn<Timetable, String> colStartTime;
-    @FXML
-    private TableColumn<Timetable, String> colEndTime;
-    @FXML
-    private TableColumn<Timetable, String> colSessionType;
+    @FXML private ComboBox<String> cmbDepartment;
+
+    @FXML private TableView<Timetable> tblTimetables;
+
+    @FXML private TableColumn<Timetable, String> colTimetableId, colDepartment, colLecturerId,
+            colCourseCode, colAdminId, colDay, colStartTime, colEndTime, colSessionType;
 
     private final TimetableRepository timetableRepository = new TimetableRepository();
 
     @FXML
     public void initialize() {
-        colTimetableId.setCellValueFactory(d -> d.getValue().timetableIdProperty());
-        colDepartment.setCellValueFactory(d -> d.getValue().departmentProperty());
-        colLecturerId.setCellValueFactory(d -> d.getValue().lecturerIdProperty());
-        colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
-        colAdminId.setCellValueFactory(d -> d.getValue().adminIdProperty());
-        colDay.setCellValueFactory(d -> d.getValue().dayProperty());
-        colStartTime.setCellValueFactory(d -> d.getValue().startTimeProperty());
-        colEndTime.setCellValueFactory(d -> d.getValue().endTimeProperty());
-        colSessionType.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
+        // Step 1: Tell each column which data to pull from the Timetable model
+        configureColumns();
 
-        loadDepartments();
-        loadTimetables(null);
+        // Step 2: Fill the ComboBox with department names from the database
+        loadDepartmentList();
+
+        // Step 3: Load all timetables by default (passing null shows everything)
+        refreshTableData(null);
+    }
+
+    private void configureColumns() {
+        // Standard readable way to link columns to model properties
+        colTimetableId.setCellValueFactory(data -> { return data.getValue().timetableIdProperty(); });
+        colDepartment.setCellValueFactory(data -> { return data.getValue().departmentProperty(); });
+        colLecturerId.setCellValueFactory(data -> { return data.getValue().lecturerIdProperty(); });
+        colCourseCode.setCellValueFactory(data -> { return data.getValue().courseCodeProperty(); });
+        colAdminId.setCellValueFactory(data -> { return data.getValue().adminIdProperty(); });
+        colDay.setCellValueFactory(data -> { return data.getValue().dayProperty(); });
+        colStartTime.setCellValueFactory(data -> { return data.getValue().startTimeProperty(); });
+        colEndTime.setCellValueFactory(data -> { return data.getValue().endTimeProperty(); });
+        colSessionType.setCellValueFactory(data -> { return data.getValue().sessionTypeProperty(); });
     }
 
     @FXML
     private void filterByDepartment(ActionEvent event) {
-        loadTimetables(cmbDepartment.getValue());
+        // Get the selected department from the dropdown
+        String selectedDept = cmbDepartment.getValue();
+
+        // Reload the table using this filter
+        refreshTableData(selectedDept);
     }
 
-    private void loadDepartments() {
+    private void loadDepartmentList() {
         try {
-            cmbDepartment.getItems().setAll(timetableRepository.findAllDepartments());
+            // Get unique departments from the repository
+            List<String> departments = timetableRepository.findAllDepartments();
+            cmbDepartment.getItems().setAll(departments);
         } catch (SQLException e) {
-            showError("Failed to load departments.", e);
+            showErrorMessage("Database Error", "Failed to load departments.");
         }
     }
 
-    private void loadTimetables(String department) {
+    private void refreshTableData(String department) {
         try {
-            List<Timetable> timetables = timetableRepository.findByFilters(department, null, null);
-            tblTimetables.getItems().setAll(timetables);
+            // Fetch filtered list (using null for lecturer and course filters)
+            List<Timetable> list = timetableRepository.findByFilters(department, null, null);
+
+            // Update the table
+            tblTimetables.getItems().setAll(list);
         } catch (SQLException e) {
-            showError("Failed to load timetables.", e);
+            showErrorMessage("Database Error", "Failed to load timetables.");
         }
     }
 
-    private void showError(String message, Exception e) {
+    private void showErrorMessage(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Database Error");
+        alert.setTitle(title);
         alert.setHeaderText(null);
-        alert.setContentText(message + "\n" + e.getMessage());
+        alert.setContentText(message);
         alert.showAndWait();
     }
-
 }

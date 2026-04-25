@@ -3,21 +3,14 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Performance;
 import com.example.java_lms_group_01.model.summary.UndergraduateSummary;
-import com.example.java_lms_group_01.util.LoggedInLecture;
+import com.example.java_lms_group_01.session.LoggedInLecture;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Shows calculated performance, grades, GPA, and SGPA for students.
- */
 public class LecturerGpaController {
 
     @FXML
@@ -61,7 +54,14 @@ public class LecturerGpaController {
 
     @FXML
     public void initialize() {
+        setupPerformanceColumns();
+        setupSummaryColumns();
+        loadBatchOptions();
+        loadReports("", "");
+    }
 
+    // Set up the marks table.
+    private void setupPerformanceColumns() {
         colStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
         colStudentName.setCellValueFactory(d -> d.getValue().studentNameProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
@@ -72,27 +72,30 @@ public class LecturerGpaController {
         colGrade.setCellValueFactory(d -> d.getValue().gradeProperty());
         colSgpa.setCellValueFactory(d -> d.getValue().sgpaProperty());
         colCgpa.setCellValueFactory(d -> d.getValue().cgpaProperty());
+    }
 
+    // Set up the summary table.
+    private void setupSummaryColumns() {
         colSummaryStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
         colSummaryStudentName.setCellValueFactory(d -> d.getValue().studentNameProperty());
         colSummarySgpa.setCellValueFactory(d -> d.getValue().sgpaProperty());
         colSummaryCgpa.setCellValueFactory(d -> d.getValue().cgpaProperty());
-
-        loadBatchOptions();
-        loadReports("", "");
     }
 
     @FXML
     private void submitFilters() {
-        loadReports(value(txtStudentSearch), selectedBatch());
+        loadReports(text(txtStudentSearch), selectedBatch());
     }
 
+    // Load the batch list for the logged-in lecturer.
     private void loadBatchOptions() {
         try {
             List<String> batches = lecturerRepository.findBatchesByLecturer(currentLecturer());
             List<String> options = new ArrayList<>();
             options.add("All Batches");
-            options.addAll(batches);
+            if (batches != null) {
+                options.addAll(batches);
+            }
             cmbBatch.getItems().setAll(options);
             cmbBatch.setValue("All Batches");
         } catch (SQLException e) {
@@ -102,17 +105,22 @@ public class LecturerGpaController {
 
     private String selectedBatch() {
         String batch = cmbBatch.getValue();
-        return batch == null || "All Batches".equals(batch) ? "" : batch.trim();
+        if (batch == null || "All Batches".equals(batch)) {
+            return "";
+        }
+        return batch.trim();
     }
 
+    // Load both reports using the same search and batch filter.
     private void loadReports(String studentReg, String batch) {
         try {
-            List<Performance> performanceRows =
-                    lecturerRepository.findPerformanceByLecturer(currentLecturer(), studentReg, "", batch);
-            List<UndergraduateSummary> summaryRows =
-                    lecturerRepository.findUndergraduateSummariesByLecturer(currentLecturer(), studentReg, "", batch);
-            tblPerformance.getItems().setAll(performanceRows);
-            tblUndergraduateSummary.getItems().setAll(summaryRows);
+            String lecturerId = currentLecturer();
+            tblPerformance.getItems().setAll(
+                    lecturerRepository.findPerformanceByLecturer(lecturerId, studentReg, "", batch)
+            );
+            tblUndergraduateSummary.getItems().setAll(
+                    lecturerRepository.findUndergraduateSummariesByLecturer(lecturerId, studentReg, "", batch)
+            );
         } catch (SQLException e) {
             showError("Failed to load marks/grades/GPA.", e);
         }
@@ -123,8 +131,8 @@ public class LecturerGpaController {
         return reg == null ? "" : reg.trim();
     }
 
-    private String value(TextField textField) {
-        return textField.getText() == null ? "" : textField.getText().trim();
+    private String text(TextField field) {
+        return field.getText() == null ? "" : field.getText().trim();
     }
 
     private void showError(String message, Exception e) {

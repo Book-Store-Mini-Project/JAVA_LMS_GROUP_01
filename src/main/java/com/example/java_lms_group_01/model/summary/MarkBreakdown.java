@@ -1,6 +1,6 @@
-package com.example.java_lms_group_01.util;
+package com.example.java_lms_group_01.model.summary;
 
-// This class is used to store calculated marks for a student [ only contain DATA ]
+// Holds calculated CA marks, exam marks, and totals.
 public class MarkBreakdown {
     private final double caMarks;
     private final double endMarks;

@@ -4,12 +4,7 @@ import com.example.java_lms_group_01.model.UserRecord;
 import com.example.java_lms_group_01.util.DBConnection;
 import com.example.java_lms_group_01.util.PasswordUtil;
 
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -176,7 +171,7 @@ public class UserRepository {
             u.setString(4, row.getEmail());
             u.setString(5, row.getAddress());
             u.setString(6, row.getPhoneNumber());
-            u.setDate(7, row.getDateOfBirth() == null ? null : java.sql.Date.valueOf(row.getDateOfBirth()));
+            u.setDate(7, row.getDateOfBirth() == null ? null : Date.valueOf(row.getDateOfBirth()));
             u.setString(8, row.getGender());
             u.executeUpdate();
 
@@ -208,7 +203,7 @@ public class UserRepository {
             u.setString(4, row.getEmail());
             u.setString(5, row.getAddress());
             u.setString(6, row.getPhoneNumber());
-            u.setDate(7, row.getDateOfBirth() == null ? null : java.sql.Date.valueOf(row.getDateOfBirth()));
+            u.setDate(7, row.getDateOfBirth() == null ? null : Date.valueOf(row.getDateOfBirth()));
             u.setString(8, row.getGender());
             u.executeUpdate();
 
@@ -241,7 +236,7 @@ public class UserRepository {
             u.setString(4, row.getEmail());
             u.setString(5, row.getAddress());
             u.setString(6, row.getPhoneNumber());
-            u.setDate(7, row.getDateOfBirth() == null ? null : java.sql.Date.valueOf(row.getDateOfBirth()));
+            u.setDate(7, row.getDateOfBirth() == null ? null : Date.valueOf(row.getDateOfBirth()));
             u.setString(8, row.getGender());
             u.executeUpdate();
 
@@ -276,14 +271,15 @@ public class UserRepository {
             u.setString(4, row.getEmail());
             u.setString(5, row.getAddress());
             u.setString(6, row.getPhoneNumber());
-            u.setDate(7, row.getDateOfBirth() == null ? null : java.sql.Date.valueOf(row.getDateOfBirth()));
+            u.setDate(7, row.getDateOfBirth() == null ? null : Date.valueOf(row.getDateOfBirth()));
             u.setString(8, row.getGender());
             u.executeUpdate();
 
             PreparedStatement t = con.prepareStatement(
-                    "INSERT INTO tech_officer VALUES (?, ?)");
+                    "INSERT INTO tech_officer VALUES (?, ?,?)");
             t.setString(1, row.getRegistrationNo());
             t.setString(2, PasswordUtil.hashPassword(row.getPassword()));
+            t.setString(3, row.getDepartment());
             t.executeUpdate();
 
             return true;
@@ -308,7 +304,7 @@ public class UserRepository {
             u.setString(3, row.getEmail());
             u.setString(4, row.getAddress());
             u.setString(5, row.getPhoneNumber());
-            u.setDate(6, row.getDateOfBirth() == null ? null : java.sql.Date.valueOf(row.getDateOfBirth()));
+            u.setDate(6, row.getDateOfBirth() == null ? null : Date.valueOf(row.getDateOfBirth()));
             u.setString(7, row.getGender());
             u.setString(8, row.getRegistrationNo());
             u.executeUpdate();
@@ -345,7 +341,7 @@ public class UserRepository {
             u.setString(3, row.getEmail());
             u.setString(4, row.getAddress());
             u.setString(5, row.getPhoneNumber());
-            u.setDate(6, row.getDateOfBirth() == null ? null : java.sql.Date.valueOf(row.getDateOfBirth()));
+            u.setDate(6, row.getDateOfBirth() == null ? null : Date.valueOf(row.getDateOfBirth()));
             u.setString(7, row.getGender());
             u.setString(8, row.getRegistrationNo());
             u.executeUpdate();
@@ -391,7 +387,7 @@ public class UserRepository {
             u.setString(3, row.getEmail());
             u.setString(4, row.getAddress());
             u.setString(5, row.getPhoneNumber());
-            u.setDate(6, row.getDateOfBirth() == null ? null : java.sql.Date.valueOf(row.getDateOfBirth()));
+            u.setDate(6, row.getDateOfBirth() == null ? null : Date.valueOf(row.getDateOfBirth()));
             u.setString(7, row.getGender());
             u.setString(8, row.getRegistrationNo());
             u.executeUpdate();
@@ -439,7 +435,7 @@ public class UserRepository {
             u.setString(3, row.getEmail());
             u.setString(4, row.getAddress());
             u.setString(5, row.getPhoneNumber());
-            u.setDate(6, row.getDateOfBirth() == null ? null : java.sql.Date.valueOf(row.getDateOfBirth()));
+            u.setDate(6, row.getDateOfBirth() == null ? null : Date.valueOf(row.getDateOfBirth()));
             u.setString(7, row.getGender());
             u.setString(8, row.getRegistrationNo());
             u.executeUpdate();

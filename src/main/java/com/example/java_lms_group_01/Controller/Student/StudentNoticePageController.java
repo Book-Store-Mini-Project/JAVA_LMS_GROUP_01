@@ -10,9 +10,6 @@ import javafx.scene.control.TableView;
 import java.sql.SQLException;
 import java.util.List;
 
-/**
- * Shows published notices for the logged-in student.
- */
 public class StudentNoticePageController {
 
     @FXML
@@ -28,12 +25,17 @@ public class StudentNoticePageController {
 
     @FXML
     public void initialize() {
+        setupColumns();
+        loadNotices();
+    }
+
+    private void setupColumns() {
         colTitle.setCellValueFactory(d -> d.getValue().titleProperty());
         colContent.setCellValueFactory(d -> d.getValue().contentProperty());
         colDate.setCellValueFactory(d -> d.getValue().dateProperty());
-        loadNotices();
     }
-//loard notice method
+
+    // Load all notices for the student.
     private void loadNotices() {
         try {
             List<Notice> notices = noticeRepository.findAll();

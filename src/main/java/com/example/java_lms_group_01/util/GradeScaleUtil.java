@@ -1,5 +1,8 @@
 package com.example.java_lms_group_01.util;
 
+import com.example.java_lms_group_01.model.summary.GradeResult;
+import com.example.java_lms_group_01.model.summary.MarkBreakdown;
+
 // convert marks into Grades
 public final class GradeScaleUtil {
 

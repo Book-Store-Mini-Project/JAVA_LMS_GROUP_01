@@ -2,16 +2,14 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Timetable;
-import com.example.java_lms_group_01.util.LoggedInLecture;
+import com.example.java_lms_group_01.session.LoggedInLecture;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
 import java.sql.SQLException;
-/**
- * Shows the timetable for the logged-in lecturer.
- */
+
 public class LecturerTimetableController {
 
     @FXML
@@ -33,18 +31,24 @@ public class LecturerTimetableController {
 
     @FXML
     public void initialize() {
+        setupColumns();
+        loadTimetable();
+    }
+
+    // Set the timetable table columns.
+    private void setupColumns() {
         colDepartment.setCellValueFactory(d -> d.getValue().departmentProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
         colDay.setCellValueFactory(d -> d.getValue().dayProperty());
         colStartTime.setCellValueFactory(d -> d.getValue().startTimeProperty());
         colEndTime.setCellValueFactory(d -> d.getValue().endTimeProperty());
         colSession.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
-        loadTimetable();
     }
 
+    // Load the timetable for the logged-in lecturer.
     private void loadTimetable() {
-        String lecturerReg = LoggedInLecture.getRegistrationNo();
-        if (lecturerReg == null || lecturerReg.isBlank()) {
+        String lecturerReg = currentLecturer();
+        if (lecturerReg.isBlank()) {
             return;
         }
 
@@ -55,6 +59,11 @@ public class LecturerTimetableController {
         } catch (SQLException e) {
             showError("Failed to load lecturer timetable.", e);
         }
+    }
+
+    private String currentLecturer() {
+        String reg = LoggedInLecture.getRegistrationNo();
+        return reg == null ? "" : reg.trim();
     }
 
     private void showError(String message, Exception e) {

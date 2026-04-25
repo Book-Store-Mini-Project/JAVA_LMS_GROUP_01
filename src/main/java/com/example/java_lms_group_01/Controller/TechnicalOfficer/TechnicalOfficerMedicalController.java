@@ -3,224 +3,215 @@ package com.example.java_lms_group_01.Controller.TechnicalOfficer;
 import com.example.java_lms_group_01.Repository.TechnicalOfficerRepository;
 import com.example.java_lms_group_01.model.Medical;
 import com.example.java_lms_group_01.model.request.MedicalRequest;
-import com.example.java_lms_group_01.util.LoggedInTechnicalOfficer;
+import com.example.java_lms_group_01.session.LoggedInTechnicalOfficer;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 
-import java.time.LocalDate;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.List;
 
-/**
- * Lets a technical officer manage student medical submissions.
- */
 public class TechnicalOfficerMedicalController {
 
-    @FXML
-    private TextField txtStudentRegNo;
-    @FXML
-    private TextField txtCourseCode;
-    @FXML
-    private TextField txtAttendanceId;
-    @FXML
-    private DatePicker dpSubmissionDate;
-    @FXML
-    private ComboBox<String> cmbSessionType;
-    @FXML
-    private TextArea txtDescription;
-    @FXML
-    private TextField txtSearch;
-    @FXML
-    private TableView<Medical> tblMedical;
-    @FXML
-    private TableColumn<Medical, String> colMedicalId;
-    @FXML
-    private TableColumn<Medical, String> colStudentRegNo;
-    @FXML
-    private TableColumn<Medical, String> colCourseCode;
-    @FXML
-    private TableColumn<Medical, String> colDate;
-    @FXML
-    private TableColumn<Medical, String> colDescription;
-    @FXML
-    private TableColumn<Medical, String> colSessionType;
-    @FXML
-    private TableColumn<Medical, String> colAttendanceId;
-    @FXML
-    private TableColumn<Medical, String> colApprovalStatus;
-    @FXML
-    private TableColumn<Medical, String> colTechOfficerReg;
+    @FXML private TextField txtStudentRegNo, txtCourseCode, txtAttendanceId, txtSearch;
+    @FXML private TextArea txtDescription;
+    @FXML private DatePicker dpSubmissionDate;
+    @FXML private ComboBox<String> cmbSessionType;
+
+    @FXML private TableView<Medical> tblMedical;
+    @FXML private TableColumn<Medical, String> colMedicalId, colStudentRegNo, colCourseCode,
+            colDate, colDescription, colSessionType, colAttendanceId, colApprovalStatus, colTechOfficerReg;
 
     private final TechnicalOfficerRepository technicalOfficerRepository = new TechnicalOfficerRepository();
 
     @FXML
     public void initialize() {
+        // Setup Dropdown
         cmbSessionType.setItems(FXCollections.observableArrayList("theory", "practical"));
 
-        colMedicalId.setCellValueFactory(d -> d.getValue().medicalIdProperty());
-        colStudentRegNo.setCellValueFactory(d -> d.getValue().studentRegNoProperty());
-        colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
-        colDate.setCellValueFactory(d -> d.getValue().dateProperty());
-        colDescription.setCellValueFactory(d -> d.getValue().descriptionProperty());
-        colSessionType.setCellValueFactory(d -> d.getValue().sessionTypeProperty());
-        colAttendanceId.setCellValueFactory(d -> d.getValue().attendanceIdProperty());
-        colApprovalStatus.setCellValueFactory(d -> d.getValue().approvalStatusProperty());
-        colTechOfficerReg.setCellValueFactory(d -> d.getValue().techOfficerRegProperty());
+        // Setup Table Columns (Standard Beginner Style)
+        colMedicalId.setCellValueFactory(data -> { return data.getValue().medicalIdProperty(); });
+        colStudentRegNo.setCellValueFactory(data -> { return data.getValue().studentRegNoProperty(); });
+        colCourseCode.setCellValueFactory(data -> { return data.getValue().courseCodeProperty(); });
+        colDate.setCellValueFactory(data -> { return data.getValue().dateProperty(); });
+        colDescription.setCellValueFactory(data -> { return data.getValue().descriptionProperty(); });
+        colSessionType.setCellValueFactory(data -> { return data.getValue().sessionTypeProperty(); });
+        colAttendanceId.setCellValueFactory(data -> { return data.getValue().attendanceIdProperty(); });
+        colApprovalStatus.setCellValueFactory(data -> { return data.getValue().approvalStatusProperty(); });
+        colTechOfficerReg.setCellValueFactory(data -> { return data.getValue().techOfficerRegProperty(); });
 
-        loadMedical(null);
-
+        // Selection Listener: When you click a row, fill the form
         tblMedical.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, row) -> {
-            if (row == null) {
-                return;
+            if (row != null) {
+                txtStudentRegNo.setText(row.getStudentRegNo());
+                txtCourseCode.setText(row.getCourseCode());
+                txtDescription.setText(row.getDescription());
+                txtAttendanceId.setText(row.getAttendanceId());
+                cmbSessionType.setValue(row.getSessionType());
+
+                // Convert String date to LocalDate
+                if (row.getDate() != null && !row.getDate().isBlank()) {
+                    dpSubmissionDate.setValue(LocalDate.parse(row.getDate()));
+                } else {
+                    dpSubmissionDate.setValue(null);
+                }
             }
-            txtStudentRegNo.setText(row.getStudentRegNo());
-            txtCourseCode.setText(row.getCourseCode());
-            dpSubmissionDate.setValue(row.getDate().isBlank() ? null : LocalDate.parse(row.getDate()));
-            txtDescription.setText(row.getDescription());
-            cmbSessionType.setValue(row.getSessionType());
-            txtAttendanceId.setText(row.getAttendanceId());
         });
+
+        // Initial load
+        loadMedicalData("");
     }
 
     @FXML
     private void addRecord(ActionEvent event) {
-        if (!validForm()) {
-            return;
-        }
-        try {
-            technicalOfficerRepository.addMedical(buildMedicalRequest());
-            loadMedical(txtSearch.getText());
-            clearForm(event);
-        } catch (Exception e) {
-            showError("Failed to add medical record.", e);
+        if (isFormValid()) {
+            try {
+                MedicalRequest request = createRequest();
+                technicalOfficerRepository.addMedical(request);
+
+                loadMedicalData(txtSearch.getText());
+                clearFormFields();
+                showInfo("Medical record added!");
+            } catch (Exception e) {
+                showError("Failed to add record.", e);
+            }
         }
     }
 
     @FXML
     private void updateRecord(ActionEvent event) {
         Medical selected = tblMedical.getSelectionModel().getSelectedItem();
+
         if (selected == null) {
-            showWarn("Select a record to update.");
+            showWarning("Please select a medical record from the table.");
             return;
         }
-        if (!validForm()) {
-            return;
-        }
-        try {
-            technicalOfficerRepository.updateMedical(Integer.parseInt(selected.getMedicalId()), buildMedicalRequest());
-            loadMedical(txtSearch.getText());
-        } catch (Exception e) {
-            showError("Failed to update medical record.", e);
+
+        if (isFormValid()) {
+            try {
+                int id = Integer.parseInt(selected.getMedicalId());
+                MedicalRequest request = createRequest();
+
+                technicalOfficerRepository.updateMedical(id, request);
+                loadMedicalData(txtSearch.getText());
+                showInfo("Record updated!");
+            } catch (Exception e) {
+                showError("Failed to update record.", e);
+            }
         }
     }
 
     @FXML
     private void deleteRecord(ActionEvent event) {
         Medical selected = tblMedical.getSelectionModel().getSelectedItem();
+
         if (selected == null) {
-            showWarn("Select a record to delete.");
+            showWarning("Select a record to delete.");
             return;
         }
+
         try {
-            technicalOfficerRepository.deleteMedical(Integer.parseInt(selected.getMedicalId()), Integer.parseInt(selected.getAttendanceId()));
-            loadMedical(txtSearch.getText());
-            clearForm(event);
+            int medId = Integer.parseInt(selected.getMedicalId());
+            int attId = Integer.parseInt(selected.getAttendanceId());
+
+            technicalOfficerRepository.deleteMedical(medId, attId);
+            loadMedicalData(txtSearch.getText());
+            clearFormFields();
+            showInfo("Record deleted.");
         } catch (Exception e) {
-            showError("Failed to delete medical record.", e);
+            showError("Failed to delete record.", e);
         }
     }
 
     @FXML
     private void clearForm(ActionEvent event) {
-        txtStudentRegNo.clear();
-        txtCourseCode.clear();
-        txtAttendanceId.clear();
-        dpSubmissionDate.setValue(null);
-        txtDescription.clear();
-        cmbSessionType.setValue(null);
-        tblMedical.getSelectionModel().clearSelection();
+        clearFormFields();
     }
 
     @FXML
     private void searchRecords(ActionEvent event) {
-        loadMedical(txtSearch.getText());
+        loadMedicalData(txtSearch.getText());
     }
 
     @FXML
     private void refreshRecords(ActionEvent event) {
         txtSearch.clear();
-        loadMedical(null);
+        loadMedicalData("");
     }
 
-    private boolean validForm() {
-        if (value(txtStudentRegNo).isBlank() || value(txtCourseCode).isBlank() || dpSubmissionDate.getValue() == null
-                || value(txtDescription).isBlank() || cmbSessionType.getValue() == null || value(txtAttendanceId).isBlank()) {
-            showWarn("Fill all required fields.");
-            return false;
-        }
+    private void loadMedicalData(String keyword) {
         try {
-            Integer.parseInt(value(txtAttendanceId));
-        } catch (NumberFormatException e) {
-            showWarn("Attendance ID must be numeric.");
+            List<Medical> list = technicalOfficerRepository.findMedical(keyword);
+            tblMedical.getItems().setAll(list);
+        } catch (SQLException e) {
+            showError("Could not load medical data.", e);
+        }
+    }
+
+    private boolean isFormValid() {
+        // Check if basic text fields are empty
+        if (txtStudentRegNo.getText().isBlank() ||
+                txtCourseCode.getText().isBlank() ||
+                txtAttendanceId.getText().isBlank() ||
+                txtDescription.getText().isBlank() ||
+                dpSubmissionDate.getValue() == null ||
+                cmbSessionType.getValue() == null) {
+
+            showWarning("Please fill in all required fields.");
             return false;
         }
-        return true;
+
+        // Check if Attendance ID is a number
+        try {
+            Integer.parseInt(txtAttendanceId.getText().trim());
+            return true;
+        } catch (NumberFormatException e) {
+            showWarning("Attendance ID must be a valid number.");
+            return false;
+        }
     }
 
-    private String value(TextField textField) {
-        return textField.getText() == null ? "" : textField.getText().trim();
+    private MedicalRequest createRequest() {
+        // Get the logged-in officer's ID
+        String officerReg = LoggedInTechnicalOfficer.getRegistrationNo();
+        if (officerReg == null) officerReg = "";
+
+        // Package the data for the database
+        return new MedicalRequest(
+                txtStudentRegNo.getText().trim(),
+                txtCourseCode.getText().trim(),
+                Integer.parseInt(txtAttendanceId.getText().trim()),
+                dpSubmissionDate.getValue(),
+                cmbSessionType.getValue(),
+                txtDescription.getText().trim(),
+                officerReg
+        );
     }
 
-    private String value(TextArea textArea) {
-        return textArea.getText() == null ? "" : textArea.getText().trim();
+    private void clearFormFields() {
+        txtStudentRegNo.clear();
+        txtCourseCode.clear();
+        txtAttendanceId.clear();
+        txtDescription.clear();
+        dpSubmissionDate.setValue(null);
+        cmbSessionType.setValue(null);
+        tblMedical.getSelectionModel().clearSelection();
     }
 
-    private void showWarn(String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Validation");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
+    private void showInfo(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, message);
+        alert.showAndWait();
+    }
+
+    private void showWarning(String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING, message);
         alert.showAndWait();
     }
 
     private void showError(String message, Exception e) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Database Error");
-        alert.setHeaderText(null);
-        alert.setContentText(message + "\n" + e.getMessage());
+        Alert alert = new Alert(Alert.AlertType.ERROR, message + "\n" + e.getMessage());
         alert.showAndWait();
     }
-
-    private void loadMedical(String keyword) {
-        try {
-            tblMedical.getItems().setAll(technicalOfficerRepository.findMedical(keyword));
-        } catch (SQLException e) {
-            showError("Failed to load medical records.", e);
-        }
-    }
-
-    private String currentTechOfficerReg() {
-        String reg = LoggedInTechnicalOfficer.getRegistrationNo();
-        return reg == null ? "" : reg.trim();
-    }
-
-    private MedicalRequest buildMedicalRequest() {
-        return new MedicalRequest(
-                value(txtStudentRegNo),
-                value(txtCourseCode),
-                Integer.parseInt(value(txtAttendanceId)),
-                dpSubmissionDate.getValue(),
-                cmbSessionType.getValue(),
-                value(txtDescription),
-                currentTechOfficerReg()
-        );
-    }
-
 }

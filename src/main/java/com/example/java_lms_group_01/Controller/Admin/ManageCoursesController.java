@@ -9,17 +9,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Region;
 import javafx.util.StringConverter;
@@ -35,34 +25,24 @@ public class ManageCoursesController implements Initializable {
 
     @FXML
     private ComboBox<String> cmbDeptFilter;
-
     @FXML
     private TableColumn<Course, String> colCourseCode;
-
     @FXML
     private TableColumn<Course, Number> colCredits;
-
     @FXML
     private TableColumn<Course, String> colDeptId;
-
     @FXML
     private TableColumn<Course, String> colHasPractical;
-
     @FXML
     private TableColumn<Course, String> colHasTheory;
-
     @FXML
     private TableColumn<Course, String> colLecturerId;
-
     @FXML
     private TableColumn<Course, String> colName;
-
     @FXML
     private TableColumn<Course, String> colSemester;
-
     @FXML
     private TableView<Course> tblCourses;
-
     @FXML
     private TextField txtSearchCourse;
 
@@ -70,7 +50,7 @@ public class ManageCoursesController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        configureColumns();
+        setupColumns();
         loadDepartmentFilter("All");
         loadCourses(null, null);
 
@@ -78,57 +58,27 @@ public class ManageCoursesController implements Initializable {
         cmbDeptFilter.valueProperty().addListener((obs, oldValue, newValue) -> applyFilters());
     }
 
-    private void configureColumns() {
+    // Set the course table columns.
+    private void setupColumns() {
         colHasPractical.setVisible(false);
-        colCourseCode.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCourseCode()));
-        colName.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
-        colCredits.setCellValueFactory(data -> new SimpleIntegerProperty(data.getValue().getCredit()));
-        colHasTheory.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getCourseType()));
-        colLecturerId.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getLecturerRegistrationNo())));
-        colDeptId.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getDepartment())));
-        colSemester.setCellValueFactory(data -> new SimpleStringProperty(value(data.getValue().getSemester())));
-    }
-
-    private void loadDepartmentFilter(String selectedValue) {
-        try {
-            // set values to combo BOX
-            cmbDeptFilter.getItems().clear();
-            cmbDeptFilter.getItems().add("All");
-            cmbDeptFilter.getItems().addAll(adminRepository.findAllCourseDepartments());
-
-            //To get value that selected user
-            cmbDeptFilter.setValue(cmbDeptFilter.getItems().contains(selectedValue) ? selectedValue : "All");
-        } catch (SQLException e) {
-            showError("Failed to load department filters.", e);
-        }
-    }
-
-    private void applyFilters() {
-        String selectedDept = cmbDeptFilter.getValue();
-        String department = "All".equals(selectedDept) ? null : selectedDept;
-        loadCourses(department, txtSearchCourse.getText());
-    }
-
-    // Load courses using the current filter values.
-    private void loadCourses(String department, String keyword) {
-        try {
-            List<Course> courses = adminRepository.findCoursesByFilters(department, keyword);
-            tblCourses.getItems().setAll(courses);
-        } catch (SQLException e) {
-            showError("Failed to load courses.", e);
-        }
+        colCourseCode.setCellValueFactory(d -> new SimpleStringProperty(text(d.getValue().getCourseCode())));
+        colName.setCellValueFactory(d -> new SimpleStringProperty(text(d.getValue().getName())));
+        colCredits.setCellValueFactory(d -> new SimpleIntegerProperty(d.getValue().getCredit()));
+        colHasTheory.setCellValueFactory(d -> new SimpleStringProperty(text(d.getValue().getCourseType())));
+        colLecturerId.setCellValueFactory(d -> new SimpleStringProperty(text(d.getValue().getLecturerRegistrationNo())));
+        colDeptId.setCellValueFactory(d -> new SimpleStringProperty(text(d.getValue().getDepartment())));
+        colSemester.setCellValueFactory(d -> new SimpleStringProperty(text(d.getValue().getSemester())));
     }
 
     @FXML
     void btnOnActionAddNewCourse(ActionEvent event) {
-        Course course = showCourseForm(null);
+        Course course = openCourseForm(null);
         if (course == null) {
             return;
         }
 
         try {
-            boolean saved = adminRepository.saveCourse(course);
-            if (saved) {
+            if (adminRepository.saveCourse(course)) {
                 refreshCourses();
                 showInfo("Course added successfully.");
             } else {
@@ -141,23 +91,22 @@ public class ManageCoursesController implements Initializable {
 
     @FXML
     void btnOnActionDeleteCourse(ActionEvent event) {
-        Course selectedCourse = tblCourses.getSelectionModel().getSelectedItem();
-        if (selectedCourse == null) {
+        Course selected = tblCourses.getSelectionModel().getSelectedItem();
+        if (selected == null) {
             showInfo("Please select a course to delete.");
             return;
         }
 
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION);
         confirmation.setHeaderText("Delete Course");
-        confirmation.setContentText("Delete course " + selectedCourse.getCourseCode() + "?");
+        confirmation.setContentText("Delete course " + selected.getCourseCode() + "?");
         Optional<ButtonType> answer = confirmation.showAndWait();
         if (answer.isEmpty() || answer.get() != ButtonType.OK) {
             return;
         }
 
         try {
-            boolean deleted = adminRepository.deleteCourseByCode(selectedCourse.getCourseCode());
-            if (deleted) {
+            if (adminRepository.deleteCourseByCode(selected.getCourseCode())) {
                 refreshCourses();
             } else {
                 showInfo("No course was deleted.");
@@ -169,20 +118,19 @@ public class ManageCoursesController implements Initializable {
 
     @FXML
     void btnOnActionUpdateCourse(ActionEvent event) {
-        Course selectedCourse = tblCourses.getSelectionModel().getSelectedItem();
-        if (selectedCourse == null) {
+        Course selected = tblCourses.getSelectionModel().getSelectedItem();
+        if (selected == null) {
             showInfo("Please select a course to edit.");
             return;
         }
 
-        Course updatedCourse = showCourseForm(selectedCourse);
-        if (updatedCourse == null) {
+        Course updated = openCourseForm(selected);
+        if (updated == null) {
             return;
         }
 
         try {
-            boolean updated = adminRepository.updateCourse(updatedCourse);
-            if (updated) {
+            if (adminRepository.updateCourse(updated)) {
                 refreshCourses();
                 showInfo("Course updated successfully.");
             } else {
@@ -195,8 +143,8 @@ public class ManageCoursesController implements Initializable {
 
     @FXML
     void btnOnActionEnrollStudent(ActionEvent event) {
-        Course selectedCourse = tblCourses.getSelectionModel().getSelectedItem();
-        if (selectedCourse == null) {
+        Course selected = tblCourses.getSelectionModel().getSelectedItem();
+        if (selected == null) {
             showInfo("Please select a course to enroll a student.");
             return;
         }
@@ -210,20 +158,20 @@ public class ManageCoursesController implements Initializable {
 
             Dialog<ButtonType> dialog = new Dialog<>();
             dialog.setTitle("Enroll Student");
-            dialog.setHeaderText("Enroll a student to " + selectedCourse.getCourseCode());
+            dialog.setHeaderText("Enroll a student to " + selected.getCourseCode());
 
-            ButtonType enrollButtonType = new ButtonType("Enroll", ButtonBar.ButtonData.OK_DONE);
-            dialog.getDialogPane().getButtonTypes().addAll(enrollButtonType, ButtonType.CANCEL);
+            ButtonType save = new ButtonType("Enroll", ButtonBar.ButtonData.OK_DONE);
+            dialog.getDialogPane().getButtonTypes().addAll(save, ButtonType.CANCEL);
 
             ComboBox<UserRecord> cmbStudent = new ComboBox<>();
             cmbStudent.getItems().setAll(students);
-            configureStudentComboBox(cmbStudent);
+            setupStudentComboBox(cmbStudent);
 
             ComboBox<String> cmbEnrollmentStatus = new ComboBox<>();
             cmbEnrollmentStatus.getItems().addAll("active", "completed", "dropped");
             cmbEnrollmentStatus.setValue("active");
 
-            TextField txtCourseCode = new TextField(selectedCourse.getCourseCode());
+            TextField txtCourseCode = new TextField(selected.getCourseCode());
             txtCourseCode.setEditable(false);
 
             GridPane grid = new GridPane();
@@ -237,40 +185,37 @@ public class ManageCoursesController implements Initializable {
             grid.add(cmbEnrollmentStatus, 1, 2);
 
             dialog.getDialogPane().setContent(grid);
-            dialog.setResultConverter(buttonType -> buttonType);
+            dialog.setResultConverter(button -> button == save ? save : null);
 
-            Button enrollButton = (Button) dialog.getDialogPane().lookupButton(enrollButtonType);
+            Button enrollButton = (Button) dialog.getDialogPane().lookupButton(save);
             enrollButton.addEventFilter(ActionEvent.ACTION, actionEvent -> {
-                UserRecord selectedStudent = cmbStudent.getValue();
-                String status = cmbEnrollmentStatus.getValue();
-
-                if (selectedStudent == null) {
+                if (cmbStudent.getValue() == null) {
                     showInfo("Please select a student.");
                     actionEvent.consume();
                     return;
                 }
-
-                if (status == null || status.isBlank()) {
+                if (cmbEnrollmentStatus.getValue() == null || cmbEnrollmentStatus.getValue().isBlank()) {
                     showInfo("Please select an enrollment status.");
                     actionEvent.consume();
                 }
             });
 
             Optional<ButtonType> result = dialog.showAndWait();
-            if (result.isEmpty() || result.get() != enrollButtonType) {
+            if (result.isEmpty() || result.get() != save) {
                 return;
             }
 
-            UserRecord selectedStudent = cmbStudent.getValue();
+            UserRecord student = cmbStudent.getValue();
             String status = cmbEnrollmentStatus.getValue();
+            if (student == null || status == null || status.isBlank()) {
+                return;
+            }
 
-            boolean saved = adminRepository.enrollStudentToCourse(
-                    selectedStudent.getRegistrationNo(),
-                    selectedCourse.getCourseCode(),
+            if (adminRepository.enrollStudentToCourse(
+                    student.getRegistrationNo(),
+                    selected.getCourseCode(),
                     status
-            );
-
-            if (saved) {
+            )) {
                 showInfo("Student enrolled successfully.");
             } else {
                 showInfo("No enrollment was saved.");
@@ -280,15 +225,48 @@ public class ManageCoursesController implements Initializable {
         }
     }
 
-    // ADD and Update Course Form Access method
-    private Course showCourseForm(Course existingCourse) {
-        boolean editMode = existingCourse != null;
-        Dialog<Course> dialog = new Dialog<>();
-        dialog.setTitle(editMode ? "Edit Course" : "Add New Course");
-        dialog.setHeaderText(editMode ? "Update selected course details." : "Enter new course details.");
+    // Load courses based on the current filters.
+    private void loadCourses(String department, String keyword) {
+        try {
+            tblCourses.getItems().setAll(adminRepository.findCoursesByFilters(department, keyword));
+        } catch (SQLException e) {
+            showError("Failed to load courses.", e);
+        }
+    }
 
-        ButtonType saveButtonType = new ButtonType(editMode ? "Update" : "Save", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+    private void loadDepartmentFilter(String selectedValue) {
+        try {
+            cmbDeptFilter.getItems().clear();
+            cmbDeptFilter.getItems().add("All");
+            cmbDeptFilter.getItems().addAll(adminRepository.findAllCourseDepartments());
+            cmbDeptFilter.setValue(cmbDeptFilter.getItems().contains(selectedValue) ? selectedValue : "All");
+        } catch (SQLException e) {
+            showError("Failed to load department filters.", e);
+        }
+    }
+
+    private void refreshCourses() {
+        String selectedDepartment = cmbDeptFilter.getValue();
+        loadDepartmentFilter(selectedDepartment == null ? "All" : selectedDepartment);
+        applyFilters();
+    }
+
+    private void applyFilters() {
+        String selectedDept = cmbDeptFilter.getValue();
+        String department = "All".equals(selectedDept) ? null : selectedDept;
+        loadCourses(department, text(txtSearchCourse));
+    }
+
+    // Open one form for adding and editing courses.
+    private Course openCourseForm(Course existingCourse) {
+        boolean edit = existingCourse != null;
+        Dialog<Course> dialog = new Dialog<>();
+        dialog.setTitle(edit ? "Edit Course" : "Add New Course");
+        dialog.setHeaderText(edit ? "Update selected course details." : "Enter new course details.");
+
+        ButtonType save = new ButtonType(edit ? "Update" : "Save", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(save, ButtonType.CANCEL);
+
         CourseFormController formController;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/Admin/course_form.fxml"));
@@ -300,13 +278,13 @@ public class ManageCoursesController implements Initializable {
             return null;
         }
 
-        if (editMode) {
+        if (edit) {
             formController.setupForEdit(existingCourse);
         } else {
             formController.setupForCreate();
         }
 
-        Button saveButton = (Button) dialog.getDialogPane().lookupButton(saveButtonType);
+        Button saveButton = (Button) dialog.getDialogPane().lookupButton(save);
         final Course[] resultHolder = new Course[1];
         saveButton.addEventFilter(ActionEvent.ACTION, actionEvent -> {
             try {
@@ -317,22 +295,12 @@ public class ManageCoursesController implements Initializable {
             }
         });
 
-        dialog.setResultConverter(button -> button == saveButtonType ? resultHolder[0] : null);
+        dialog.setResultConverter(button -> button == save ? resultHolder[0] : null);
         Optional<Course> result = dialog.showAndWait();
         return result.orElse(null);
     }
 
-    private String value(String text) {
-        return text == null ? "" : text;
-    }
-
-    private void refreshCourses() {
-        String selectedDepartment = cmbDeptFilter.getValue();
-        loadDepartmentFilter(selectedDepartment == null ? "All" : selectedDepartment);
-        applyFilters();
-    }
-
-    private void configureStudentComboBox(ComboBox<UserRecord> comboBox) {
+    private void setupStudentComboBox(ComboBox<UserRecord> comboBox) {
         comboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(UserRecord student) {
@@ -355,8 +323,16 @@ public class ManageCoursesController implements Initializable {
     }
 
     private String formatStudentLabel(UserRecord student) {
-        return value(student.getRegistrationNo()) + " - "
-                + (value(student.getFirstName()) + " " + value(student.getLastName())).trim();
+        return text(student.getRegistrationNo()) + " - "
+                + (text(student.getFirstName()) + " " + text(student.getLastName())).trim();
+    }
+
+    private String text(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String text(TextField field) {
+        return field.getText() == null ? "" : field.getText().trim();
     }
 
     private void showInfo(String message) {

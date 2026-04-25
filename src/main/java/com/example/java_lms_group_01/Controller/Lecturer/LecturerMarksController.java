@@ -3,7 +3,7 @@ package com.example.java_lms_group_01.Controller.Lecturer;
 import com.example.java_lms_group_01.Repository.LecturerRepository;
 import com.example.java_lms_group_01.model.Mark;
 import com.example.java_lms_group_01.model.request.MarkRequest;
-import com.example.java_lms_group_01.util.LoggedInLecture;
+import com.example.java_lms_group_01.session.LoggedInLecture;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
@@ -65,6 +65,13 @@ public class LecturerMarksController {
 
     @FXML
     public void initialize() {
+        setupTableColumns();
+        setupSelectionListener();
+        loadMarks("");
+    }
+
+    // Set table columns
+    private void setupTableColumns() {
         colMarkId.setCellValueFactory(d -> d.getValue().markIdProperty());
         colStudentReg.setCellValueFactory(d -> d.getValue().studentRegProperty());
         colCourseCode.setCellValueFactory(d -> d.getValue().courseCodeProperty());
@@ -76,33 +83,40 @@ public class LecturerMarksController {
         colMid.setCellValueFactory(d -> d.getValue().midTermProperty());
         colFinalTheory.setCellValueFactory(d -> d.getValue().finalTheoryProperty());
         colFinalPractical.setCellValueFactory(d -> d.getValue().finalPracticalProperty());
-        loadMarks(null);
+    }
 
-        tblMarks.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, row) -> {
-            if (row == null) {
+    // When a row is clicked, copy the data into the form fields.
+    private void setupSelectionListener() {
+        tblMarks.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            if (newValue == null) {
                 return;
             }
-            txtStudentReg.setText(row.getStudentReg());
-            txtCourseCode.setText(row.getCourseCode());
-            txtQuiz1.setText(row.getQuiz1());
-            txtQuiz2.setText(row.getQuiz2());
-            txtQuiz3.setText(row.getQuiz3());
-            txtAssessment.setText(row.getAssessment());
-            txtProject.setText(row.getProject());
-            txtMidTerm.setText(row.getMidTerm());
-            txtFinalTheory.setText(row.getFinalTheory());
-            txtFinalPractical.setText(row.getFinalPractical());
+            fillForm(newValue);
         });
+    }
+
+    private void fillForm(Mark row) {
+        txtStudentReg.setText(row.getStudentReg());
+        txtCourseCode.setText(row.getCourseCode());
+        txtQuiz1.setText(row.getQuiz1());
+        txtQuiz2.setText(row.getQuiz2());
+        txtQuiz3.setText(row.getQuiz3());
+        txtAssessment.setText(row.getAssessment());
+        txtProject.setText(row.getProject());
+        txtMidTerm.setText(row.getMidTerm());
+        txtFinalTheory.setText(row.getFinalTheory());
+        txtFinalPractical.setText(row.getFinalPractical());
     }
 
     @FXML
     private void addMarks() {
-        if (!validForm()) {
+        if (!isFormValid()) {
             return;
         }
+
         try {
-            lecturerRepository.addMarks(currentLecturer(), buildMutation());
-            loadMarks(txtSearch.getText());
+            lecturerRepository.addMarks(currentLecturer(), buildRequest());
+            loadMarks(text(txtSearch));
             clearForm();
         } catch (Exception e) {
             showError("Failed to add marks.", e);
@@ -111,17 +125,22 @@ public class LecturerMarksController {
 
     @FXML
     private void updateMarks() {
-        Mark selected = tblMarks.getSelectionModel().getSelectedItem();
+        Mark selected = selectedMark();
         if (selected == null) {
             showWarn("Select a marks record to update.");
             return;
         }
-        if (!validForm()) {
+        if (!isFormValid()) {
             return;
         }
+
         try {
-            lecturerRepository.updateMarks(currentLecturer(), Integer.parseInt(selected.getMarkId()), buildMutation());
-            loadMarks(txtSearch.getText());
+            lecturerRepository.updateMarks(
+                    currentLecturer(),
+                    Integer.parseInt(selected.getMarkId()),
+                    buildRequest()
+            );
+            loadMarks(text(txtSearch));
         } catch (Exception e) {
             showError("Failed to update marks.", e);
         }
@@ -129,14 +148,15 @@ public class LecturerMarksController {
 
     @FXML
     private void deleteMarks() {
-        Mark selected = tblMarks.getSelectionModel().getSelectedItem();
+        Mark selected = selectedMark();
         if (selected == null) {
             showWarn("Select a marks record to delete.");
             return;
         }
+
         try {
             lecturerRepository.deleteMarks(currentLecturer(), Integer.parseInt(selected.getMarkId()));
-            loadMarks(txtSearch.getText());
+            loadMarks(text(txtSearch));
             clearForm();
         } catch (Exception e) {
             showError("Failed to delete marks.", e);
@@ -145,7 +165,7 @@ public class LecturerMarksController {
 
     @FXML
     private void searchMarks() {
-        loadMarks(txtSearch.getText());
+        loadMarks(text(txtSearch));
     }
 
     @FXML
@@ -163,6 +183,7 @@ public class LecturerMarksController {
         tblMarks.getSelectionModel().clearSelection();
     }
 
+    // Read marks from the database and show them in the table.
     private void loadMarks(String keyword) {
         try {
             tblMarks.getItems().setAll(
@@ -173,40 +194,49 @@ public class LecturerMarksController {
         }
     }
 
-    private boolean validForm() {
-        if (value(txtStudentReg).isBlank() || value(txtCourseCode).isBlank()) {
+    // Check the form before saving.
+    private boolean isFormValid() {
+        if (text(txtStudentReg).isBlank() || text(txtCourseCode).isBlank()) {
             showWarn("Student registration and course code are required.");
             return false;
         }
+
         try {
-            validateDecimal(txtQuiz1);
-            validateDecimal(txtQuiz2);
-            validateDecimal(txtQuiz3);
-            validateDecimal(txtAssessment);
-            validateDecimal(txtProject);
-            validateDecimal(txtMidTerm);
-            validateDecimal(txtFinalTheory);
-            validateDecimal(txtFinalPractical);
+            checkNumber(txtQuiz1);
+            checkNumber(txtQuiz2);
+            checkNumber(txtQuiz3);
+            checkNumber(txtAssessment);
+            checkNumber(txtProject);
+            checkNumber(txtMidTerm);
+            checkNumber(txtFinalTheory);
+            checkNumber(txtFinalPractical);
         } catch (IllegalArgumentException e) {
             showWarn(e.getMessage());
             return false;
         }
+
         return true;
     }
 
-    private void validateDecimal(TextField textField) {
-        String value = value(textField);
+    // Empty cells are allowed, but if a value is typed it must be a number from 0 to 100.
+    private void checkNumber(TextField field) {
+        String value = text(field);
         if (value.isBlank()) {
             return;
         }
+
         try {
-            double numeric = Double.parseDouble(value);
-            if (numeric < 0 || numeric > 100) {
-                throw new IllegalArgumentException("Exam marks must be between 0 and 100.");
+            double number = Double.parseDouble(value);
+            if (number < 0 || number > 100) {
+                throw new IllegalArgumentException("Marks must be between 0 and 100.");
             }
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Marks must be numeric.");
         }
+    }
+
+    private Mark selectedMark() {
+        return tblMarks.getSelectionModel().getSelectedItem();
     }
 
     private String currentLecturer() {
@@ -214,28 +244,33 @@ public class LecturerMarksController {
         return reg == null ? "" : reg.trim();
     }
 
-    private String value(TextField textField) {
-        return textField.getText() == null ? "" : textField.getText().trim();
+    private String text(TextField field) {
+        return field.getText() == null ? "" : field.getText().trim();
     }
 
-    private MarkRequest buildMutation() {
+    // Convert the form into one request object.
+    private MarkRequest buildRequest() {
         return new MarkRequest(
-                value(txtStudentReg),
-                value(txtCourseCode),
-                parseDecimal(txtQuiz1),
-                parseDecimal(txtQuiz2),
-                parseDecimal(txtQuiz3),
-                parseDecimal(txtAssessment),
-                parseDecimal(txtProject),
-                parseDecimal(txtMidTerm),
-                parseDecimal(txtFinalTheory),
-                parseDecimal(txtFinalPractical)
+                text(txtStudentReg),
+                text(txtCourseCode),
+                parseNumber(txtQuiz1),
+                parseNumber(txtQuiz2),
+                parseNumber(txtQuiz3),
+                parseNumber(txtAssessment),
+                parseNumber(txtProject),
+                parseNumber(txtMidTerm),
+                parseNumber(txtFinalTheory),
+                parseNumber(txtFinalPractical)
         );
     }
 
-    private Double parseDecimal(TextField textField) {
-        String value = value(textField);
-        return value.isBlank() ? null : Double.parseDouble(value);
+    // Blank fields become null so the repository can store them as empty values.
+    private Double parseNumber(TextField field) {
+        String value = text(field);
+        if (value.isBlank()) {
+            return null;
+        }
+        return Double.parseDouble(value);
     }
 
     private void showWarn(String message) {
@@ -253,5 +288,4 @@ public class LecturerMarksController {
         alert.setContentText(message + "\n" + e.getMessage());
         alert.showAndWait();
     }
-
 }
